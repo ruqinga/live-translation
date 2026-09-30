@@ -1527,7 +1527,7 @@ body.zh-only .dseg .e{display:none}
       let msg="翻译失败（"+res.status+"）";
       if(relay){
         let em=""; try{ const j=await res.json(); em=j.error||""; }catch(_){}
-        if(res.status===401){ msg="中转访问口令无效"; showBanner("中转访问口令无效，请在设置里检查。"); }
+        if(res.status===401){ msg="中转访问口令无效"; showBanner("中转访问口令无效：请检查设置里的「访问口令」是否与 Worker 的 ACCESS_TOKEN 一致。如果 Worker 刚重新部署过，到 Cloudflare 后台确认 ACCESS_TOKEN 还在（丢了要重新添加，类型选 Secret）。"); }
         else if(res.status===402||/credit|balance|insufficient/i.test(em)) msg="翻译服务商账户余额不足";
         else if(res.status===429) msg="请求太频繁或额度用完";
         else if(em) msg="翻译失败："+em;

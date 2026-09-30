@@ -90,6 +90,12 @@
 - `GET /deepgram-token`：返回 `{access_token, expires_in}`，页面用 `new WebSocket(url, ["bearer", access_token])` 连接。
 - 所有请求都要带 `Authorization: Bearer <ACCESS_TOKEN>`。服务商和模型有白名单，想加新模型改 `worker.js` 顶部的 `PROVIDERS`，同时在 `index.html` 的 `MODELS` 里加上。
 
+**排错**：页面提示「中转访问口令无效」（401）时，先到 Worker 的 Settings → Variables and Secrets 确认 `ACCESS_TOKEN` 还在，并且和页面设置里的「访问口令」完全一致。Git 集成部署时，后台添加的普通变量（Text 类型）可能在重新部署后被清掉；添加密钥请选 **Secret** 类型，`wrangler.toml` 里也已加了 `keep_vars = true`。可以用下面的命令验证（应返回 200 和译文，而不是 401）：
+
+```
+curl -i -X POST https://你的Worker网址/translate -H "Authorization: Bearer 你的ACCESS_TOKEN" -H "Content-Type: application/json" -d '{"provider":"deepseek","system":"翻译成中文","user":"hello"}'
+```
+
 **注意**：访问口令一旦泄露，别人就能消耗你的额度，请定期更换，并建议设置 `ALLOWED_ORIGIN`。
 
 ## 使用注意

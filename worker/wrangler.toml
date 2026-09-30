@@ -2,6 +2,10 @@ name = "live-translation-relay"
 main = "worker.js"
 compatibility_date = "2025-01-01"
 
+# 保留在 Cloudflare 后台里添加的变量：Git 集成每次部署时，不在这个文件里的普通变量默认会被清掉，
+# 导致 ACCESS_TOKEN 丢失、页面提示「中转访问口令无效」。Secret 类型的值本来就不受影响。
+keep_vars = true
+
 # 密钥用 wrangler secret put 设置，不要写在这里：
 #   ACCESS_TOKEN  ANTHROPIC_API_KEY  DEEPSEEK_API_KEY  OPENAI_API_KEY  DEEPGRAM_API_KEY
 # 可选变量：限制只允许你的页面来源调用
