@@ -106,6 +106,20 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .row .note a{color:var(--accent)}
 .keyok{color:#2E8B57}
 [hidden]{display:none!important}
+.tg{display:inline-block;padding:1px 9px;border-radius:999px;font-size:12px;line-height:1.7;color:#fff;background:#888;white-space:nowrap}
+.tg.rm{cursor:pointer}
+.tline{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px}
+.tmore{border:0;background:none;color:var(--muted);font-size:20px;line-height:1;padding:0 6px;cursor:pointer}
+.tagpick{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 14px}
+.tagpick button{border:2px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:7px 14px;font-size:15px;cursor:pointer}
+.tagpick button.on{color:#fff;border-color:transparent}
+.tagadd{display:flex;gap:8px}
+.tagadd input{flex:1;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);padding:10px 12px;font-size:15px;font-family:inherit}
+.tagadd button{border:0;border-radius:10px;background:var(--accent);color:var(--accent-ink);padding:0 16px;font-size:15px;cursor:pointer}
+.tm-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}
+.tm-row .cnt{flex:1;font-size:13px;color:var(--muted)}
+.tm-row button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:4px 10px;font-size:13px;cursor:pointer}
+.pair{display:flex;gap:4px;justify-self:center}
 .done.alt{background:var(--bg);color:var(--ink);border:1px solid var(--line)}
 .divider{margin:8px 0;padding:6px 10px;border-radius:8px;background:var(--bg);border:1px dashed var(--line);color:var(--muted);font-size:13px;text-align:center}
 .rec-note{font-size:13px;color:var(--muted);line-height:1.5;margin:6px 0 12px}
@@ -142,10 +156,16 @@ input[type=range]{width:100%;accent-color:var(--accent)}
       <button id="typeSend">翻译</button>
     </div>
     <div class="controls">
-      <button class="side" id="toggleType" aria-label="打字输入">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h.01M11 10h.01M15 10h.01M8 14h8"/></svg>
-        打字
-      </button>
+      <div class="pair">
+        <button class="side" id="toggleType" aria-label="打字输入">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h.01M11 10h.01M15 10h.01M8 14h8"/></svg>
+          打字
+        </button>
+        <button class="side" id="markBtn" aria-label="标记重点">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg>
+          标记
+        </button>
+      </div>
       <button id="mic" aria-label="开始收听">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
       </button>
@@ -241,6 +261,12 @@ input[type=range]{width:100%;accent-color:var(--accent)}
       <textarea id="glossary" placeholder="例如：医学讲座；MRI 译为核磁共振；Apex 是公司名不翻译"></textarea>
     </div>
     <div class="row">
+      <label>标签管理</label>
+      <div id="tagMgr"></div>
+      <div class="tagadd" style="margin-top:8px"><input type="text" id="presetNew" placeholder="新增预设标签" maxlength="20" autocomplete="off"><button id="presetAdd">添加</button></div>
+      <div class="note">收听时底部的「标记」按钮使用第一个预设标签。改名或删除会同步到所有会话和句子。</div>
+    </div>
+    <div class="row">
       <label>本地存储</label>
       <div class="note" id="storeInfo">读取中…</div>
     </div>
@@ -259,6 +285,15 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     <div class="rec-note">上次的收听没有正常结束（可能是刷新、崩溃或被系统关闭），下面的内容已经保存在本机，可以恢复或丢弃。</div>
     <div id="recoverList"></div>
     <button class="done" id="recoverClose">稍后处理</button>
+  </div>
+</dialog>
+
+<dialog id="tagDlg">
+  <div class="sheet">
+    <h2 id="tagTitle">标签</h2>
+    <div class="tagpick" id="tagPick"></div>
+    <div class="tagadd"><input type="text" id="tagNew" placeholder="新建标签" maxlength="20" autocomplete="off"><button id="tagAddBtn">添加</button></div>
+    <button class="done" id="tagDone">完成</button>
   </div>
 </dialog>
 
@@ -283,7 +318,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   let rec=null, listening=false, liveEl=null, wakeLock=null, restartTimer=null;
   const entries=[]; const queue=[]; let busy=false; let seq=0; let stickToBottom=true;
 
-  const settings={route:"direct", relayUrl:"", relayToken:"", provider:"anthropic", saveAudio:true, apiKey:"", dgKey:"", engine:"deepgram", model:"claude-haiku-4-5-20251001", lang:"en-US", mode:"both", size:22, glossary:""};
+  const settings={route:"direct", relayUrl:"", relayToken:"", provider:"anthropic", saveAudio:true, tagPresets:["重点","作业","考试","没听懂"], apiKey:"", dgKey:"", engine:"deepgram", model:"claude-haiku-4-5-20251001", lang:"en-US", mode:"both", size:22, glossary:""};
   try{ Object.assign(settings, JSON.parse(localStorage.getItem("lt-settings")||"{}")); }catch(e){}
   function saveSettings(){ try{ localStorage.setItem("lt-settings", JSON.stringify(settings)); }catch(e){} }
   function applySettings(){
@@ -326,7 +361,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   let toastT; function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),1800); }
 
   const dlg=$("settings");
-  function openSettings(){ applySettings(); dlg.showModal(); refreshStoreInfo(); }
+  function openSettings(){ applySettings(); dlg.showModal(); refreshStoreInfo(); drawTagMgr(); }
 
   function checkEngine(){
     const bad = settings.engine==="browser" && !SR;
@@ -400,7 +435,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     const row={id:Date.now(), title:p(d.getMonth()+1)+"月"+p(d.getDate())+"日 "+p(d.getHours())+":"+p(d.getMinutes()),
       created:Date.now(), ended:null, dur:0, tags:[], summary:"", summaryAt:null, audioMime:null, parts:[], engine};
     S={id:row.id, row, t0:performance.now(), gapMs:0, intAt:null, intT:0, segN:0, closing:false, ending:false, chunkIdx:0, writes:[], mrDones:[], mr:null, needPrompt:false};
-    uStartWall=null;
+    uStartWall=null; pendingMark=false;
     dbPut("sessions",row).catch(dbFail);
     askPersist();
     return S;
@@ -418,7 +453,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     try{ await audioFlush(s); }catch(e){}
     const row=s.row;
     row.ended=Date.now(); row.dur=s.intAt!=null ? s.intT : nowT();
-    S=null; uStartWall=null;
+    S=null; uStartWall=null; pendingMark=false;
     let segs=[]; try{ segs=await dbBySid("segments",row.id); }catch(e){}
     const real=segs.filter(x=>x.kind!=="break");
     if(!real.length && !row.parts.length && row.dur<2){ dbDelSession(row.id).catch(()=>{}); return; }
@@ -551,6 +586,150 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   }
   $("recoverClose").onclick=()=>$("recoverDlg").close();
 
+
+  // ---------- Tags ----------
+  const TAG_COLORS={"重点":"#E08A00","作业":"#2B7DE9","考试":"#D6453D","没听懂":"#8E5BD6"};
+  function tagColor(t){ if(TAG_COLORS[t]) return TAG_COLORS[t]; let h=0; for(const c of t) h=(h*31+c.charCodeAt(0))%360; return "hsl("+h+",55%,40%)"; }
+  function tagChip(t,onRemove){
+    const el=document.createElement("span"); el.className="tg"; el.textContent=t; el.style.background=tagColor(t);
+    if(onRemove){ el.classList.add("rm"); el.textContent=t+" ✕"; el.onclick=()=>onRemove(t); }
+    return el;
+  }
+  const markTag=()=>(settings.tagPresets&&settings.tagPresets[0])||"重点";
+  let pendingMark=false;              // 当前正在识别的句子确定后要打上标记
+  const knownTags=new Set();          // 预设 + 数据库里出现过的标签，用于菜单和补全
+  const allTagList=()=>Array.from(new Set((settings.tagPresets||[]).concat(Array.from(knownTags))));
+  async function loadKnownTags(){
+    try{
+      (await dbAll("sessions")).forEach(r=>(r.tags||[]).forEach(t=>knownTags.add(t)));
+      (await dbAll("segments")).forEach(r=>(r.tags||[]).forEach(t=>knownTags.add(t)));
+    }catch(e){}
+  }
+  const tagWatchers=[];               // 标签变化后需要刷新的界面
+  const tagsChanged=()=>tagWatchers.forEach(f=>{ try{ f(); }catch(e){} });
+
+  // 通用标签菜单：cur 为当前标签，onChange(新数组) 每次点选都会调用
+  let tagCtx=null;
+  function openTagMenu(title,cur,onChange){
+    tagCtx={tags:cur.slice(), onChange};
+    $("tagTitle").textContent=title; $("tagNew").value=""; drawTagPick();
+    if(!$("tagDlg").open) $("tagDlg").showModal();
+  }
+  function drawTagPick(){
+    const box=$("tagPick"); box.textContent="";
+    const list=allTagList(); tagCtx.tags.forEach(t=>{ if(!list.includes(t)) list.push(t); });
+    list.forEach(t=>{
+      const b=document.createElement("button"); b.textContent=t;
+      const on=tagCtx.tags.includes(t); b.classList.toggle("on",on); if(on) b.style.background=tagColor(t);
+      b.onclick=()=>{ toggleTagCtx(t); };
+      box.appendChild(b);
+    });
+  }
+  function toggleTagCtx(t){
+    const i=tagCtx.tags.indexOf(t);
+    if(i>=0) tagCtx.tags.splice(i,1); else tagCtx.tags.push(t);
+    knownTags.add(t); drawTagPick(); tagCtx.onChange(tagCtx.tags.slice());
+  }
+  function addNewTag(){
+    const v=$("tagNew").value.trim(); if(!v||!tagCtx) return;
+    $("tagNew").value="";
+    if(!tagCtx.tags.includes(v)) toggleTagCtx(v); else drawTagPick();
+  }
+  $("tagAddBtn").onclick=addNewTag;
+  $("tagNew").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); addNewTag(); } });
+  $("tagDone").onclick=()=>{ $("tagDlg").close(); tagCtx=null; };
+  $("tagDlg").addEventListener("click",e=>{ if(e.target===$("tagDlg")){ $("tagDlg").close(); tagCtx=null; } });
+
+  // 长按（触屏）或右键/系统长按菜单
+  function attachLongPress(el,fn){
+    let t=null;
+    const clear=()=>{ clearTimeout(t); t=null; };
+    el.addEventListener("touchstart",()=>{ clear(); t=setTimeout(()=>{ t=null; fn(); },550); },{passive:true});
+    ["touchend","touchmove","touchcancel"].forEach(n=>el.addEventListener(n,clear,{passive:true}));
+    el.addEventListener("contextmenu",e=>{ e.preventDefault(); fn(); });
+  }
+  function vibrate(){ try{ navigator.vibrate && navigator.vibrate(30); }catch(e){} }
+
+  // 实时字幕里的句子标签
+  function drawTags(e){
+    const box=e.tagsEl; box.textContent="";
+    (e.tags||[]).forEach(t=>box.appendChild(tagChip(t)));
+    const more=document.createElement("button"); more.className="tmore"; more.textContent="…"; more.setAttribute("aria-label","标签");
+    more.onclick=()=>editEntryTags(e); box.appendChild(more);
+  }
+  function editEntryTags(e){
+    openTagMenu("给这句加标签",e.tags||[],tags=>{ e.tags=tags; drawTags(e); segSave(e); tagsChanged(); });
+  }
+  function addTagToEntry(e,t){
+    if(!(e.tags||(e.tags=[])).includes(t)){ e.tags.push(t); knownTags.add(t); if(e.tagsEl) drawTags(e); segSave(e); tagsChanged(); }
+  }
+  // 收听时的「标记」按钮：标最近一句；当前句还在识别中，则等它确定后标记
+  function markLast(){
+    if(!S || S.closing || S.intAt!=null){ toast("开始收听后才能标记"); return; }
+    const tag=markTag();
+    if(liveEl || dg.finals.length){ pendingMark=true; toast("已标记当前句：#"+tag); vibrate(); return; }
+    let last=null; for(let i=entries.length-1;i>=0;i--){ if(entries[i].sid===S.id){ last=entries[i]; break; } }
+    if(!last){ toast("还没有可标记的句子"); return; }
+    addTagToEntry(last,tag); toast("已标记上一句：#"+tag); vibrate();
+  }
+  $("markBtn").onclick=markLast;
+
+  // ----- 标签管理（设置页）：改名、删除同步到所有会话 -----
+  async function tagUsage(){
+    const use={};
+    const add=(t,k)=>{ (use[t]||(use[t]={s:0,g:0}))[k]++; };
+    try{
+      (await dbAll("sessions")).forEach(r=>(r.tags||[]).forEach(t=>add(t,"s")));
+      (await dbAll("segments")).forEach(r=>(r.tags||[]).forEach(t=>add(t,"g")));
+    }catch(e){}
+    (settings.tagPresets||[]).forEach(t=>{ if(!use[t]) use[t]={s:0,g:0}; });
+    return use;
+  }
+  // map(tags)→新 tags 数组；用于改名（替换）和删除（过滤）
+  async function rewriteTags(map){
+    const same=(a,b)=>a.length===b.length && a.every((x,i)=>x===b[i]);
+    const rs=await dbAll("sessions"), gs=await dbAll("segments");
+    const rc=rs.filter(r=>{ const n=map(r.tags||[]); if(same(n,r.tags||[])) return false; r.tags=n; return true; });
+    const gc=gs.filter(r=>{ const n=map(r.tags||[]); if(same(n,r.tags||[])) return false; r.tags=n; return true; });
+    await dbTx(["sessions","segments"],"readwrite",t=>{ rc.forEach(r=>t.objectStore("sessions").put(r)); gc.forEach(r=>t.objectStore("segments").put(r)); });
+    // 内存中的实时字幕和当前会话
+    entries.forEach(e=>{ if(e.tags){ e.tags=map(e.tags); if(e.tagsEl) drawTags(e); } });
+    if(S) S.row.tags=map(S.row.tags||[]);
+  }
+  const uniq=a=>a.filter((x,i)=>a.indexOf(x)===i);
+  async function renameTag(old,nu){
+    nu=(nu||"").trim(); if(!nu || nu===old) return;
+    settings.tagPresets=uniq((settings.tagPresets||[]).map(t=>t===old?nu:t)); saveSettings();
+    knownTags.delete(old); knownTags.add(nu);
+    await rewriteTags(tags=>uniq(tags.map(t=>t===old?nu:t)));
+    tagsChanged();
+  }
+  async function deleteTag(t){
+    settings.tagPresets=(settings.tagPresets||[]).filter(x=>x!==t); saveSettings();
+    knownTags.delete(t);
+    await rewriteTags(tags=>tags.filter(x=>x!==t));
+    tagsChanged();
+  }
+  async function drawTagMgr(){
+    const box=$("tagMgr"); const use=await tagUsage(); box.textContent="";
+    const names=Object.keys(use);
+    if(!names.length){ box.textContent="还没有标签。"; return; }
+    names.forEach(t=>{
+      const row=document.createElement("div"); row.className="tm-row";
+      const cnt=document.createElement("span"); cnt.className="cnt"; cnt.textContent=use[t].s+" 个会话 · "+use[t].g+" 句";
+      const rn=document.createElement("button"); rn.textContent="改名";
+      rn.onclick=async()=>{ const n=prompt("把「"+t+"」改名为",t); if(n&&n.trim()&&n.trim()!==t){ try{ await renameTag(t,n); }catch(e){ dbFail(e); } drawTagMgr(); } };
+      const dl=document.createElement("button"); dl.textContent="删除";
+      dl.onclick=async()=>{ if(confirm("删除标签「"+t+"」？所有会话和句子上的这个标签都会被移除。")){ try{ await deleteTag(t); }catch(e){ dbFail(e); } drawTagMgr(); } };
+      row.append(tagChip(t),cnt,rn,dl); box.appendChild(row);
+    });
+  }
+  $("presetAdd").onclick=()=>{
+    const v=$("presetNew").value.trim(); if(!v) return; $("presetNew").value="";
+    if(!(settings.tagPresets||[]).includes(v)){ settings.tagPresets=(settings.tagPresets||[]).concat(v); saveSettings(); }
+    drawTagMgr();
+  };
+
   // ---------- Feed ----------
   feed.addEventListener("scroll",()=>{ stickToBottom = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 60; });
   function scrollDown(){ if(stickToBottom) feed.scrollTop=feed.scrollHeight; }
@@ -561,7 +740,9 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     const div=document.createElement("div"); div.className="entry";
     const en=document.createElement("div"); en.className="en"; en.textContent=e.en;
     const zh=document.createElement("div"); zh.className="zh pending"; zh.textContent="翻译中…";
-    div.append(en,zh);
+    const tl=document.createElement("div"); tl.className="tline";
+    div.append(en,zh,tl); e.tagsEl=tl; drawTags(e);
+    attachLongPress(div,()=>editEntryTags(e));
     if(liveEl && liveEl.parentNode===feed) feed.insertBefore(div, liveEl); else feed.appendChild(div);
     e.el=zh; scrollDown();
   }
@@ -584,6 +765,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     if(S){
       e.sid=S.id; e.segId=S.id+"-"+(++S.segN);
       e.end=end!=null?end:nowT(); e.start=start!=null?start:e.end; if(e.end<e.start) e.end=e.start;
+      if(pendingMark){ e.tags.push(markTag()); pendingMark=false; }
       segSave(e);
     }
     entries.push(e); renderEntry(e); queue.push(e); pump();
@@ -1008,6 +1190,7 @@ registerProcessor("pcm16",PCM16);`;
     settings.engine=e.target.value; saveSettings(); applySettings();
     hideBanner(); hint.textContent="建议在安静环境，靠近说话人"; checkEngine();
   };
+  loadKnownTags();
   checkUnfinished();
   $("size").oninput=e=>{ settings.size=+e.target.value; document.documentElement.style.setProperty("--zh-size", settings.size+"px"); saveSettings(); };
   $("glossary").oninput=e=>{ settings.glossary=e.target.value; saveSettings(); };
