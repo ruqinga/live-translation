@@ -1,5 +1,6 @@
 // 同声字幕中转层（Cloudflare Workers）
 //   POST /translate        流式翻译，统一输出  data: {"t":"文本片段"}  ...  data: [DONE]
+//   POST /summary          流式长文本摘要，格式同上，但允许更长的输入和输出
 //   GET  /deepgram-token   签发 Deepgram 短期令牌（手机端不需要保存 Deepgram 长期密钥）
 // 所有请求都要带  Authorization: Bearer <ACCESS_TOKEN>
 //
@@ -8,11 +9,14 @@
 //   ALLOWED_ORIGIN（可选，例如 https://ruqinga.github.io，不填则允许任何来源）
 
 const PROVIDERS = {
-  anthropic: { key: "ANTHROPIC_API_KEY", models: ["claude-haiku-4-5-20251001", "claude-sonnet-5-5"] },
+  anthropic: { key: "ANTHROPIC_API_KEY", models: ["claude-haiku-4-5-20251001", "claude-sonnet-5-5", "claude-opus-5-5"] },
   deepseek:  { key: "DEEPSEEK_API_KEY",  models: ["deepseek-chat"] },
   openai:    { key: "OPENAI_API_KEY",    models: ["gpt-4o-mini", "gpt-4o"] },
 };
-const MAX_BODY = 30000;
+const LIMITS = {
+  translate: { maxBody: 30000, maxTokens: 1024 },
+  summary:   { maxBody: 200000, maxTokens: 4096 },
+};
 
 function cors(env, req) {
   const allow = env.ALLOWED_ORIGIN || "*";
@@ -66,9 +70,9 @@ const extractOpenAI = (ev) => {
   return c && c.delta && c.delta.content ? { text: c.delta.content } : null;
 };
 
-async function translate(req, env, h) {
+async function translate(req, env, h, lim) {
   const len = +(req.headers.get("content-length") || 0);
-  if (len > MAX_BODY) return json({ error: "请求太大" }, 413, h);
+  if (len > lim.maxBody * 3) return json({ error: "请求太大" }, 413, h);
   let b; try { b = await req.json(); } catch (_) { return json({ error: "请求格式错误" }, 400, h); }
   const provider = b.provider || "anthropic";
   const p = PROVIDERS[provider];
@@ -78,7 +82,8 @@ async function translate(req, env, h) {
   const model = b.model || p.models[0];
   if (!p.models.includes(model)) return json({ error: "不支持的模型：" + model }, 400, h);
   const system = String(b.system || ""), user = String(b.user || "");
-  if (!user || system.length + user.length > MAX_BODY) return json({ error: "内容为空或过长" }, 400, h);
+  if (!user || system.length + user.length > lim.maxBody) return json({ error: "内容为空或过长" }, 400, h);
+  const maxTokens = Math.max(64, Math.min(lim.maxTokens, +b.max_tokens || lim.maxTokens));
 
   let res;
   try {
@@ -86,14 +91,14 @@ async function translate(req, env, h) {
       res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: { "content-type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
-        body: JSON.stringify({ model, max_tokens: 1024, stream: true, system, messages: [{ role: "user", content: user }] }),
+        body: JSON.stringify({ model, max_tokens: maxTokens, stream: true, system, messages: [{ role: "user", content: user }] }),
       });
     } else {
       const url = provider === "deepseek" ? "https://api.deepseek.com/chat/completions" : "https://api.openai.com/v1/chat/completions";
       res = await fetch(url, {
         method: "POST",
         headers: { "content-type": "application/json", authorization: "Bearer " + apiKey },
-        body: JSON.stringify({ model, stream: true, max_tokens: 1024, messages: [{ role: "system", content: system }, { role: "user", content: user }] }),
+        body: JSON.stringify({ model, stream: true, max_tokens: maxTokens, messages: [{ role: "system", content: system }, { role: "user", content: user }] }),
       });
     }
   } catch (e) { return json({ error: "连接上游服务失败" }, 502, h); }
@@ -132,7 +137,8 @@ export default {
       return json({ error: "访问口令无效" }, 401, h);
     }
     const path = new URL(req.url).pathname.replace(/\/+$/, "");
-    if (path === "/translate" && req.method === "POST") return translate(req, env, h);
+    if (path === "/translate" && req.method === "POST") return translate(req, env, h, LIMITS.translate);
+    if (path === "/summary" && req.method === "POST") return translate(req, env, h, LIMITS.summary);
     if (path === "/deepgram-token" && req.method === "GET") return deepgramToken(env, h);
     return json({ error: "未找到" }, 404, h);
   },

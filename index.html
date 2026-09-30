@@ -159,6 +159,16 @@ body.v-records #feed,body.v-records footer{display:none}
 .dseg .e{font-family:var(--font-en);font-size:14px;color:var(--muted);line-height:1.5;word-break:break-word}
 .dseg .z{font-size:17px;line-height:1.6;word-break:break-word}
 body.zh-only .dseg .e{display:none}
+.sumbox{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px;background:var(--panel)}
+.sum-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.sum-time{font-size:12px;color:var(--muted)}
+.sum-err{color:var(--rec);font-size:14px;margin:6px 0}
+.md{font-size:15px;line-height:1.7;word-break:break-word}
+.md .md-h{margin:12px 0 4px;font-size:15px;font-weight:600}
+.md p{margin:4px 0}
+.md ul,.md ol{margin:4px 0;padding-left:22px}
+.md a.ts{color:var(--accent);text-decoration:none;font-family:var(--font-en);font-size:13px;padding:0 2px}
+.md .muted{color:var(--muted)}
 .done.alt{background:var(--bg);color:var(--ink);border:1px solid var(--line)}
 .divider{margin:8px 0;padding:6px 10px;border-radius:8px;background:var(--bg);border:1px dashed var(--line);color:var(--muted);font-size:13px;text-align:center}
 .rec-note{font-size:13px;color:var(--muted);line-height:1.5;margin:6px 0 12px}
@@ -230,6 +240,11 @@ body.zh-only .dseg .e{display:none}
         <audio id="plAudio" preload="metadata" playsinline hidden></audio>
       </div>
       <div class="det-tags" id="detTags"></div>
+      <div class="sumbox" id="detSum">
+        <div class="sum-head"><b>摘要</b><span class="sum-time" id="sumTime"></span><span style="flex:1"></span><button class="pbtn" id="sumGen">生成摘要</button></div>
+        <div class="sum-err" id="sumErr" hidden></div>
+        <div class="md" id="sumBody"></div>
+      </div>
       <div id="detList"></div>
     </div>
   </section>
@@ -307,6 +322,11 @@ body.zh-only .dseg .e{display:none}
       <label for="dgKey">Deepgram API 密钥</label>
       <input type="password" id="dgKey" placeholder="Deepgram 密钥" autocomplete="off" spellcheck="false">
       <div class="note">同样只保存在这台手机的浏览器里。在 <a href="https://console.deepgram.com" target="_blank" rel="noopener">Deepgram Console</a> 申请。</div>
+    </div>
+    <div class="row">
+      <label for="sumModel">摘要模型</label>
+      <select id="sumModel"></select>
+      <div class="note">摘要用比实时翻译更强的模型，只在停止收听后（超过 10 句）或手动点「生成摘要」时调用，不占用实时翻译。</div>
     </div>
     <div class="row">
       <label for="saveAudio">保存录音</label>
@@ -402,7 +422,7 @@ body.zh-only .dseg .e{display:none}
   let rec=null, listening=false, liveEl=null, wakeLock=null, restartTimer=null;
   const entries=[]; const queue=[]; let busy=false; let seq=0; let stickToBottom=true;
 
-  const settings={route:"direct", relayUrl:"", relayToken:"", provider:"anthropic", saveAudio:true, tagPresets:["重点","作业","考试","没听懂"], apiKey:"", dgKey:"", engine:"deepgram", model:"claude-haiku-4-5-20251001", lang:"en-US", mode:"both", size:22, glossary:""};
+  const settings={route:"direct", relayUrl:"", relayToken:"", provider:"anthropic", saveAudio:true, tagPresets:["重点","作业","考试","没听懂"], sumModel:"", apiKey:"", dgKey:"", engine:"deepgram", model:"claude-haiku-4-5-20251001", lang:"en-US", mode:"both", size:22, glossary:""};
   try{ Object.assign(settings, JSON.parse(localStorage.getItem("lt-settings")||"{}")); }catch(e){}
   function saveSettings(){ try{ localStorage.setItem("lt-settings", JSON.stringify(settings)); }catch(e){} }
   function applySettings(){
@@ -414,7 +434,7 @@ body.zh-only .dseg .e{display:none}
     $("route").value=settings.route; $("relayUrl").value=settings.relayUrl||""; $("relayToken").value=settings.relayToken||""; $("provider").value=settings.provider;
     $("relayRows").style.display=useRelay()?"":"none";
     $("claudeRow").style.display=useRelay()?"none":"";
-    fillModels();
+    fillModels(); fillSumModels();
     $("accent").value=settings.lang;
     $("size").value=settings.size;
     $("glossary").value=settings.glossary||"";
@@ -427,6 +447,11 @@ body.zh-only .dseg .e{display:none}
     deepseek:[["deepseek-chat","DeepSeek Chat"]],
     openai:[["gpt-4o-mini","GPT-4o mini（快、便宜）"],["gpt-4o","GPT-4o（更准）"]]
   };
+  const SUM_MODELS={
+    anthropic:[["claude-sonnet-5-5","Sonnet（推荐）"],["claude-opus-5-5","Opus（最强，较贵）"]],
+    deepseek:[["deepseek-chat","DeepSeek Chat"]],
+    openai:[["gpt-4o","GPT-4o（推荐）"],["gpt-4o-mini","GPT-4o mini（便宜）"]]
+  };
   const useRelay=()=>settings.route==="relay";
   const relayBase=()=>(settings.relayUrl||"").trim().replace(/\/+$/,"");
   const translateReady=()=>useRelay() ? !!(relayBase() && settings.relayToken) : !!settings.apiKey;
@@ -437,6 +462,13 @@ body.zh-only .dseg .e{display:none}
     list.forEach(([v,t])=>{ const o=document.createElement("option"); o.value=v; o.textContent=t; sel.appendChild(o); });
     if(!list.some(x=>x[0]===settings.model)){ settings.model=list[0][0]; saveSettings(); }
     sel.value=settings.model;
+  }
+  function fillSumModels(){
+    const list=SUM_MODELS[useRelay()?settings.provider:"anthropic"]||SUM_MODELS.anthropic;
+    const sel=$("sumModel"); sel.innerHTML="";
+    list.forEach(([v,t])=>{ const o=document.createElement("option"); o.value=v; o.textContent=t; sel.appendChild(o); });
+    if(!list.some(x=>x[0]===settings.sumModel)){ settings.sumModel=list[0][0]; saveSettings(); }
+    sel.value=settings.sumModel;
   }
   applySettings();
 
@@ -542,6 +574,7 @@ body.zh-only .dseg .e{display:none}
     const real=segs.filter(x=>x.kind!=="break");
     if(!real.length && !row.parts.length && row.dur<2){ dbDelSession(row.id).catch(()=>{}); return; }
     try{ await dbPut("sessions",row); }catch(e){ dbFail(e); }
+    if(real.length>10 && !row.summary && sumReady()) queueSummary(row.id);
   }
   function segRecord(e){ return {id:e.segId, sid:e.sid, start:e.start, end:e.end, en:e.en, zh:e.zh||"", tags:e.tags||[], kind:"seg"}; }
   function segSave(e){ if(e.segId) dbPut("segments",segRecord(e)).catch(dbFail); }
@@ -934,14 +967,14 @@ body.zh-only .dseg .e{display:none}
     freePlayer();
     det={row, segs:sortSegs(segs), segRows:[], active:-1};
     pane("recDetail"); $("detTitle").textContent=row.title;
-    drawDetTags(); renderDetList();
+    drawDetTags(); renderDetList(); drawSum();
     loadPlayer(row).then(()=>{ if(opts.seek!=null && det && det.row.id===id){ seekTo(opts.seek,false); hiliteAt(opts.seek,true); } });
     if(opts.seek!=null) hiliteAt(opts.seek,true);
   }
   async function reloadDetail(){
     if(!det) return; const id=det.row.id;
     try{ det.row=await dbGet("sessions",id)||det.row; det.segs=sortSegs(await dbBySid("segments",id)); }catch(e){ return; }
-    drawDetTags(); renderDetList();
+    drawDetTags(); renderDetList(); drawSum();
   }
   function closeDetail(){
     freePlayer(); det=null; pane("recHome"); recRefresh();
@@ -1092,6 +1125,174 @@ body.zh-only .dseg .e{display:none}
     document.querySelectorAll("#player [data-rate]").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));
   });
   tagWatchers.push(()=>{ if(view!=="records") return; if(!$("recDetail").hidden) reloadDetail(); else recRefresh(); });
+
+  // ---------- Auto summary（走同一条中转/直连通道，独立队列，不占用实时翻译） ----------
+  const sumState={};      // 会话 id → {status:"running"|"error", text, progress, err}
+  const sumQueue=[]; let sumBusy=false;
+  const SUM_LIMIT=60000, SUM_CHUNK=50000;
+  const SUM_SYS="你是一名英文课程、讲座、会议的学习助理。根据用户提供的英文转写（每行以 [mm:ss] 时间戳开头），用简体中文输出 Markdown 摘要。严格使用下面的结构和标题，不要添加其他章节：\n\n"
+    +"## 一句话概括\n（一句话）\n\n"
+    +"## 主要内容\n（按主题分段，每段用加粗小标题，并在小标题里标注大致时间点，格式如 **主题名 [12:30]**；下面用要点列出内容）\n\n"
+    +"## 关键术语\n（每条：英文原词 — 中文解释；没有则写“无”）\n\n"
+    +"## 作业 / 待办 / 截止日期\n（逐条列出，并注明时间点 [mm:ss]；没有则写“无”）\n\n"
+    +"## 标记内容回顾\n（汇总用户标记过的句子，按标签分组，每组用加粗标签名作小标题；每条带时间点 [mm:ss] 和中文要点；标签为“没听懂”的句子要给出通俗易懂的解释；没有标记则写“无”）\n\n"
+    +"要求：时间点一律写成 [mm:ss] 或 [h:mm:ss]，并且必须来自原文的时间戳；转写可能有识别错误，请结合上下文与“场景与术语”合理纠正；不要编造转写里没有的内容。";
+  const PART_SYS="你是一名英文课程、讲座、会议的学习助理。下面是一段较长录音转写的其中一部分（每行以 [mm:ss] 时间戳开头）。请用简体中文整理这一部分的笔记：按主题分条，保留大致时间点 [mm:ss]；列出出现的关键术语（英文+中文解释）；列出作业、待办、截止日期；不要编造，不要写总结性的开头结尾。";
+  const sumReady=()=>translateReady();
+
+  async function readSSE(res,onEvent){
+    const reader=res.body.getReader(), dec=new TextDecoder(); let buf="";
+    while(true){
+      const {value,done}=await reader.read(); if(done) break;
+      buf+=dec.decode(value,{stream:true}).replace(/\r\n/g,"\n");
+      let i;
+      while((i=buf.indexOf("\n\n"))>=0){
+        const chunk=buf.slice(0,i); buf=buf.slice(i+2);
+        const line=chunk.split("\n").find(l=>l.startsWith("data:")); if(!line) continue;
+        let ev; try{ ev=JSON.parse(line.slice(5).trim()); }catch(_){ continue; }
+        onEvent(ev);
+      }
+    }
+  }
+  // 流式调用摘要模型；relay 走 Worker 的 /summary，直连则走 Claude API
+  async function llmStream(system,user,maxTokens,onText){
+    const relay=useRelay(), model=settings.sumModel; let res;
+    try{
+      if(relay){
+        res=await fetch(relayBase()+"/summary",{method:"POST",
+          headers:{"content-type":"application/json","authorization":"Bearer "+settings.relayToken},
+          body:JSON.stringify({provider:settings.provider, model, system, user, max_tokens:maxTokens})});
+      }else{
+        res=await fetch(API_URL,{method:"POST",
+          headers:{"content-type":"application/json","x-api-key":settings.apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+          body:JSON.stringify({model, max_tokens:maxTokens, stream:true, system, messages:[{role:"user",content:user}]})});
+      }
+    }catch(e){ throw new Error("网络连接失败"); }
+    if(!res.ok){
+      let em=""; try{ const j=await res.json(); em=(j.error&&(j.error.message||j.error))||""; }catch(_){}
+      if(relay && res.status===404) throw new Error("中转层还不支持摘要，请更新并重新部署 Worker（见 README）");
+      if(res.status===401) throw new Error(relay?"中转访问口令无效":"API 密钥无效");
+      if(res.status===402||/credit|balance|insufficient/i.test(String(em))) throw new Error("账户余额不足");
+      if(res.status===429) throw new Error("请求太频繁或额度用完，稍后重试");
+      throw new Error("摘要失败（"+res.status+"）"+(em?"："+em:""));
+    }
+    let out="";
+    await readSSE(res,ev=>{
+      if(relay){ if(typeof ev.t==="string"){ out+=ev.t; onText&&onText(out); } else if(ev.error) throw new Error(String(ev.error)); }
+      else if(ev.type==="content_block_delta" && ev.delta && ev.delta.type==="text_delta"){ out+=ev.delta.text; onText&&onText(out); }
+      else if(ev.type==="error") throw new Error((ev.error&&ev.error.message)||"stream error");
+    });
+    out=out.trim(); if(!out) throw new Error("模型没有返回内容");
+    return out;
+  }
+  async function summarize(row,segs,st){
+    const line=g=>"["+fmtT(g.start)+"] "+(g.en||"");
+    const lines=segs.map(line);
+    const head=[];
+    if((row.tags||[]).length) head.push("【会话标签（主题提示）】\n"+row.tags.join("、"));
+    const gl=(settings.glossary||"").trim(); if(gl) head.push("【场景与术语】\n"+gl);
+    const tagged=segs.filter(g=>(g.tags||[]).length).slice(0,300).map(g=>"["+fmtT(g.start)+"] ["+g.tags.join("、")+"] "+(g.en||""));
+    head.push("【带标记的句子】\n"+(tagged.length?tagged.join("\n"):"（无）"));
+    const ctx=head.join("\n\n");
+    const total=lines.join("\n").length;
+    const onText=t=>{ st.text=t; st.progress=""; sumRender(row.id); };
+    if(total<=SUM_LIMIT) return llmStream(SUM_SYS, ctx+"\n\n【完整英文转写】\n"+lines.join("\n"), 4096, onText);
+    // 长会话：先分段各自整理，再合并成最终摘要
+    const chunks=[]; let cur=[], n=0;
+    lines.forEach(l=>{ if(n+l.length>SUM_CHUNK && cur.length){ chunks.push(cur.join("\n")); cur=[]; n=0; } cur.push(l); n+=l.length+1; });
+    if(cur.length) chunks.push(cur.join("\n"));
+    const partials=[];
+    for(let i=0;i<chunks.length;i++){
+      st.progress="转写较长，正在分段整理（"+(i+1)+"/"+chunks.length+"）…"; st.text=""; sumRender(row.id);
+      partials.push(await llmStream(PART_SYS,"【第 "+(i+1)+"/"+chunks.length+" 段转写】\n"+chunks[i],2048));
+    }
+    st.progress="正在合并生成最终摘要…"; sumRender(row.id);
+    return llmStream(SUM_SYS+"\n\n注意：用户提供的是分段整理好的笔记而不是原始转写，请合并去重后按上面的结构输出，时间点沿用笔记里的 [mm:ss]。",
+      ctx+"\n\n【分段笔记】\n"+partials.map((p,i)=>"—— 第 "+(i+1)+" 段 ——\n"+p).join("\n\n"), 4096, onText);
+  }
+  function queueSummary(id){
+    if(sumState[id] && sumState[id].status==="running") return;
+    sumState[id]={status:"running", text:"", progress:"", err:""}; sumQueue.push(id); sumRender(id); runSums();
+  }
+  async function runSums(){
+    if(sumBusy) return; sumBusy=true;
+    try{
+      while(sumQueue.length){
+        const id=sumQueue.shift(), st=sumState[id];
+        try{
+          const row=await dbGet("sessions",id);
+          const segs=sortSegs((await dbBySid("segments",id)).filter(g=>g.kind!=="break"));
+          if(!row || !segs.length) throw new Error("没有可总结的字幕");
+          const text=await summarize(row,segs,st);
+          const fresh=(await dbGet("sessions",id))||row;   // 生成期间用户可能改了标签/标题，用最新的行来写
+          fresh.summary=text; fresh.summaryAt=Date.now(); await dbPut("sessions",fresh);
+          if(S && S.id===id){ S.row.summary=text; S.row.summaryAt=fresh.summaryAt; }
+          delete sumState[id];
+          if(det && det.row.id===id) det.row=fresh;
+          toast("「"+fresh.title+"」的摘要已生成");
+        }catch(e){ st.status="error"; st.err=(e&&e.message)||"未知错误"; }
+        sumRender(id);
+      }
+    }finally{ sumBusy=false; }
+  }
+  function sumRender(id){ if(det && det.row.id===id) drawSum(); }
+  const tsToSec=t=>t.split(":").reduce((a,x)=>a*60+(+x),0);
+  function jumpTo(sec){ if(!det) return; if(P && P.parts.length) seekTo(sec,true); hiliteAt(sec,true); }
+  function mdInline(el,text){
+    const re=/\*\*([^*]+)\*\*|\[((?:\d+:)?\d{1,2}:\d{2})\]/g; let last=0, m;
+    while((m=re.exec(text))){
+      if(m.index>last) el.appendChild(document.createTextNode(text.slice(last,m.index)));
+      if(m[1]!==undefined){ const b=document.createElement("strong"); mdInline(b,m[1]); el.appendChild(b); }
+      else{
+        const a=document.createElement("a"); a.className="ts"; a.href="#"; a.textContent="["+m[2]+"]";
+        const sec=tsToSec(m[2]); a.onclick=ev=>{ ev.preventDefault(); jumpTo(sec); }; el.appendChild(a);
+      }
+      last=re.lastIndex;
+    }
+    if(last<text.length) el.appendChild(document.createTextNode(text.slice(last)));
+  }
+  // 极简 Markdown 渲染：标题、加粗、有序/无序列表、[mm:ss] 可点击（全部用 DOM 构建，不注入 HTML）
+  function renderMd(box,md){
+    box.textContent=""; let list=null, ordered=false;
+    (md||"").split("\n").forEach(raw=>{
+      const line=raw.replace(/\s+$/,""); let m;
+      if(!line.trim()){ list=null; return; }
+      if((m=line.match(/^#{1,4}\s+(.*)$/))){ list=null; const h=document.createElement("div"); h.className="md-h"; mdInline(h,m[1]); box.appendChild(h); return; }
+      if((m=line.match(/^\s*[-*•]\s+(.*)$/))){
+        if(!list||ordered){ list=document.createElement("ul"); ordered=false; box.appendChild(list); }
+        const li=document.createElement("li"); mdInline(li,m[1]); list.appendChild(li); return;
+      }
+      if((m=line.match(/^\s*\d+[.)]\s+(.*)$/))){
+        if(!list||!ordered){ list=document.createElement("ol"); ordered=true; box.appendChild(list); }
+        const li=document.createElement("li"); mdInline(li,m[1]); list.appendChild(li); return;
+      }
+      list=null; const p=document.createElement("p"); mdInline(p,line); box.appendChild(p);
+    });
+  }
+  function drawSum(){
+    if(!det) return;
+    const row=det.row, st=sumState[row.id], body=$("sumBody"), err=$("sumErr"), gen=$("sumGen"), tm=$("sumTime");
+    const p2=n=>String(n).padStart(2,"0");
+    err.hidden=true; gen.disabled=false;
+    tm.textContent=row.summaryAt ? (()=>{ const d=new Date(row.summaryAt); return "生成于 "+(d.getMonth()+1)+"月"+d.getDate()+"日 "+p2(d.getHours())+":"+p2(d.getMinutes()); })() : "";
+    if(st && st.status==="running"){
+      gen.textContent="生成中…"; gen.disabled=true;
+      if(st.text) renderMd(body,st.text); else{ body.textContent=st.progress||"正在生成摘要…"; body.className="md muted"; return; }
+      body.className="md"; return;
+    }
+    body.className="md";
+    if(st && st.status==="error"){ err.hidden=false; err.textContent="摘要生成失败："+st.err; gen.textContent="重试"; }
+    else gen.textContent=row.summary?"重新生成":"生成摘要";
+    if(row.summary) renderMd(body,row.summary);
+    else if(!(st&&st.status==="error")){ body.textContent=sumReady()?"还没有摘要。停止收听后超过 10 句会自动生成，也可以点右上角「生成摘要」。":"还没有摘要。请先在设置里填好密钥或中转地址。"; body.className="md muted"; }
+    else body.textContent="";
+  }
+  $("sumGen").onclick=()=>{
+    if(!det) return;
+    if(!sumReady()){ openSettings(); toast(useRelay()?"请先填写中转地址和访问口令":"请先填写 Claude API 密钥"); return; }
+    if(det.row.summary && !(sumState[det.row.id]&&sumState[det.row.id].status==="error") && !confirm("重新生成会覆盖现有摘要，继续吗？")) return;
+    queueSummary(det.row.id);
+  };
 
   // ---------- Feed ----------
   feed.addEventListener("scroll",()=>{ stickToBottom = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 60; });
@@ -1545,7 +1746,8 @@ registerProcessor("pcm16",PCM16);`;
   $("route").onchange=e=>{ if(listening) stop(); settings.route=e.target.value; saveSettings(); applySettings(); hideBanner(); checkEngine(); };
   $("relayUrl").oninput=e=>{ settings.relayUrl=e.target.value.trim(); saveSettings(); };
   $("relayToken").oninput=e=>{ settings.relayToken=e.target.value.trim(); saveSettings(); };
-  $("provider").onchange=e=>{ settings.provider=e.target.value; saveSettings(); fillModels(); };
+  $("provider").onchange=e=>{ settings.provider=e.target.value; saveSettings(); fillModels(); fillSumModels(); };
+  $("sumModel").onchange=e=>{ settings.sumModel=e.target.value; saveSettings(); };
   $("saveAudio").onchange=e=>{ settings.saveAudio=e.target.value==="1"; saveSettings(); };
   $("dgKey").oninput=e=>{ settings.dgKey=e.target.value.trim(); saveSettings(); };
   $("engine").onchange=e=>{
