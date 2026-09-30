@@ -141,6 +141,7 @@ body.v-records #feed,body.v-records footer{display:none}
 .card .hit{font-size:13px;color:var(--muted);margin-top:6px;word-break:break-word}
 .det-top{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
 .det-title{flex:1;font-weight:600;font-size:17px;word-break:break-all;min-width:120px}
+.det-top.wide .det-title{flex-basis:100%;order:10}
 .det-top button.danger{color:var(--rec)}
 .player{position:sticky;top:-10px;z-index:5;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px}
 .p-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
@@ -224,7 +225,7 @@ body.zh-only .dseg .e{display:none}
       <div id="tvList"></div>
     </div>
     <div id="recDetail" hidden>
-      <div class="det-top">
+      <div class="det-top wide">
         <button id="detBack">← 记录</button>
         <div class="det-title" id="detTitle"></div>
         <button id="detExport">导出</button>
@@ -1874,7 +1875,7 @@ registerProcessor("pcm16",PCM16);`;
   };
   $("clearAll").onclick=()=>{
     if(!entries.length) return;
-    if(!confirm("确定清空所有翻译记录？")) return;
+    if(!confirm("确定清空当前屏幕上的字幕？「记录」里已保存的内容不会被删除。")) return;
     entries.length=0; queue.length=0; feed.innerHTML=""; feed.appendChild(empty); liveEl=null; toast("已清空");
   };
 
