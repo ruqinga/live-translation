@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#2B59C3">
+<title>同声字幕</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎧</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+
+:root{
+  --bg:#F2F4F1; --panel:#FFFFFF; --ink:#16202B; --muted:#687481; --line:#D8DDD8;
+  --accent:#2B59C3; --accent-ink:#FFFFFF; --rec:#D6453D; --warn-bg:#FFF4D6; --warn-ink:#6B4E00;
+  --zh-size:22px;
+  --font-en:"Figtree",-apple-system,"Segoe UI",Roboto,sans-serif;
+  --font-zh:"PingFang SC","Hiragino Sans GB","Noto Sans SC","Microsoft YaHei",system-ui,sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#11171E; --panel:#19212B; --ink:#E7ECF1; --muted:#8E99A5; --line:#28323D;
+    --accent:#7FA2FF; --accent-ink:#0E1624; --rec:#FF6B61; --warn-bg:#3A3016; --warn-ink:#F3D98A;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#11171E; --panel:#19212B; --ink:#E7ECF1; --muted:#8E99A5; --line:#28323D;
+  --accent:#7FA2FF; --accent-ink:#0E1624; --rec:#FF6B61; --warn-bg:#3A3016; --warn-ink:#F3D98A;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-zh);-webkit-tap-highlight-color:transparent}
+.app{height:100%;display:flex;flex-direction:column;max-width:720px;margin:0 auto}
+
+header{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)}
+header h1{font-size:17px;font-weight:600;margin:0;flex:1}
+.status{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--line)}
+.status.on .dot{background:var(--rec);animation:blink 1.2s infinite}
+@keyframes blink{50%{opacity:.35}}
+.icon-btn{border:0;background:transparent;color:var(--ink);width:40px;height:40px;border-radius:10px;display:grid;place-items:center;cursor:pointer}
+.icon-btn:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.banner{margin:10px 16px 0;padding:10px 12px;border-radius:10px;background:var(--warn-bg);color:var(--warn-ink);font-size:14px;line-height:1.5;display:none}
+.banner.show{display:block}
+
+#feed{flex:1;overflow-y:auto;padding:8px 16px 24px;overscroll-behavior:contain}
+.empty{color:var(--muted);text-align:center;margin-top:18vh;line-height:1.8;font-size:15px;padding:0 12px}
+.empty strong{color:var(--ink);font-weight:600;display:block;font-size:18px;margin-bottom:6px}
+.entry{padding:14px 0;border-bottom:1px solid var(--line)}
+.entry:last-child{border-bottom:0}
+.en{font-family:var(--font-en);font-size:14px;line-height:1.5;color:var(--muted)}
+.zh{font-size:var(--zh-size);line-height:1.6;margin-top:4px;min-height:1.6em;word-break:break-word}
+.zh.pending{color:var(--muted)}
+.zh.error{color:var(--rec);font-size:15px}
+.retry{margin-left:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:2px 10px;font-size:14px;cursor:pointer}
+.live .en{color:var(--ink);font-style:italic;opacity:.75}
+body.zh-only .en{display:none}
+body.zh-only .live .en{display:block}
+
+footer{border-top:1px solid var(--line);padding:12px 16px 14px;background:var(--bg)}
+.controls{display:grid;grid-template-columns:1fr auto 1fr;align-items:center}
+.side{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px;color:var(--muted);border:0;background:none;cursor:pointer;justify-self:center;padding:6px}
+.side svg{color:var(--ink)}
+#mic{width:76px;height:76px;border-radius:50%;border:0;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;cursor:pointer;position:relative;transition:transform .15s}
+#mic:active{transform:scale(.95)}
+#mic.on{background:var(--rec)}
+#mic.on::after{content:"";position:absolute;inset:-7px;border-radius:50%;border:2px solid var(--rec);opacity:.5;animation:ring 1.6s ease-out infinite}
+@keyframes ring{from{transform:scale(.9);opacity:.6}to{transform:scale(1.18);opacity:0}}
+#mic:disabled{opacity:.4;cursor:not-allowed}
+.hint{text-align:center;font-size:13px;color:var(--muted);margin-top:8px;min-height:1.2em}
+
+.typebar{display:none;gap:8px;margin-bottom:12px}
+.typebar.show{display:flex}
+.typebar textarea{flex:1;resize:none;height:44px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);padding:10px 12px;font:15px/1.4 var(--font-en)}
+.typebar button{border:0;border-radius:10px;background:var(--accent);color:var(--accent-ink);padding:0 16px;font-size:15px;cursor:pointer}
+
+dialog{border:0;border-radius:18px 18px 0 0;padding:0;width:100%;max-width:720px;margin:auto auto 0;background:var(--panel);color:var(--ink);max-height:85vh}
+dialog::backdrop{background:rgba(10,15,20,.45)}
+.sheet{padding:18px 18px calc(18px + env(safe-area-inset-bottom,0px))}
+.sheet h2{font-size:17px;margin:0 0 14px;font-weight:600}
+.row{margin-bottom:16px}
+.row label{display:block;font-size:14px;color:var(--muted);margin-bottom:6px}
+.row select,.row textarea{width:100%;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);padding:10px 12px;font-size:15px;font-family:inherit}
+.row textarea{height:72px;resize:vertical}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{flex:1;border:0;background:var(--bg);color:var(--ink);padding:10px;font-size:15px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:6px}
+.actions button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:11px 6px;font-size:14px;cursor:pointer}
+.actions button.danger{color:var(--rec)}
+.done{width:100%;margin-top:14px;border:0;border-radius:10px;background:var(--accent);color:var(--accent-ink);padding:12px;font-size:16px;cursor:pointer}
+.toast{position:fixed;left:50%;bottom:calc(130px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){.status.on .dot,#mic.on::after{animation:none}}
+
+.row input[type=password],.row input[type=text]{width:100%;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);padding:10px 12px;font-size:15px;font-family:var(--font-en)}
+.row .note{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.5}
+.row .note a{color:var(--accent)}
+.keyok{color:#2E8B57}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>同声字幕</h1>
+    <div class="status" id="status"><span class="dot"></span><span id="statusText">未开始</span></div>
+    <button class="icon-btn" id="openSettings" aria-label="设置">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+    </button>
+  </header>
+
+  <div class="banner" id="banner" role="status"></div>
+
+  <main id="feed" aria-live="polite">
+    <div class="empty" id="empty">
+      <strong>点下方麦克风开始</strong>
+      把手机对准说英文的人，每说完一句，<br>中文译文会自动出现在这里。
+    </div>
+  </main>
+
+  <footer>
+    <div class="typebar" id="typebar">
+      <textarea id="typeInput" placeholder="粘贴或输入英文…" enterkeyhint="send"></textarea>
+      <button id="typeSend">翻译</button>
+    </div>
+    <div class="controls">
+      <button class="side" id="toggleType" aria-label="打字输入">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h.01M11 10h.01M15 10h.01M8 14h8"/></svg>
+        打字
+      </button>
+      <button id="mic" aria-label="开始收听">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+      </button>
+      <button class="side" id="copyAllQuick" aria-label="复制全文">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>
+        复制
+      </button>
+    </div>
+    <div class="hint" id="hint">建议在安静环境，靠近说话人</div>
+  </footer>
+</div>
+
+<dialog id="settings">
+  <div class="sheet">
+    <h2>设置</h2>
+    <div class="row">
+      <label for="apiKey">Claude API 密钥</label>
+      <input type="password" id="apiKey" placeholder="sk-ant-…" autocomplete="off" spellcheck="false">
+      <div class="note" id="keyNote">密钥只保存在这台手机的浏览器里，不会上传到网站。在 <a href="https://console.anthropic.com" target="_blank" rel="noopener">Claude Console</a> 申请。</div>
+    </div>
+    <div class="row">
+      <label for="model">翻译模型</label>
+      <select id="model">
+        <option value="claude-haiku-4-5-20251001">Haiku（快、便宜，推荐）</option>
+        <option value="claude-sonnet-5-5">Sonnet（更准，稍慢）</option>
+      </select>
+    </div>
+    <div class="row">
+      <label for="accent">说话人的口音</label>
+      <select id="accent">
+        <option value="en-US">美式英语</option>
+        <option value="en-GB">英式英语</option>
+        <option value="en-AU">澳大利亚英语</option>
+        <option value="en-IN">印度英语</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>显示方式</label>
+      <div class="seg" id="modeSeg">
+        <button data-mode="both" aria-pressed="true">中英对照</button>
+        <button data-mode="zh" aria-pressed="false">只看中文</button>
+      </div>
+    </div>
+    <div class="row">
+      <label for="size">中文字号</label>
+      <input type="range" id="size" min="16" max="34" step="1" value="22">
+    </div>
+    <div class="row">
+      <label for="glossary">场景与术语（可选）</label>
+      <textarea id="glossary" placeholder="例如：医学讲座；MRI 译为核磁共振；Apex 是公司名不翻译"></textarea>
+    </div>
+    <div class="actions">
+      <button id="copyAll">复制全文</button>
+      <button id="exportTxt">导出文本</button>
+      <button id="clearAll" class="danger">清空记录</button>
+    </div>
+    <button class="done" id="closeSettings">完成</button>
+  </div>
+</dialog>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const feed=$("feed"), empty=$("empty"), mic=$("mic"), banner=$("banner"), hint=$("hint");
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const API_URL="https://api.anthropic.com/v1/messages";
+
+  let rec=null, listening=false, liveEl=null, wakeLock=null, restartTimer=null;
+  const entries=[]; const queue=[]; let busy=false; let seq=0; let stickToBottom=true;
+
+  const settings={apiKey:"", model:"claude-haiku-4-5-20251001", lang:"en-US", mode:"both", size:22, glossary:""};
+  try{ Object.assign(settings, JSON.parse(localStorage.getItem("lt-settings")||"{}")); }catch(e){}
+  function saveSettings(){ try{ localStorage.setItem("lt-settings", JSON.stringify(settings)); }catch(e){} }
+  function applySettings(){
+    $("apiKey").value=settings.apiKey||"";
+    $("model").value=settings.model;
+    $("accent").value=settings.lang;
+    $("size").value=settings.size;
+    $("glossary").value=settings.glossary||"";
+    document.documentElement.style.setProperty("--zh-size", settings.size+"px");
+    document.body.classList.toggle("zh-only", settings.mode==="zh");
+    document.querySelectorAll("#modeSeg button").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.mode===settings.mode)));
+  }
+  applySettings();
+
+  function showBanner(msg){ banner.innerHTML=msg; banner.classList.add("show"); }
+  function hideBanner(){ banner.classList.remove("show"); }
+  let toastT; function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),1800); }
+
+  const dlg=$("settings");
+  function openSettings(){ applySettings(); dlg.showModal(); }
+
+  if(!settings.apiKey) showBanner('第一次使用：请点右上角设置，填入你的 Claude API 密钥。');
+  if(!SR){
+    mic.disabled=true;
+    showBanner("这个浏览器不支持语音识别。安卓请用 Chrome，iPhone 请用 Safari 打开；也可以点左下角「打字」，用键盘上的 🎤 听写英文。");
+    hint.textContent="语音识别不可用，可使用打字输入";
+  }
+  if(location.protocol!=="https:" && location.hostname!=="localhost"){
+    showBanner("麦克风需要 https 网址才能使用，请通过 https 链接打开此页面。");
+  }
+
+  // ---------- Feed ----------
+  feed.addEventListener("scroll",()=>{ stickToBottom = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 60; });
+  function scrollDown(){ if(stickToBottom) feed.scrollTop=feed.scrollHeight; }
+  function hideEmpty(){ if(empty.parentNode) empty.remove(); }
+
+  function renderEntry(e){
+    hideEmpty();
+    const div=document.createElement("div"); div.className="entry";
+    const en=document.createElement("div"); en.className="en"; en.textContent=e.en;
+    const zh=document.createElement("div"); zh.className="zh pending"; zh.textContent="翻译中…";
+    div.append(en,zh);
+    if(liveEl && liveEl.parentNode===feed) feed.insertBefore(div, liveEl); else feed.appendChild(div);
+    e.el=zh; scrollDown();
+  }
+  function setZh(e){ e.el.className="zh"; e.el.textContent=e.zh; scrollDown(); }
+  function setError(e,msg){
+    const z=e.el; z.className="zh error"; z.textContent=msg;
+    const b=document.createElement("button"); b.className="retry"; b.textContent="重试";
+    b.onclick=()=>{ z.className="zh pending"; z.textContent="翻译中…"; e.status="waiting"; queue.push(e); pump(); };
+    z.appendChild(b);
+  }
+  function showLive(text){
+    if(!text){ if(liveEl){ liveEl.remove(); liveEl=null; } return; }
+    hideEmpty();
+    if(!liveEl){ liveEl=document.createElement("div"); liveEl.className="entry live"; liveEl.innerHTML='<div class="en"></div>'; feed.appendChild(liveEl); }
+    liveEl.firstChild.textContent=text; scrollDown();
+  }
+  function commit(text){
+    text=(text||"").trim(); if(!text) return;
+    const e={id:++seq, en:text, zh:"", status:"waiting"};
+    entries.push(e); renderEntry(e); queue.push(e); pump();
+  }
+
+  // ---------- Translation (Claude API, streaming) ----------
+  async function pump(){
+    if(busy) return;
+    const e=queue.shift(); if(!e) return;
+    busy=true;
+    try{ await translate(e); } finally{ busy=false; pump(); }
+  }
+
+  async function translate(e){
+    if(!settings.apiKey){ e.status="failed"; setError(e,"还没填 API 密钥"); showBanner('请点右上角设置，填入 Claude API 密钥。'); return; }
+    const prev=entries.filter(x=>x.status==="done" && x.id<e.id).slice(-3).map(x=>"EN: "+x.en+"\nZH: "+x.zh).join("\n");
+    const g=(settings.glossary||"").trim();
+    const system="你是一名专业的英译中同声传译员。把用户给出的【待翻译】英文翻译成自然、口语化、通顺的简体中文。只输出中文译文本身，不要解释、不要引号、不要保留英文。语音识别结果可能有错字或缺标点，请根据上下文合理理解后翻译。人名、品牌名如无通用中文译名可保留英文。"
+      + (g ? "\n\n场景与术语要求：\n"+g : "");
+    const user=(prev ? "【前文，仅供参考上下文，不要翻译】\n"+prev+"\n\n" : "") + "【待翻译】\n"+e.en;
+
+    let res;
+    try{
+      res=await fetch(API_URL,{
+        method:"POST",
+        headers:{
+          "content-type":"application/json",
+          "x-api-key":settings.apiKey,
+          "anthropic-version":"2023-06-01",
+          "anthropic-dangerous-direct-browser-access":"true"
+        },
+        body:JSON.stringify({model:settings.model, max_tokens:1024, stream:true, system, messages:[{role:"user",content:user}]})
+      });
+    }catch(err){ e.status="failed"; setError(e,"网络连接失败"); return; }
+
+    if(!res.ok){
+      e.status="failed";
+      let msg="翻译失败（"+res.status+"）";
+      if(res.status===401) { msg="API 密钥无效"; showBanner("API 密钥无效，请在设置里检查是否复制完整。"); }
+      else if(res.status===403) msg="没有访问权限（可能是地区不支持）";
+      else if(res.status===429) msg="请求太频繁或额度用完";
+      else if(res.status===400){ try{ const j=await res.json(); if(/credit/i.test(j.error&&j.error.message||"")) msg="账户余额不足"; }catch(_){} }
+      else if(res.status===529) msg="服务繁忙，稍后重试";
+      setError(e,msg); return;
+    }
+
+    // Parse server-sent events
+    const reader=res.body.getReader(); const dec=new TextDecoder(); let buf=""; e.zh="";
+    try{
+      while(true){
+        const {value,done}=await reader.read(); if(done) break;
+        buf+=dec.decode(value,{stream:true});
+        let idx;
+        while((idx=buf.indexOf("\n\n"))>=0){
+          const chunk=buf.slice(0,idx); buf=buf.slice(idx+2);
+          const line=chunk.split("\n").find(l=>l.startsWith("data:"));
+          if(!line) continue;
+          let ev=null;
+          try{ ev=JSON.parse(line.slice(5).trim()); }catch(_){ continue; }
+          if(ev.type==="content_block_delta" && ev.delta && ev.delta.type==="text_delta"){ e.zh+=ev.delta.text; setZh(e); }
+          else if(ev.type==="error"){ throw new Error((ev.error&&ev.error.message)||"stream error"); }
+        }
+      }
+      e.zh=e.zh.trim(); e.status="done"; setZh(e);
+    }catch(err){
+      if(e.zh){ e.status="done"; setZh(e); } else { e.status="failed"; setError(e,"翻译中断"); }
+    }
+  }
+
+  // ---------- Speech recognition ----------
+  function setStatus(on,text){
+    $("status").classList.toggle("on",on); $("statusText").textContent=text;
+    mic.classList.toggle("on",on); mic.setAttribute("aria-label", on?"停止收听":"开始收听");
+  }
+  function startRec(){
+    rec=new SR();
+    rec.lang=settings.lang; rec.continuous=true; rec.interimResults=true; rec.maxAlternatives=1;
+    rec.onresult=(ev)=>{
+      let interim="";
+      for(let i=ev.resultIndex;i<ev.results.length;i++){
+        const r=ev.results[i];
+        if(r.isFinal) commit(r[0].transcript); else interim+=r[0].transcript;
+      }
+      showLive(interim);
+    };
+    rec.onerror=(ev)=>{
+      if(ev.error==="not-allowed"||ev.error==="service-not-allowed"){
+        stop(); showBanner("麦克风权限被拒绝。请在浏览器的网站设置（或系统设置 → 隐私 → 麦克风）里允许此网站使用麦克风，然后刷新页面。");
+      }else if(ev.error==="audio-capture"){ stop(); showBanner("没有检测到麦克风，请检查设备。"); }
+      else if(ev.error==="network"){ hint.textContent="语音识别需要联网，正在重试…"; }
+    };
+    rec.onend=()=>{
+      showLive("");
+      if(listening){ clearTimeout(restartTimer); restartTimer=setTimeout(()=>{ try{ startRec(); }catch(e){} },200); }
+    };
+    rec.start();
+  }
+  async function start(){
+    if(!settings.apiKey){ openSettings(); toast("请先填写 API 密钥"); return; }
+    hideBanner();
+    listening=true; setStatus(true,"收听中"); hint.textContent="正在收听英文，再点一次停止";
+    try{ startRec(); }catch(e){ stop(); showBanner("语音识别启动失败，请重试。"); return; }
+    try{ if("wakeLock" in navigator) wakeLock=await navigator.wakeLock.request("screen"); }catch(e){}
+  }
+  function stop(){
+    listening=false; clearTimeout(restartTimer);
+    try{ rec && rec.stop(); }catch(e){}
+    setStatus(false,"已暂停"); hint.textContent="点麦克风继续收听";
+    try{ wakeLock && wakeLock.release(); }catch(e){} wakeLock=null;
+  }
+  mic.onclick=()=>{ listening?stop():start(); };
+  document.addEventListener("visibilitychange",async()=>{
+    if(document.visibilityState==="visible" && listening && "wakeLock" in navigator){ try{ wakeLock=await navigator.wakeLock.request("screen"); }catch(e){} }
+  });
+
+  // ---------- Typing / keyboard dictation ----------
+  $("toggleType").onclick=()=>{ const t=$("typebar"); t.classList.toggle("show"); if(t.classList.contains("show")) $("typeInput").focus(); };
+  function sendTyped(){ const v=$("typeInput").value; if(v.trim()){ commit(v); $("typeInput").value=""; } }
+  $("typeSend").onclick=sendTyped;
+  $("typeInput").addEventListener("keydown",e=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); sendTyped(); } });
+
+  // ---------- Export ----------
+  function fullText(){ return entries.map(e=> settings.mode==="zh" ? (e.zh||"") : (e.en+"\n"+(e.zh||""))).join("\n\n"); }
+  async function copyAll(){
+    if(!entries.length){ toast("还没有内容"); return; }
+    try{ await navigator.clipboard.writeText(fullText()); toast("已复制全文"); }
+    catch(e){ const ta=document.createElement("textarea"); ta.value=fullText(); document.body.appendChild(ta); ta.select(); try{ document.execCommand("copy"); toast("已复制全文"); }catch(_){ toast("复制失败"); } ta.remove(); }
+  }
+  $("copyAll").onclick=copyAll; $("copyAllQuick").onclick=copyAll;
+  $("exportTxt").onclick=()=>{
+    if(!entries.length){ toast("还没有内容"); return; }
+    const d=new Date(), p=n=>String(n).padStart(2,"0");
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(new Blob([fullText()],{type:"text/plain;charset=utf-8"}));
+    a.download="翻译记录-"+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+"-"+p(d.getHours())+p(d.getMinutes())+".txt";
+    document.body.appendChild(a); a.click(); a.remove();
+  };
+  $("clearAll").onclick=()=>{
+    if(!entries.length) return;
+    if(!confirm("确定清空所有翻译记录？")) return;
+    entries.length=0; queue.length=0; feed.innerHTML=""; feed.appendChild(empty); liveEl=null; toast("已清空");
+  };
+
+  // ---------- Settings ----------
+  $("openSettings").onclick=openSettings;
+  $("closeSettings").onclick=()=>{ dlg.close(); if(settings.apiKey) hideBanner(); };
+  dlg.addEventListener("click",e=>{ if(e.target===dlg) dlg.close(); });
+  $("apiKey").oninput=e=>{ settings.apiKey=e.target.value.trim(); saveSettings(); };
+  $("model").onchange=e=>{ settings.model=e.target.value; saveSettings(); };
+  $("accent").onchange=e=>{ settings.lang=e.target.value; saveSettings(); if(listening){ try{ rec.stop(); }catch(_){} } };
+  $("size").oninput=e=>{ settings.size=+e.target.value; document.documentElement.style.setProperty("--zh-size", settings.size+"px"); saveSettings(); };
+  $("glossary").oninput=e=>{ settings.glossary=e.target.value; saveSettings(); };
+  document.querySelectorAll("#modeSeg button").forEach(b=>b.onclick=()=>{ settings.mode=b.dataset.mode; saveSettings(); applySettings(); });
+})();
+</script>
+</body>
+</html>
