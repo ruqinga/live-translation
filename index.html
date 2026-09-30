@@ -120,6 +120,45 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .tm-row .cnt{flex:1;font-size:13px;color:var(--muted)}
 .tm-row button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:4px 10px;font-size:13px;cursor:pointer}
 .pair{display:flex;gap:4px;justify-self:center}
+.tabs{display:flex;gap:6px;padding:8px 16px 0}
+.tabs button{flex:1;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:10px;padding:8px;font-size:15px;cursor:pointer}
+.tabs button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+#records{display:none;flex:1;overflow-y:auto;padding:10px 16px 28px;overscroll-behavior:contain}
+body.v-records #records{display:block}
+body.v-records #feed,body.v-records footer{display:none}
+.rh-tools{display:flex;gap:8px;margin-bottom:8px}
+.rh-tools input,.rh-tools select{border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);padding:9px 12px;font-size:15px;font-family:inherit;min-width:0}
+.rh-tools input{flex:1}
+.rh-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.rh-tags button{border:2px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:3px 12px;font-size:13px;cursor:pointer}
+.rh-tags button.on{color:#fff;border-color:transparent}
+.rh-actions{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:13px;color:var(--muted)}
+.rh-actions button,.det-top button,.pbtn{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:6px 12px;font-size:14px;cursor:pointer}
+.card{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;background:var(--panel);cursor:pointer}
+.card .ct{font-weight:600;font-size:16px;word-break:break-all}
+.card .cm{font-size:13px;color:var(--muted);margin:3px 0 6px}
+.card .cs{font-size:14px;color:var(--ink);opacity:.85;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:6px;word-break:break-word}
+.card .hit{font-size:13px;color:var(--muted);margin-top:6px;word-break:break-word}
+.det-top{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.det-title{flex:1;font-weight:600;font-size:17px;word-break:break-all;min-width:120px}
+.det-top button.danger{color:var(--rec)}
+.player{position:sticky;top:-10px;z-index:5;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px}
+.p-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.p-row:last-child{margin-bottom:0}
+#pPlay{width:44px;height:44px;border-radius:50%;border:0;background:var(--accent);color:var(--accent-ink);font-size:18px;cursor:pointer}
+#pSeek{flex:1;min-width:0}
+#pTime{font-family:var(--font-en);font-size:13px;color:var(--muted);white-space:nowrap}
+.pbtn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.p-note{font-size:13px;color:var(--muted)}
+.det-tags{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:10px}
+.det-tags input{border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--ink);padding:4px 12px;font-size:14px;width:120px;font-family:inherit}
+.dseg{display:flex;gap:10px;padding:10px 6px;border-bottom:1px solid var(--line);cursor:pointer;border-radius:8px;scroll-margin:120px}
+.dseg.active{background:var(--warn-bg)}
+.dseg .dt{font-family:var(--font-en);font-size:13px;color:var(--accent);min-width:44px;padding-top:2px}
+.dseg .dtx{flex:1;min-width:0}
+.dseg .e{font-family:var(--font-en);font-size:14px;color:var(--muted);line-height:1.5;word-break:break-word}
+.dseg .z{font-size:17px;line-height:1.6;word-break:break-word}
+body.zh-only .dseg .e{display:none}
 .done.alt{background:var(--bg);color:var(--ink);border:1px solid var(--line)}
 .divider{margin:8px 0;padding:6px 10px;border-radius:8px;background:var(--bg);border:1px dashed var(--line);color:var(--muted);font-size:13px;text-align:center}
 .rec-note{font-size:13px;color:var(--muted);line-height:1.5;margin:6px 0 12px}
@@ -141,6 +180,11 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     </button>
   </header>
 
+  <nav class="tabs" id="tabs">
+    <button data-view="live" aria-pressed="true">实时字幕</button>
+    <button data-view="records" aria-pressed="false">记录</button>
+  </nav>
+
   <div class="banner" id="banner" role="status"></div>
 
   <main id="feed" aria-live="polite">
@@ -149,6 +193,46 @@ input[type=range]{width:100%;accent-color:var(--accent)}
       把手机对准说英文的人，每说完一句，<br>中文译文会自动出现在这里。
     </div>
   </main>
+
+  <section id="records" aria-live="polite">
+    <div id="recHome">
+      <div class="rh-tools">
+        <input type="search" id="recSearch" placeholder="搜索标题、英文、中文" autocomplete="off">
+        <select id="recSort"><option value="new">最新优先</option><option value="old">最早优先</option><option value="long">时长最长</option></select>
+      </div>
+      <div class="rh-tags" id="recTagFilter"></div>
+      <div class="rh-actions"><button id="openTagView">按标签查看句子</button><span id="recCount"></span></div>
+      <div id="recItems"></div>
+    </div>
+    <div id="recTags" hidden>
+      <div class="det-top"><button id="tvBack">← 记录</button><div class="det-title">按标签查看句子</div></div>
+      <div class="rh-tags" id="tvChips"></div>
+      <div id="tvList"></div>
+    </div>
+    <div id="recDetail" hidden>
+      <div class="det-top">
+        <button id="detBack">← 记录</button>
+        <div class="det-title" id="detTitle"></div>
+        <button id="detRename">重命名</button>
+        <button id="detDelete" class="danger">删除</button>
+      </div>
+      <div class="player" id="player">
+        <div class="p-row">
+          <button id="pPlay" aria-label="播放">▶</button>
+          <button class="pbtn" id="pBack15" aria-label="后退15秒">↺15</button>
+          <input type="range" id="pSeek" min="0" max="0" step="0.1" value="0" aria-label="进度">
+        </div>
+        <div class="p-row"><span id="pTime">00:00 / 00:00</span>
+          <span style="flex:1"></span>
+          <button class="pbtn" data-rate="1" aria-pressed="true">1x</button><button class="pbtn" data-rate="1.25" aria-pressed="false">1.25x</button><button class="pbtn" data-rate="1.5" aria-pressed="false">1.5x</button><button class="pbtn" data-rate="2" aria-pressed="false">2x</button>
+        </div>
+        <div class="p-note" id="pNote" hidden></div>
+        <audio id="plAudio" preload="metadata" playsinline hidden></audio>
+      </div>
+      <div class="det-tags" id="detTags"></div>
+      <div id="detList"></div>
+    </div>
+  </section>
 
   <footer>
     <div class="typebar" id="typebar">
@@ -644,9 +728,9 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   function attachLongPress(el,fn){
     let t=null;
     const clear=()=>{ clearTimeout(t); t=null; };
-    el.addEventListener("touchstart",()=>{ clear(); t=setTimeout(()=>{ t=null; fn(); },550); },{passive:true});
+    el.addEventListener("touchstart",()=>{ clear(); t=setTimeout(()=>{ t=null; el._lp=Date.now(); fn(); },550); },{passive:true});
     ["touchend","touchmove","touchcancel"].forEach(n=>el.addEventListener(n,clear,{passive:true}));
-    el.addEventListener("contextmenu",e=>{ e.preventDefault(); fn(); });
+    el.addEventListener("contextmenu",e=>{ e.preventDefault(); el._lp=Date.now(); fn(); });
   }
   function vibrate(){ try{ navigator.vibrate && navigator.vibrate(30); }catch(e){} }
 
@@ -729,6 +813,285 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     if(!(settings.tagPresets||[]).includes(v)){ settings.tagPresets=(settings.tagPresets||[]).concat(v); saveSettings(); }
     drawTagMgr();
   };
+
+  // ---------- Records: list / filter / search ----------
+  let view="live";
+  const rd={rows:[],segs:new Map()};
+  const rf={q:"",tags:new Set(),sort:"new"};
+  const tv={tag:null};
+  function showView(v){
+    view=v; document.body.classList.toggle("v-records",v==="records");
+    document.querySelectorAll("#tabs button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.view===v)));
+    if(v==="records"){ if($("recDetail").hidden) recRefresh(); } else { pausePlayer(); scrollDown(); }
+  }
+  document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>showView(b.dataset.view));
+  function pane(name){ ["recHome","recTags","recDetail"].forEach(n=>{ $(n).hidden=(n!==name); }); $("records").scrollTop=0; }
+  async function loadRecData(){
+    const rows=await dbAll("sessions"), gs=await dbAll("segments");
+    rd.rows=rows; rd.segs=new Map();
+    gs.forEach(g=>{ let a=rd.segs.get(g.sid); if(!a){ a=[]; rd.segs.set(g.sid,a); } a.push(g); });
+  }
+  const segNo=g=>parseInt(String(g.id).split("-")[1],10)||0;
+  const sortSegs=a=>a.sort((x,y)=>(x.start-y.start)||(segNo(x)-segNo(y)));
+  function tagsOf(r){ const u=new Set(r.tags||[]); (rd.segs.get(r.id)||[]).forEach(g=>(g.tags||[]).forEach(t=>u.add(t))); return u; }
+  function plainFirstLine(md){
+    const l=(md||"").split("\n").map(x=>x.trim()).find(x=>x && !/^#/.test(x));
+    return l ? l.replace(/^[-*\d.\s]+/,"").replace(/\*\*/g,"") : "";
+  }
+  function recRefresh(){
+    loadRecData().then(()=>{ if(!$("recTags").hidden) renderTagView(); else if(!$("recDetail").hidden) return; else{ pane("recHome"); renderHome(); } })
+      .catch(()=>{ $("recItems").textContent="这个浏览器不能使用本地存储，无法查看记录。"; });
+  }
+  function filterChips(box,names,sel,multi,onPick,counts){
+    box.textContent="";
+    names.forEach(t=>{
+      const b=document.createElement("button"); b.textContent=t+(counts?" "+counts[t]:"");
+      const on=sel.has(t); b.classList.toggle("on",on); if(on) b.style.background=tagColor(t);
+      b.onclick=()=>onPick(t); box.appendChild(b);
+    });
+  }
+  function renderHome(){
+    const counts={}; rd.rows.forEach(r=>tagsOf(r).forEach(t=>{ counts[t]=(counts[t]||0)+1; }));
+    rf.tags.forEach(t=>{ if(!counts[t]) rf.tags.delete(t); });
+    const names=Object.keys(counts).sort((a,b)=>counts[b]-counts[a]);
+    filterChips($("recTagFilter"),names,rf.tags,true,t=>{ if(rf.tags.has(t)) rf.tags.delete(t); else rf.tags.add(t); renderHome(); },counts);
+    const q=rf.q.trim().toLowerCase(); const hits=new Map();
+    let list=rd.rows.filter(r=>{
+      if(rf.tags.size){ const u=tagsOf(r); if(![...rf.tags].some(t=>u.has(t))) return false; }
+      if(q){
+        if((r.title||"").toLowerCase().includes(q)) return true;
+        const g=(rd.segs.get(r.id)||[]).find(g=>(g.en||"").toLowerCase().includes(q)||(g.zh||"").toLowerCase().includes(q));
+        if(!g) return false; hits.set(r.id,g);
+      }
+      return true;
+    });
+    list.sort(rf.sort==="old" ? (a,b)=>a.created-b.created : rf.sort==="long" ? (a,b)=>(b.dur||0)-(a.dur||0) : (a,b)=>b.created-a.created);
+    $("recCount").textContent="共 "+list.length+" 条"+(list.length!==rd.rows.length?"（已筛选）":"");
+    const box=$("recItems"); box.textContent="";
+    if(!list.length){
+      const d=document.createElement("div"); d.className="empty";
+      d.innerHTML=rd.rows.length ? "<strong>没有符合条件的记录</strong>换个关键词或去掉标签筛选试试。" : "<strong>还没有记录</strong>每次点麦克风开始、再点停止，就会自动保存为一条记录。";
+      box.appendChild(d); return;
+    }
+    const p2=n=>String(n).padStart(2,"0");
+    list.forEach(r=>{
+      const c=document.createElement("div"); c.className="card";
+      const t=document.createElement("div"); t.className="ct"; t.textContent=r.title;
+      const d=new Date(r.created);
+      const nSeg=(rd.segs.get(r.id)||[]).filter(g=>g.kind!=="break").length;
+      const m=document.createElement("div"); m.className="cm";
+      m.textContent=(d.getMonth()+1)+"月"+d.getDate()+"日 "+p2(d.getHours())+":"+p2(d.getMinutes())+" · "+fmtT(r.dur||0)+" · "+nSeg+" 句"+(r.parts&&r.parts.length?" · 有录音":"")+(r.ended==null?" · 未结束":"");
+      c.append(t,m);
+      if((r.tags||[]).length){ const tl=document.createElement("div"); tl.className="tline"; r.tags.forEach(x=>tl.appendChild(tagChip(x))); c.appendChild(tl); }
+      const sm=plainFirstLine(r.summary);
+      if(sm){ const e=document.createElement("div"); e.className="cs"; e.textContent=sm; c.appendChild(e); }
+      const h=hits.get(r.id);
+      if(h){ const e=document.createElement("div"); e.className="hit"; e.textContent="["+fmtT(h.start)+"] "+(h.en||"")+(h.zh?"  "+h.zh:""); c.appendChild(e); }
+      c.onclick=()=>openDetail(r.id,h?{seek:h.start}:{});
+      box.appendChild(c);
+    });
+  }
+  let srchT=null;
+  $("recSearch").oninput=e=>{ clearTimeout(srchT); srchT=setTimeout(()=>{ rf.q=e.target.value; renderHome(); },200); };
+  $("recSort").onchange=e=>{ rf.sort=e.target.value; renderHome(); };
+
+  // ----- 按标签查看句子（跨会话） -----
+  $("openTagView").onclick=()=>{ pane("recTags"); renderTagView(); };
+  $("tvBack").onclick=()=>{ pane("recHome"); renderHome(); };
+  function renderTagView(){
+    const counts={}; rd.segs.forEach(a=>a.forEach(g=>(g.tags||[]).forEach(t=>{ counts[t]=(counts[t]||0)+1; })));
+    const names=Object.keys(counts).sort((a,b)=>counts[b]-counts[a]);
+    if(!tv.tag || !counts[tv.tag]) tv.tag=names[0]||null;
+    filterChips($("tvChips"),names,new Set(tv.tag?[tv.tag]:[]),false,t=>{ tv.tag=t; renderTagView(); },counts);
+    const box=$("tvList"); box.textContent="";
+    if(!tv.tag){ const d=document.createElement("div"); d.className="rec-note"; d.textContent="还没有带标签的句子。在实时字幕或记录详情里，点句子的「…」或长按即可加标签。"; box.appendChild(d); return; }
+    rd.rows.slice().sort((a,b)=>b.created-a.created).forEach(r=>{
+      const gs=sortSegs((rd.segs.get(r.id)||[]).filter(g=>(g.tags||[]).includes(tv.tag)));
+      if(!gs.length) return;
+      const h=document.createElement("div"); h.className="pl-h"; h.textContent=r.title; box.appendChild(h);
+      gs.forEach(g=>{
+        const row=document.createElement("div"); row.className="dseg";
+        const tm=document.createElement("span"); tm.className="dt"; tm.textContent=fmtT(g.start);
+        const tx=document.createElement("div"); tx.className="dtx";
+        const z=document.createElement("div"); z.className="z"; z.textContent=g.zh||"";
+        const e=document.createElement("div"); e.className="e"; e.textContent=g.en||"";
+        tx.append(z,e); row.append(tm,tx);
+        row.onclick=()=>openDetail(r.id,{seek:g.start});
+        box.appendChild(row);
+      });
+    });
+  }
+
+  // ---------- Session detail ----------
+  let det=null;   // {row, segs, segRows:[{g,el}], active}
+  let userScrollUntil=0;
+  ["wheel","touchmove"].forEach(n=>$("records").addEventListener(n,()=>{ userScrollUntil=Date.now()+4000; },{passive:true}));
+  async function openDetail(id,opts){
+    opts=opts||{};
+    let row, segs;
+    try{ row=await dbGet("sessions",id); segs=await dbBySid("segments",id); }catch(e){ toast("打开失败"); return; }
+    if(!row){ toast("这条记录已不存在"); return; }
+    freePlayer();
+    det={row, segs:sortSegs(segs), segRows:[], active:-1};
+    pane("recDetail"); $("detTitle").textContent=row.title;
+    drawDetTags(); renderDetList();
+    loadPlayer(row).then(()=>{ if(opts.seek!=null && det && det.row.id===id){ seekTo(opts.seek,false); hiliteAt(opts.seek,true); } });
+    if(opts.seek!=null) hiliteAt(opts.seek,true);
+  }
+  async function reloadDetail(){
+    if(!det) return; const id=det.row.id;
+    try{ det.row=await dbGet("sessions",id)||det.row; det.segs=sortSegs(await dbBySid("segments",id)); }catch(e){ return; }
+    drawDetTags(); renderDetList();
+  }
+  function closeDetail(){
+    freePlayer(); det=null; pane("recHome"); recRefresh();
+  }
+  $("detBack").onclick=closeDetail;
+  $("detRename").onclick=async()=>{
+    if(!det) return; const n=prompt("记录标题",det.row.title); if(!n||!n.trim()) return;
+    det.row.title=n.trim(); $("detTitle").textContent=det.row.title;
+    if(S && S.id===det.row.id) S.row.title=det.row.title;
+    dbPut("sessions",det.row).catch(dbFail);
+  };
+  $("detDelete").onclick=async()=>{
+    if(!det) return;
+    if(S && S.id===det.row.id){ toast("正在收听的记录不能删除，请先停止"); return; }
+    if(!confirm("删除「"+det.row.title+"」？字幕、标签、摘要和录音都会被删除，无法恢复。")) return;
+    try{ await dbDelSession(det.row.id); }catch(e){ dbFail(e); return; }
+    toast("已删除"); closeDetail();
+  };
+
+  // 会话标签：添加/删除，输入时自动补全已有标签
+  function drawDetTags(){
+    const box=$("detTags"); box.textContent=""; const row=det.row;
+    (row.tags||[]).forEach(t=>box.appendChild(tagChip(t,x=>{ row.tags=row.tags.filter(y=>y!==x); saveDetRow(); drawDetTags(); })));
+    const inp=document.createElement("input"); inp.type="text"; inp.placeholder="＋ 会话标签"; inp.maxLength=20; inp.setAttribute("list","tagList"); inp.autocomplete="off";
+    let dl=$("tagList"); if(!dl){ dl=document.createElement("datalist"); dl.id="tagList"; document.body.appendChild(dl); }
+    dl.textContent=""; allTagList().filter(t=>!(row.tags||[]).includes(t)).forEach(t=>{ const o=document.createElement("option"); o.value=t; dl.appendChild(o); });
+    const add=()=>{ const v=inp.value.trim(); if(!v) return; if(!row.tags) row.tags=[]; if(!row.tags.includes(v)){ row.tags.push(v); knownTags.add(v); saveDetRow(); } drawDetTags(); };
+    inp.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); add(); } });
+    inp.addEventListener("change",add);
+    box.appendChild(inp);
+  }
+  function saveDetRow(){ if(S && det && S.id===det.row.id) S.row.tags=det.row.tags; dbPut("sessions",det.row).catch(dbFail); }
+
+  function renderDetList(){
+    const box=$("detList"); box.textContent=""; det.segRows=[]; det.active=-1;
+    if(!det.segs.length){ const d=document.createElement("div"); d.className="rec-note"; d.textContent="这条记录还没有字幕。"; box.appendChild(d); return; }
+    det.segs.forEach(g=>{
+      if(g.kind==="break"){ const d=document.createElement("div"); d.className="divider"; d.textContent=g.en; box.appendChild(d); return; }
+      const row=document.createElement("div"); row.className="dseg";
+      const tm=document.createElement("span"); tm.className="dt"; tm.textContent=fmtT(g.start);
+      const tx=document.createElement("div"); tx.className="dtx";
+      const z=document.createElement("div"); z.className="z"; z.textContent=g.zh||"";
+      const e=document.createElement("div"); e.className="e"; e.textContent=g.en||"";
+      const tl=document.createElement("div"); tl.className="tline";
+      tx.append(z,e,tl); row.append(tm,tx);
+      const draw=()=>{
+        tl.textContent=""; (g.tags||[]).forEach(t=>tl.appendChild(tagChip(t)));
+        const more=document.createElement("button"); more.className="tmore"; more.textContent="…"; more.setAttribute("aria-label","标签");
+        more.onclick=ev=>{ ev.stopPropagation(); edit(); }; tl.appendChild(more);
+      };
+      const edit=()=>openTagMenu("给这句加标签",g.tags||[],tags=>{ g.tags=tags; draw(); dbPut("segments",g).catch(dbFail); });
+      draw();
+      row.onclick=()=>{ if(Date.now()-(row._lp||0)<700) return; seekTo(g.start,true); };
+      attachLongPress(row,edit);
+      box.appendChild(row); det.segRows.push({g,el:row});
+    });
+  }
+  function hiliteAt(T,force){
+    if(!det) return;
+    let a=-1; for(let i=0;i<det.segRows.length;i++){ if(det.segRows[i].g.start<=T+0.25) a=i; else break; }
+    if(a===det.active) return;
+    if(det.active>=0 && det.segRows[det.active]) det.segRows[det.active].el.classList.remove("active");
+    det.active=a;
+    if(a>=0){
+      const el=det.segRows[a].el; el.classList.add("active");
+      if(force || (!au.paused && Date.now()>userScrollUntil)) el.scrollIntoView({block:"center",behavior:force?"auto":"smooth"});
+    }
+  }
+
+  // ---------- Player（多段音频按时间轴拼接播放） ----------
+  const au=$("plAudio");
+  let P=null;       // {row, parts:[{n,offset,dur,url}], cur, dur, speed}
+  let plSpeed=1;
+  function pausePlayer(){ try{ au.pause(); }catch(e){} }
+  function freePlayer(){
+    pausePlayer(); if(P) P.parts.forEach(pt=>pt.url && URL.revokeObjectURL(pt.url)); P=null;
+    au.removeAttribute("src"); try{ au.load(); }catch(e){}
+    $("pPlay").textContent="▶"; $("pSeek").value=0; $("pTime").textContent="00:00 / 00:00";
+  }
+  async function loadPlayer(row){
+    $("pNote").hidden=true;
+    const my=P={row, parts:[], cur:-1, dur:row.dur||0};
+    let chunks=[]; try{ chunks=await dbBySid("audioChunks",row.id); }catch(e){}
+    if(P!==my) return;
+    const segEnd=Math.max(0,...(det?det.segs.map(g=>g.end||0):[0]));
+    my.dur=Math.max(row.dur||0,segEnd);
+    const rp=(row.parts||[]).slice().sort((a,b)=>a.n-b.n);
+    rp.forEach((pt,i)=>{
+      const list=chunks.filter(c=>c.part===pt.n).sort((a,b)=>a.idx-b.idx);
+      if(!list.length) return;
+      const next=rp[i+1]; const end=next?next.offset:my.dur;
+      my.parts.push({n:pt.n, offset:pt.offset, dur:Math.max(0,end-pt.offset), url:URL.createObjectURL(new Blob(list.map(c=>c.blob),{type:row.audioMime||"audio/webm"}))});
+    });
+    $("pSeek").max=my.dur; $("pSeek").disabled=!my.parts.length; $("pPlay").disabled=!my.parts.length; $("pBack15").disabled=!my.parts.length;
+    if(!my.parts.length){
+      const n=$("pNote"); n.hidden=false;
+      n.textContent=row.engine==="browser" ? "这条记录用「浏览器自带」引擎，没有录音，只有字幕。" : (settings.saveAudio?"这条记录没有保存录音，只有字幕。":"这条记录没有保存录音，只有字幕。");
+      updatePlayerUI(); return;
+    }
+    loadPart(0,0,false); updatePlayerUI();
+  }
+  const curT=()=>P&&P.cur>=0 ? P.parts[P.cur].offset+au.currentTime : 0;
+  function loadPart(i,local,play){
+    P.cur=i; const pt=P.parts[i];
+    const onmeta=()=>{
+      au.removeEventListener("loadedmetadata",onmeta);
+      const go=()=>{ au.playbackRate=plSpeed; try{ au.currentTime=local; }catch(e){} if(play) au.play().catch(()=>{}); updatePlayerUI(); };
+      // Chrome 的 MediaRecorder webm 没有时长信息，先跳到末尾让浏览器算出时长，再回到目标位置
+      if(au.duration===Infinity || isNaN(au.duration)){
+        au.currentTime=1e7;
+        const f=()=>{ au.removeEventListener("timeupdate",f); go(); };
+        au.addEventListener("timeupdate",f);
+      }else go();
+    };
+    au.addEventListener("loadedmetadata",onmeta);
+    au.src=pt.url; au.load();
+  }
+  function seekTo(T,play){
+    if(!P || !P.parts.length) return;
+    T=Math.max(0,Math.min(T,P.dur));
+    let i=0; P.parts.forEach((p,k)=>{ if(p.offset<=T+1e-6) i=k; });
+    const local=Math.max(0,T-P.parts[i].offset);
+    if(i===P.cur && au.readyState>0){ au.currentTime=local; if(play) au.play().catch(()=>{}); updatePlayerUI(); }
+    else loadPart(i,local,play);
+  }
+  function updatePlayerUI(){
+    if(!P) return; const T=curT();
+    $("pTime").textContent=fmtT(T)+" / "+fmtT(P.dur);
+    if(document.activeElement!==$("pSeek")) $("pSeek").value=T;
+    $("pPlay").textContent=au.paused?"▶":"⏸"; $("pPlay").setAttribute("aria-label",au.paused?"播放":"暂停");
+    hiliteAt(T,false);
+  }
+  au.addEventListener("timeupdate",updatePlayerUI);
+  au.addEventListener("play",updatePlayerUI); au.addEventListener("pause",updatePlayerUI);
+  au.addEventListener("ended",()=>{
+    if(P && P.cur<P.parts.length-1) loadPart(P.cur+1,0,true); else updatePlayerUI();
+  });
+  au.addEventListener("error",()=>{ if(P && P.parts.length){ const n=$("pNote"); n.hidden=false; n.textContent="这段录音无法播放（可能已损坏，或这个浏览器不支持该格式）。可以先导出音频用其他播放器打开。"; } });
+  $("pPlay").onclick=()=>{
+    if(!P || !P.parts.length) return;
+    if(P.cur<0){ seekTo(0,true); return; }
+    if(au.paused) au.play().catch(()=>{}); else au.pause();
+  };
+  $("pBack15").onclick=()=>{ if(P) seekTo(Math.max(0,curT()-15),!au.paused); };
+  $("pSeek").oninput=e=>{ if(P) seekTo(+e.target.value,!au.paused); };
+  document.querySelectorAll("#player [data-rate]").forEach(b=>b.onclick=()=>{
+    plSpeed=+b.dataset.rate; au.playbackRate=plSpeed; au.defaultPlaybackRate=plSpeed;
+    document.querySelectorAll("#player [data-rate]").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));
+  });
+  tagWatchers.push(()=>{ if(view!=="records") return; if(!$("recDetail").hidden) reloadDetail(); else recRefresh(); });
 
   // ---------- Feed ----------
   feed.addEventListener("scroll",()=>{ stickToBottom = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 60; });
