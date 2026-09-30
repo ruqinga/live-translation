@@ -149,6 +149,7 @@ body.v-records #feed,body.v-records footer{display:none}
 .det-top{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
 .det-title{flex:1;font-weight:600;font-size:17px;word-break:break-all;min-width:120px}
 .det-top.wide .det-title{flex-basis:100%;order:10}
+.det-title .retitle{margin-left:8px;padding:3px 10px;font-size:12px;font-weight:400;vertical-align:middle}
 .det-top button.danger{color:var(--rec)}
 .player{position:sticky;top:-10px;z-index:5;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px}
 .p-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
@@ -236,7 +237,7 @@ body.zh-only .dseg .e{display:none}
     <div id="recDetail" hidden>
       <div class="det-top wide">
         <button id="detBack">← 记录</button>
-        <div class="det-title" id="detTitle"></div>
+        <div class="det-title"><span id="detTitle"></span><button class="pbtn retitle" id="detRetitle">重新生成标题</button></div>
         <button id="detExport">导出</button>
         <button id="detRename">重命名</button>
         <button id="detDelete" class="danger">删除</button>
@@ -586,8 +587,8 @@ body.zh-only .dseg .e{display:none}
   function sessBegin(engine){
     const d=new Date(), p=n=>String(n).padStart(2,"0");
     const row={id:Date.now(), title:p(d.getMonth()+1)+"月"+p(d.getDate())+"日 "+p(d.getHours())+":"+p(d.getMinutes()),
-      created:Date.now(), ended:null, dur:0, tags:[], summary:"", summaryAt:null, audioMime:null, parts:[], engine};
-    S={id:row.id, row, t0:performance.now(), gapMs:0, intAt:null, intT:0, segN:0, closing:false, ending:false, chunkIdx:0, writes:[], mrDones:[], mr:null, needPrompt:false};
+      created:Date.now(), ended:null, dur:0, tags:[], summary:"", summaryAt:null, audioMime:null, parts:[], engine, titleEdited:false, titleAuto:false};
+    S={id:row.id, row, t0:performance.now(), gapMs:0, intAt:null, intT:0, segN:0, nSeg:0, titled:false, closing:false, ending:false, chunkIdx:0, writes:[], mrDones:[], mr:null, needPrompt:false};
     uStartWall=null; pendingMark=false;
     dbPut("sessions",row).catch(dbFail);
     askPersist();
@@ -1036,8 +1037,8 @@ body.zh-only .dseg .e{display:none}
   $("detBack").onclick=closeDetail;
   $("detRename").onclick=async()=>{
     if(!det) return; const n=prompt("记录标题",det.row.title); if(!n||!n.trim()) return;
-    det.row.title=n.trim(); $("detTitle").textContent=det.row.title;
-    if(S && S.id===det.row.id) S.row.title=det.row.title;
+    det.row.title=n.trim(); det.row.titleEdited=true; $("detTitle").textContent=det.row.title;
+    if(S && S.id===det.row.id){ S.row.title=det.row.title; S.row.titleEdited=true; }
     dbPut("sessions",det.row).catch(dbFail);
   };
   $("detDelete").onclick=async()=>{
@@ -1185,11 +1186,62 @@ body.zh-only .dseg .e{display:none}
   });
   tagWatchers.push(()=>{ if(view!=="records") return; if(!$("recDetail").hidden) reloadDetail(); else recRefresh(); });
 
+  // ---------- Auto title ----------
+  const TITLE_SYS="你是标题助手。根据英文课程、讲座或会议转写的一部分，起一个中文标题，概括主题，不超过 15 个字。只输出标题本身，不要引号、书名号、标点和解释。";
+  function cleanTitle(t){
+    t=(t||"").split("\n")[0].replace(/^\s*标题[:：]\s*/,"").replace(/^[\s"'“”‘’《》「」『』。.!！,，:：]+|[\s"'“”‘’《》「」『』。.!！,，:：]+$/g,"");
+    const a=Array.from(t); return a.length>15 ? a.slice(0,15).join("") : t;
+  }
+  // 摘要输出的第一行是“标题：xxx”，拆出来；没有这一行就原样返回
+  function splitTitle(text){
+    const m=(text||"").match(/^\s*标题[:：][ \t]*([^\n]*)\n*/);
+    return m ? {title:cleanTitle(m[1]), body:text.slice(m[0].length)} : {title:"", body:text};
+  }
+  async function genTitle(tags,texts){
+    const head=[];
+    if((tags||[]).length) head.push("【会话标签（主题提示）】\n"+tags.join("、"));
+    const gl=(settings.glossary||"").trim(); if(gl) head.push("【场景与术语】\n"+gl);
+    head.push("【转写】\n"+texts.join(" ").slice(0,6000));
+    return cleanTitle(await llmStream(TITLE_SYS,head.join("\n\n"),64,null,{model:settings.model,path:"/translate"}));   // 用快速模型，走翻译同一通道
+  }
+  // 自动标题只在“用户没手动改过”时生效
+  async function applyAutoTitle(id,title){
+    if(!title) return false;
+    if(S && S.id===id){ if(S.row.titleEdited) return false; S.row.title=title; S.row.titleAuto=true; sessSave(); }
+    else{ const r=await dbGet("sessions",id); if(!r || r.titleEdited) return false; r.title=title; r.titleAuto=true; await dbPut("sessions",r); }
+    if(det && det.row.id===id){ det.row.title=title; det.row.titleAuto=true; $("detTitle").textContent=title; }
+    return true;
+  }
+  async function autoTitleLive(s){
+    if(s.row.titleEdited || !translateReady()) return;
+    try{
+      const title=await genTitle(s.row.tags, entries.filter(e=>e.sid===s.id).map(e=>e.en));
+      await applyAutoTitle(s.id,title);
+    }catch(e){ /* 静默失败：保留临时标题，结束时的摘要还会再给一次标题 */ }
+  }
+  $("detRetitle").onclick=async()=>{
+    if(!det) return;
+    if(!sumReady()){ openSettings(); toast(useRelay()?"请先填写中转地址和访问口令":"请先填写 Claude API 密钥"); return; }
+    const b=$("detRetitle"), id=det.row.id; b.disabled=true; b.textContent="生成中…";
+    try{
+      const segs=det.segs.filter(g=>g.kind!=="break");
+      if(!segs.length) throw new Error("没有字幕");
+      const title=await genTitle(det.row.tags, segs.map(g=>g.en));
+      if(!title) throw new Error("模型没有返回标题");
+      // 用户主动点了“重新生成”，就以新标题为准，之后仍可被自动更新
+      if(S && S.id===id){ S.row.titleEdited=false; } else{ const r=await dbGet("sessions",id); if(r){ r.titleEdited=false; await dbPut("sessions",r); } }
+      det.row.titleEdited=false;
+      await applyAutoTitle(id,title);
+      toast("标题已更新");
+    }catch(e){ toast("生成标题失败："+((e&&e.message)||"未知错误")); }
+    finally{ b.disabled=false; b.textContent="重新生成标题"; }
+  };
+
   // ---------- Auto summary（走同一条中转/直连通道，独立队列，不占用实时翻译） ----------
   const sumState={};      // 会话 id → {status:"running"|"error", text, progress, err}
   const sumQueue=[]; let sumBusy=false;
   const SUM_LIMIT=60000, SUM_CHUNK=50000;
-  const SUM_SYS="你是一名英文课程、讲座、会议的学习助理。根据用户提供的英文转写（每行以 [mm:ss] 时间戳开头），用简体中文输出 Markdown 摘要。严格使用下面的结构和标题，不要添加其他章节：\n\n"
+  const SUM_SYS="你是一名英文课程、讲座、会议的学习助理。根据用户提供的英文转写（每行以 [mm:ss] 时间戳开头），用简体中文输出 Markdown 摘要。输出的第一行必须是“标题：”加一个不超过 15 个字的中文标题（概括主题，不加引号和标点），然后空一行，再严格使用下面的结构和标题，不要添加其他章节：\n\n"
     +"## 一句话概括\n（一句话）\n\n"
     +"## 主要内容\n（按主题分段，每段用加粗小标题，并在小标题里标注大致时间点，格式如 **主题名 [12:30]**；下面用要点列出内容）\n\n"
     +"## 关键术语\n（每条：英文原词 — 中文解释；没有则写“无”）\n\n"
@@ -1214,11 +1266,12 @@ body.zh-only .dseg .e{display:none}
     }
   }
   // 流式调用摘要模型；relay 走 Worker 的 /summary，直连则走 Claude API
-  async function llmStream(system,user,maxTokens,onText){
-    const relay=useRelay(), model=settings.sumModel; let res;
+  async function llmStream(system,user,maxTokens,onText,opts){
+    opts=opts||{};
+    const relay=useRelay(), model=opts.model||settings.sumModel; let res;
     try{
       if(relay){
-        res=await fetch(relayBase()+"/summary",{method:"POST",
+        res=await fetch(relayBase()+(opts.path||"/summary"),{method:"POST",
           headers:{"content-type":"application/json","authorization":"Bearer "+settings.relayToken},
           body:JSON.stringify({provider:settings.provider, model, system, user, max_tokens:maxTokens})});
       }else{
@@ -1254,7 +1307,7 @@ body.zh-only .dseg .e{display:none}
     head.push("【带标记的句子】\n"+(tagged.length?tagged.join("\n"):"（无）"));
     const ctx=head.join("\n\n");
     const total=lines.join("\n").length;
-    const onText=t=>{ st.text=t; st.progress=""; sumRender(row.id); };
+    const onText=t=>{ st.text=splitTitle(t).body; st.progress=""; sumRender(row.id); };
     if(total<=SUM_LIMIT) return llmStream(SUM_SYS, ctx+"\n\n【完整英文转写】\n"+lines.join("\n"), 4096, onText);
     // 长会话：先分段各自整理，再合并成最终摘要
     const chunks=[]; let cur=[], n=0;
@@ -1282,13 +1335,15 @@ body.zh-only .dseg .e{display:none}
           const row=await dbGet("sessions",id);
           const segs=sortSegs((await dbBySid("segments",id)).filter(g=>g.kind!=="break"));
           if(!row || !segs.length) throw new Error("没有可总结的字幕");
-          const text=await summarize(row,segs,st);
+          const raw=await summarize(row,segs,st);
+          const sp=splitTitle(raw), text=sp.body||raw;      // 同一次调用顺带返回标题；解析失败则保留原标题
           const fresh=(await dbGet("sessions",id))||row;   // 生成期间用户可能改了标签/标题，用最新的行来写
           fresh.summary=text; fresh.summaryAt=Date.now(); await dbPut("sessions",fresh);
           if(S && S.id===id){ S.row.summary=text; S.row.summaryAt=fresh.summaryAt; }
           delete sumState[id];
           if(det && det.row.id===id) det.row=fresh;
-          toast("「"+fresh.title+"」的摘要已生成");
+          if(sp.title) await applyAutoTitle(id,sp.title);
+          toast("「"+((det&&det.row.id===id)?det.row.title:fresh.title)+"」的摘要已生成");
         }catch(e){ st.status="error"; st.err=(e&&e.message)||"未知错误"; }
         sumRender(id);
       }
@@ -1454,7 +1509,8 @@ body.zh-only .dseg .e{display:none}
       const id=+x.id, old=local.get(id);
       const row={id, title:String(x.title||"导入的记录").slice(0,100), created:num(x.created,Date.now()), ended:num(x.ended,Date.now()), dur:num(x.dur,0),
         tags:strs(x.tags), summary:typeof x.summary==="string"?x.summary:"", summaryAt:x.summaryAt==null?null:num(x.summaryAt,null),
-        audioMime:old?old.audioMime:null, parts:old?old.parts:[], engine:x.engine==="browser"?"browser":"deepgram"};
+        audioMime:old?old.audioMime:null, parts:old?old.parts:[], engine:x.engine==="browser"?"browser":"deepgram",
+        titleEdited:!!x.titleEdited, titleAuto:!!x.titleAuto};
       const segs=(Array.isArray(x.segments)?x.segments:[]).map((g,i)=>({
         id:id+"-"+(i+1), sid:id, start:num(g&&g.start,0), end:num(g&&g.end,0), en:String((g&&g.en)||""), zh:String((g&&g.zh)||""),
         tags:strs(g&&g.tags), kind:(g&&g.kind)==="break"?"break":"seg"}));
@@ -1511,6 +1567,7 @@ body.zh-only .dseg .e{display:none}
       e.end=end!=null?end:nowT(); e.start=start!=null?start:e.end; if(e.end<e.start) e.end=e.start;
       if(pendingMark){ e.tags.push(markTag()); pendingMark=false; }
       segSave(e);
+      if(++S.nSeg>=15 && !S.titled){ S.titled=true; autoTitleLive(S); }
     }
     entries.push(e); renderEntry(e); queue.push(e); pump();
   }
