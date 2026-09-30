@@ -105,6 +105,84 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .row .note{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.5}
 .row .note a{color:var(--accent)}
 .keyok{color:#2E8B57}
+[hidden]{display:none!important}
+.tg{display:inline-block;padding:1px 9px;border-radius:999px;font-size:12px;line-height:1.7;color:#fff;background:#888;white-space:nowrap}
+.tg.rm{cursor:pointer}
+.tline{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px}
+.tmore{border:0;background:none;color:var(--muted);font-size:20px;line-height:1;padding:0 6px;cursor:pointer}
+.tagpick{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 14px}
+.tagpick button{border:2px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:7px 14px;font-size:15px;cursor:pointer}
+.tagpick button.on{color:#fff;border-color:transparent}
+.tagadd{display:flex;gap:8px}
+.tagadd input{flex:1;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);padding:10px 12px;font-size:15px;font-family:inherit}
+.tagadd button{border:0;border-radius:10px;background:var(--accent);color:var(--accent-ink);padding:0 16px;font-size:15px;cursor:pointer}
+.tm-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}
+.tm-row .cnt{flex:1;font-size:13px;color:var(--muted)}
+.tm-row button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:4px 10px;font-size:13px;cursor:pointer}
+.pair{display:flex;gap:4px;justify-self:center}
+.tabs{display:flex;gap:6px;padding:8px 16px 0}
+.tabs button{flex:1;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:10px;padding:8px;font-size:15px;cursor:pointer}
+.tabs button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+#records{display:none;flex:1;overflow-y:auto;padding:10px 16px 28px;overscroll-behavior:contain}
+body.v-records #records{display:block}
+body.v-records #feed,body.v-records footer{display:none}
+.rh-tools{display:flex;gap:8px;margin-bottom:8px}
+.rh-tools input,.rh-tools select{border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);padding:9px 12px;font-size:15px;font-family:inherit;min-width:0}
+.rh-tools input{flex:1}
+.rh-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.rh-tags button{border:2px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:3px 12px;font-size:13px;cursor:pointer}
+.rh-tags button.on{color:#fff;border-color:transparent}
+.rh-actions{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:13px;color:var(--muted)}
+.rh-actions button,.det-top button,.pbtn{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:6px 12px;font-size:14px;cursor:pointer}
+.card{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;background:var(--panel);cursor:pointer}
+.card .ct{font-weight:600;font-size:16px;word-break:break-all}
+.card .cm{font-size:13px;color:var(--muted);margin:3px 0 6px}
+.card .cs{font-size:14px;color:var(--ink);opacity:.85;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:6px;word-break:break-word}
+.card .hit{font-size:13px;color:var(--muted);margin-top:6px;word-break:break-word}
+.det-top{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.det-title{flex:1;font-weight:600;font-size:17px;word-break:break-all;min-width:120px}
+.det-top.wide .det-title{flex-basis:100%;order:10}
+.det-top button.danger{color:var(--rec)}
+.player{position:sticky;top:-10px;z-index:5;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px}
+.p-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.p-row:last-child{margin-bottom:0}
+#pPlay{width:44px;height:44px;border-radius:50%;border:0;background:var(--accent);color:var(--accent-ink);font-size:18px;cursor:pointer}
+#pSeek{flex:1;min-width:0}
+#pTime{font-family:var(--font-en);font-size:13px;color:var(--muted);white-space:nowrap}
+.pbtn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.p-note{font-size:13px;color:var(--muted)}
+.det-tags{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:10px}
+.det-tags input{border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--ink);padding:4px 12px;font-size:14px;width:120px;font-family:inherit}
+.dseg{display:flex;gap:10px;padding:10px 6px;border-bottom:1px solid var(--line);cursor:pointer;border-radius:8px;scroll-margin:120px}
+.dseg.active{background:var(--warn-bg)}
+.dseg .dt{font-family:var(--font-en);font-size:13px;color:var(--accent);min-width:44px;padding-top:2px}
+.dseg .dtx{flex:1;min-width:0}
+.dseg .e{font-family:var(--font-en);font-size:14px;color:var(--muted);line-height:1.5;word-break:break-word}
+.dseg .z{font-size:17px;line-height:1.6;word-break:break-word}
+body.zh-only .dseg .e{display:none}
+.sumbox{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px;background:var(--panel)}
+.sum-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.sum-time{font-size:12px;color:var(--muted)}
+.sum-err{color:var(--rec);font-size:14px;margin:6px 0}
+.md{font-size:15px;line-height:1.7;word-break:break-word}
+.md .md-h{margin:12px 0 4px;font-size:15px;font-weight:600}
+.md p{margin:4px 0}
+.md ul,.md ol{margin:4px 0;padding-left:22px}
+.md a.ts{color:var(--accent);text-decoration:none;font-family:var(--font-en);font-size:13px;padding:0 2px}
+.md .muted{color:var(--muted)}
+.exp-list{display:flex;flex-direction:column;gap:8px;margin:10px 0 14px}
+.exp-list button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:12px 14px;font-size:16px;cursor:pointer;text-align:left}
+.exp-list button small{font-size:12px;color:var(--muted)}
+.exp-list button:disabled{opacity:.45;cursor:not-allowed}
+.done.alt{background:var(--bg);color:var(--ink);border:1px solid var(--line)}
+.divider{margin:8px 0;padding:6px 10px;border-radius:8px;background:var(--bg);border:1px dashed var(--line);color:var(--muted);font-size:13px;text-align:center}
+.rec-note{font-size:13px;color:var(--muted);line-height:1.5;margin:6px 0 12px}
+.rc-item{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;background:var(--bg)}
+.rc-item .nm{font-weight:600}
+.rc-item .meta{font-size:13px;color:var(--muted);margin:4px 0 8px}
+.rc-item .btns{display:flex;gap:8px}
+.rc-item button{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:7px 14px;font-size:14px;cursor:pointer}
+.rc-item button.danger{color:var(--rec)}
 </style>
 </head>
 <body>
@@ -117,6 +195,11 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     </button>
   </header>
 
+  <nav class="tabs" id="tabs">
+    <button data-view="live" aria-pressed="true">实时字幕</button>
+    <button data-view="records" aria-pressed="false">记录</button>
+  </nav>
+
   <div class="banner" id="banner" role="status"></div>
 
   <main id="feed" aria-live="polite">
@@ -126,16 +209,68 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     </div>
   </main>
 
+  <section id="records" aria-live="polite">
+    <div id="recHome">
+      <div class="rh-tools">
+        <input type="search" id="recSearch" placeholder="搜索标题、英文、中文" autocomplete="off">
+        <select id="recSort"><option value="new">最新优先</option><option value="old">最早优先</option><option value="long">时长最长</option></select>
+      </div>
+      <div class="rh-tags" id="recTagFilter"></div>
+      <div class="rh-actions"><button id="openTagView">按标签查看句子</button><span id="recCount"></span></div>
+      <div id="recItems"></div>
+    </div>
+    <div id="recTags" hidden>
+      <div class="det-top"><button id="tvBack">← 记录</button><div class="det-title">按标签查看句子</div></div>
+      <div class="rh-tags" id="tvChips"></div>
+      <div id="tvList"></div>
+    </div>
+    <div id="recDetail" hidden>
+      <div class="det-top wide">
+        <button id="detBack">← 记录</button>
+        <div class="det-title" id="detTitle"></div>
+        <button id="detExport">导出</button>
+        <button id="detRename">重命名</button>
+        <button id="detDelete" class="danger">删除</button>
+      </div>
+      <div class="player" id="player">
+        <div class="p-row">
+          <button id="pPlay" aria-label="播放">▶</button>
+          <button class="pbtn" id="pBack15" aria-label="后退15秒">↺15</button>
+          <input type="range" id="pSeek" min="0" max="0" step="0.1" value="0" aria-label="进度">
+        </div>
+        <div class="p-row"><span id="pTime">00:00 / 00:00</span>
+          <span style="flex:1"></span>
+          <button class="pbtn" data-rate="1" aria-pressed="true">1x</button><button class="pbtn" data-rate="1.25" aria-pressed="false">1.25x</button><button class="pbtn" data-rate="1.5" aria-pressed="false">1.5x</button><button class="pbtn" data-rate="2" aria-pressed="false">2x</button>
+        </div>
+        <div class="p-note" id="pNote" hidden></div>
+        <audio id="plAudio" preload="metadata" playsinline hidden></audio>
+      </div>
+      <div class="det-tags" id="detTags"></div>
+      <div class="sumbox" id="detSum">
+        <div class="sum-head"><b>摘要</b><span class="sum-time" id="sumTime"></span><span style="flex:1"></span><button class="pbtn" id="sumGen">生成摘要</button></div>
+        <div class="sum-err" id="sumErr" hidden></div>
+        <div class="md" id="sumBody"></div>
+      </div>
+      <div id="detList"></div>
+    </div>
+  </section>
+
   <footer>
     <div class="typebar" id="typebar">
       <textarea id="typeInput" placeholder="粘贴或输入英文…" enterkeyhint="send"></textarea>
       <button id="typeSend">翻译</button>
     </div>
     <div class="controls">
-      <button class="side" id="toggleType" aria-label="打字输入">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h.01M11 10h.01M15 10h.01M8 14h8"/></svg>
-        打字
-      </button>
+      <div class="pair">
+        <button class="side" id="toggleType" aria-label="打字输入">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h.01M11 10h.01M15 10h.01M8 14h8"/></svg>
+          打字
+        </button>
+        <button class="side" id="markBtn" aria-label="标记重点">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg>
+          标记
+        </button>
+      </div>
       <button id="mic" aria-label="开始收听">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
       </button>
@@ -195,6 +330,19 @@ input[type=range]{width:100%;accent-color:var(--accent)}
       <div class="note">同样只保存在这台手机的浏览器里。在 <a href="https://console.deepgram.com" target="_blank" rel="noopener">Deepgram Console</a> 申请。</div>
     </div>
     <div class="row">
+      <label for="sumModel">摘要模型</label>
+      <select id="sumModel"></select>
+      <div class="note">摘要用比实时翻译更强的模型，只在停止收听后（超过 10 句）或手动点「生成摘要」时调用，不占用实时翻译。</div>
+    </div>
+    <div class="row">
+      <label for="saveAudio">保存录音</label>
+      <select id="saveAudio">
+        <option value="1">保存（约 15MB/小时）</option>
+        <option value="0">不保存，只存字幕</option>
+      </select>
+      <div class="note">仅 Deepgram 识别时有录音，音频只存在这台手机的浏览器里。</div>
+    </div>
+    <div class="row">
       <label for="model">翻译模型</label>
       <select id="model"></select>
     </div>
@@ -222,12 +370,71 @@ input[type=range]{width:100%;accent-color:var(--accent)}
       <label for="glossary">场景与术语（可选）</label>
       <textarea id="glossary" placeholder="例如：医学讲座；MRI 译为核磁共振；Apex 是公司名不翻译"></textarea>
     </div>
+    <div class="row">
+      <label>标签管理</label>
+      <div id="tagMgr"></div>
+      <div class="tagadd" style="margin-top:8px"><input type="text" id="presetNew" placeholder="新增预设标签" maxlength="20" autocomplete="off"><button id="presetAdd">添加</button></div>
+      <div class="note">收听时底部的「标记」按钮使用第一个预设标签。改名或删除会同步到所有会话和句子。</div>
+    </div>
+    <div class="row">
+      <label>备份</label>
+      <div class="actions" style="grid-template-columns:1fr 1fr">
+        <button id="backupAll">导出全部备份</button>
+        <button id="backupImport">导入备份</button>
+      </div>
+      <input type="file" id="backupFile" accept="application/json,.json" hidden>
+      <div class="note">备份不含音频。iPhone 上的网站数据可能被系统清理（长期不打开约 7 天），建议添加到主屏幕使用，并定期导出备份。</div>
+    </div>
+    <div class="row">
+      <label>本地存储</label>
+      <div class="note" id="storeInfo">读取中…</div>
+    </div>
     <div class="actions">
       <button id="copyAll">复制全文</button>
       <button id="exportTxt">导出文本</button>
       <button id="clearAll" class="danger">清空记录</button>
     </div>
     <button class="done" id="closeSettings">完成</button>
+  </div>
+</dialog>
+
+<dialog id="recoverDlg">
+  <div class="sheet">
+    <h2>发现未完成的记录</h2>
+    <div class="rec-note">上次的收听没有正常结束（可能是刷新、崩溃或被系统关闭），下面的内容已经保存在本机，可以恢复或丢弃。</div>
+    <div id="recoverList"></div>
+    <button class="done" id="recoverClose">稍后处理</button>
+  </div>
+</dialog>
+
+<dialog id="expDlg">
+  <div class="sheet">
+    <h2>导出</h2>
+    <div class="exp-list">
+      <button data-exp="audio">录音文件<small id="expAudioNote"></small></button>
+      <button data-exp="srt">字幕 SRT<small>中英双语</small></button>
+      <button data-exp="md">笔记 Markdown<small>标题、标签、摘要、带时间戳的双语全文</small></button>
+      <button data-exp="json">完整备份 JSON<small>字幕、标签、摘要，不含音频</small></button>
+    </div>
+    <button class="done alt" id="expClose">取消</button>
+  </div>
+</dialog>
+
+<dialog id="tagDlg">
+  <div class="sheet">
+    <h2 id="tagTitle">标签</h2>
+    <div class="tagpick" id="tagPick"></div>
+    <div class="tagadd"><input type="text" id="tagNew" placeholder="新建标签" maxlength="20" autocomplete="off"><button id="tagAddBtn">添加</button></div>
+    <button class="done" id="tagDone">完成</button>
+  </div>
+</dialog>
+
+<dialog id="intDlg">
+  <div class="sheet">
+    <h2>录音已中断</h2>
+    <div class="rec-note">可能是锁屏、切到后台或被其他应用占用了麦克风。要接在这次记录后面继续吗？</div>
+    <button class="done" id="intResume">继续录音</button>
+    <button class="done alt" id="intEnd">结束这次记录</button>
   </div>
 </dialog>
 
@@ -243,18 +450,19 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   let rec=null, listening=false, liveEl=null, wakeLock=null, restartTimer=null;
   const entries=[]; const queue=[]; let busy=false; let seq=0; let stickToBottom=true;
 
-  const settings={route:"direct", relayUrl:"", relayToken:"", provider:"anthropic", apiKey:"", dgKey:"", engine:"deepgram", model:"claude-haiku-4-5-20251001", lang:"en-US", mode:"both", size:22, glossary:""};
+  const settings={route:"direct", relayUrl:"", relayToken:"", provider:"anthropic", saveAudio:true, tagPresets:["重点","作业","考试","没听懂"], sumModel:"", apiKey:"", dgKey:"", engine:"deepgram", model:"claude-haiku-4-5-20251001", lang:"en-US", mode:"both", size:22, glossary:""};
   try{ Object.assign(settings, JSON.parse(localStorage.getItem("lt-settings")||"{}")); }catch(e){}
   function saveSettings(){ try{ localStorage.setItem("lt-settings", JSON.stringify(settings)); }catch(e){} }
   function applySettings(){
     $("apiKey").value=settings.apiKey||"";
     $("dgKey").value=settings.dgKey||"";
     $("engine").value=settings.engine;
+    $("saveAudio").value=settings.saveAudio?"1":"0";
     $("dgRow").style.display=(settings.engine==="deepgram" && !useRelay())?"":"none";
     $("route").value=settings.route; $("relayUrl").value=settings.relayUrl||""; $("relayToken").value=settings.relayToken||""; $("provider").value=settings.provider;
     $("relayRows").style.display=useRelay()?"":"none";
     $("claudeRow").style.display=useRelay()?"none":"";
-    fillModels();
+    fillModels(); fillSumModels();
     $("accent").value=settings.lang;
     $("size").value=settings.size;
     $("glossary").value=settings.glossary||"";
@@ -267,6 +475,11 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     deepseek:[["deepseek-chat","DeepSeek Chat"]],
     openai:[["gpt-4o-mini","GPT-4o mini（快、便宜）"],["gpt-4o","GPT-4o（更准）"]]
   };
+  const SUM_MODELS={
+    anthropic:[["claude-sonnet-5-5","Sonnet（推荐）"],["claude-opus-5-5","Opus（最强，较贵）"]],
+    deepseek:[["deepseek-chat","DeepSeek Chat"]],
+    openai:[["gpt-4o","GPT-4o（推荐）"],["gpt-4o-mini","GPT-4o mini（便宜）"]]
+  };
   const useRelay=()=>settings.route==="relay";
   const relayBase=()=>(settings.relayUrl||"").trim().replace(/\/+$/,"");
   const translateReady=()=>useRelay() ? !!(relayBase() && settings.relayToken) : !!settings.apiKey;
@@ -278,6 +491,13 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     if(!list.some(x=>x[0]===settings.model)){ settings.model=list[0][0]; saveSettings(); }
     sel.value=settings.model;
   }
+  function fillSumModels(){
+    const list=SUM_MODELS[useRelay()?settings.provider:"anthropic"]||SUM_MODELS.anthropic;
+    const sel=$("sumModel"); sel.innerHTML="";
+    list.forEach(([v,t])=>{ const o=document.createElement("option"); o.value=v; o.textContent=t; sel.appendChild(o); });
+    if(!list.some(x=>x[0]===settings.sumModel)){ settings.sumModel=list[0][0]; saveSettings(); }
+    sel.value=settings.sumModel;
+  }
   applySettings();
 
   function showBanner(msg){ banner.innerHTML=msg; banner.classList.add("show"); }
@@ -285,7 +505,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   let toastT; function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),1800); }
 
   const dlg=$("settings");
-  function openSettings(){ applySettings(); dlg.showModal(); }
+  function openSettings(){ applySettings(); dlg.showModal(); refreshStoreInfo(); drawTagMgr(); }
 
   function checkEngine(){
     const bad = settings.engine==="browser" && !SR;
@@ -301,6 +521,927 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     showBanner("麦克风需要 https 网址才能使用，请通过 https 链接打开此页面。");
   }
 
+  // ---------- Local database (IndexedDB) ----------
+  // sessions：会话；segments：字幕句（按 sid 建索引）；audioChunks：音频分片（按 sid 建索引）
+  let dbP=null, dbWarned=false;
+  function db(){
+    return dbP||(dbP=new Promise((res,rej)=>{
+      if(!window.indexedDB){ rej(new Error("no indexedDB")); return; }
+      const r=indexedDB.open("lt-db",1);
+      r.onupgradeneeded=()=>{
+        const d=r.result;
+        d.createObjectStore("sessions",{keyPath:"id"});
+        d.createObjectStore("segments",{keyPath:"id"}).createIndex("sid","sid");
+        d.createObjectStore("audioChunks",{keyPath:["sid","idx"]}).createIndex("sid","sid");
+      };
+      r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); r.onblocked=()=>rej(new Error("blocked"));
+    }));
+  }
+  function dbTx(stores,mode,fn){
+    return db().then(d=>new Promise((res,rej)=>{
+      const t=d.transaction(stores,mode); let out;
+      try{ out=fn(t); }catch(e){ rej(e); return; }
+      t.oncomplete=()=>res(out && out.result!==undefined ? out.result : out);
+      t.onerror=()=>rej(t.error); t.onabort=()=>rej(t.error||new Error("aborted"));
+    }));
+  }
+  const dbPut=(store,v)=>dbTx([store],"readwrite",t=>t.objectStore(store).put(v));
+  const dbGet=(store,k)=>dbTx([store],"readonly",t=>t.objectStore(store).get(k));
+  const dbAll=store=>dbTx([store],"readonly",t=>t.objectStore(store).getAll());
+  const dbBySid=(store,sid)=>dbTx([store],"readonly",t=>t.objectStore(store).index("sid").getAll(IDBKeyRange.only(sid)));
+  function dbDelSession(id){
+    return dbTx(["sessions","segments","audioChunks"],"readwrite",t=>{
+      t.objectStore("sessions").delete(id);
+      ["segments","audioChunks"].forEach(n=>{
+        const r=t.objectStore(n).index("sid").openKeyCursor(IDBKeyRange.only(id));
+        r.onsuccess=()=>{ const c=r.result; if(c){ t.objectStore(n).delete(c.primaryKey); c.continue(); } };
+      });
+    });
+  }
+  function dbFail(err){
+    if(dbWarned) return; dbWarned=true;
+    showBanner("本地存储出错（"+((err&&(err.name||err.message))||"未知错误")+"）。字幕仍会显示，但可能没有保存成功，请检查手机存储空间，或是否处于无痕模式。");
+  }
+
+  // ---------- Sessions ----------
+  const fmtT=sec=>{ sec=Math.max(0,Math.floor(sec)); const h=Math.floor(sec/3600), m=Math.floor(sec%3600/60), x=sec%60, p=n=>String(n).padStart(2,"0"); return (h?h+":":"")+p(m)+":"+p(x); };
+  let S=null;          // 当前会话（内存中的状态）
+  let uStartWall=null; // 浏览器引擎：当前句开始的会话时间
+  // 会话时间轴：从开始（录音开始）算起的秒数；中断期间冻结，恢复后接着走
+  const nowT=()=> S ? (S.intAt!=null ? S.intT : Math.max(0,(performance.now()-S.t0-S.gapMs)/1000)) : null;
+  let persistAsked=false;
+  function askPersist(){
+    if(persistAsked) return; persistAsked=true;
+    try{ navigator.storage && navigator.storage.persist && navigator.storage.persist(); }catch(e){}
+  }
+  function sessBegin(engine){
+    const d=new Date(), p=n=>String(n).padStart(2,"0");
+    const row={id:Date.now(), title:p(d.getMonth()+1)+"月"+p(d.getDate())+"日 "+p(d.getHours())+":"+p(d.getMinutes()),
+      created:Date.now(), ended:null, dur:0, tags:[], summary:"", summaryAt:null, audioMime:null, parts:[], engine};
+    S={id:row.id, row, t0:performance.now(), gapMs:0, intAt:null, intT:0, segN:0, closing:false, ending:false, chunkIdx:0, writes:[], mrDones:[], mr:null, needPrompt:false};
+    uStartWall=null; pendingMark=false;
+    dbPut("sessions",row).catch(dbFail);
+    askPersist();
+    return S;
+  }
+  const sessSave=()=>{ if(S) dbPut("sessions",S.row).catch(dbFail); };
+  // 停止或中断时冻结时间轴
+  function freezeSession(){
+    if(!S) return;
+    S.closing=true;
+    if(S.intAt==null){ S.intT=nowT(); S.intAt=performance.now(); }
+  }
+  async function sessEnd(){
+    const s=S; if(!s || s.ending) return;
+    s.ending=true;
+    try{ await audioFlush(s); }catch(e){}
+    const row=s.row;
+    row.ended=Date.now(); row.dur=s.intAt!=null ? s.intT : nowT();
+    S=null; uStartWall=null; pendingMark=false;
+    let segs=[]; try{ segs=await dbBySid("segments",row.id); }catch(e){}
+    const real=segs.filter(x=>x.kind!=="break");
+    if(!real.length && !row.parts.length && row.dur<2){ dbDelSession(row.id).catch(()=>{}); return; }
+    try{ await dbPut("sessions",row); }catch(e){ dbFail(e); }
+    if(real.length>10 && !row.summary && sumReady()) queueSummary(row.id);
+  }
+  function segRecord(e){ return {id:e.segId, sid:e.sid, start:e.start, end:e.end, en:e.en, zh:e.zh||"", tags:e.tags||[], kind:"seg"}; }
+  function segSave(e){ if(e.segId) dbPut("segments",segRecord(e)).catch(dbFail); }
+
+  // ---------- Audio archive (MediaRecorder，与 Deepgram 的 PCM 流互不影响) ----------
+  function pickMime(){
+    if(!window.MediaRecorder || !MediaRecorder.isTypeSupported) return "";
+    return ["audio/webm;codecs=opus","audio/mp4","audio/aac"].find(m=>{ try{ return MediaRecorder.isTypeSupported(m); }catch(e){ return false; } })||"";
+  }
+  let audioWarned=false;
+  function audioFail(err){
+    if(audioWarned) return; audioWarned=true;
+    showBanner("录音保存失败（"+((err&&(err.name||err.message))||"存储错误")+"，可能是手机存储空间不足）。语音识别和翻译不受影响，已录下的部分仍会保留。");
+  }
+  function audioStart(stream){
+    const s=S; if(!s || !settings.saveAudio) return;
+    const mime=pickMime();
+    if(!mime){ if(!audioWarned){ audioWarned=true; showBanner("这个浏览器不支持录音存档，这次只保存字幕。"); } return; }
+    let mr;
+    try{ mr=new MediaRecorder(stream,{mimeType:mime,audioBitsPerSecond:32000}); }
+    catch(e){ try{ mr=new MediaRecorder(stream,{mimeType:mime}); }catch(e2){ audioFail(e2); return; } }
+    const row=s.row, part=row.parts.length+1;
+    row.audioMime=mime.split(";")[0];
+    if(part===1) s.t0=performance.now();              // 录音开始 = 会话 0 秒
+    row.parts.push({n:part, offset:part===1?0:nowT()}); // 每次中断后续录是独立的一段音频
+    sessSave();
+    s.mr=mr;
+    s.mrDones.push(new Promise(res=>{ mr.onstop=res; }));
+    mr.ondataavailable=ev=>{
+      if(!ev.data || !ev.data.size) return;
+      const idx=++s.chunkIdx;
+      s.writes.push(dbPut("audioChunks",{sid:s.id, idx, part, blob:ev.data})
+        .then(()=>{ s.row.dur=nowT(); dbPut("sessions",s.row).catch(()=>{}); })
+        .catch(audioFail));
+    };
+    mr.onerror=ev=>audioFail(ev.error||ev);
+    try{ mr.start(10000); }catch(e){ audioFail(e); }
+  }
+  function audioStop(){
+    const mr=S && S.mr;
+    if(mr && mr.state!=="inactive"){ try{ mr.stop(); }catch(e){} }
+  }
+  async function audioFlush(s){
+    if(s.mrDones.length) await Promise.race([Promise.all(s.mrDones), new Promise(r=>setTimeout(r,3000))]);
+    await Promise.allSettled(s.writes);
+  }
+
+  // ---------- 中断与恢复 ----------
+  function addBreak(gap){
+    const t=nowT(), seg={id:S.id+"-"+(++S.segN), sid:S.id, start:t, end:t, en:"[中断 "+fmtT(gap)+"]", zh:"", tags:[], kind:"break"};
+    dbPut("segments",seg).catch(dbFail);
+    hideEmpty();
+    const el=document.createElement("div"); el.className="divider"; el.textContent=seg.en;
+    if(liveEl && liveEl.parentNode===feed) feed.insertBefore(el,liveEl); else feed.appendChild(el);
+    scrollDown();
+  }
+  function interrupt(){
+    if(!S || S.closing || S.intAt!=null || activeEngine!=="deepgram" || !listening) return;
+    S.intT=nowT(); S.intAt=performance.now();
+    listening=false;
+    stopDeepgram();
+    try{ wakeLock && wakeLock.release(); }catch(e){} wakeLock=null;
+    setStatus(false,"已中断 "+fmt(dg.secs)); hint.textContent="录音已中断，点麦克风继续";
+    if(document.visibilityState==="visible") showIntDlg(); else S.needPrompt=true;
+  }
+  function showIntDlg(){ if(S){ S.needPrompt=false; if(!$("intDlg").open) $("intDlg").showModal(); } }
+  $("intResume").onclick=()=>{ $("intDlg").close(); start(); };
+  $("intEnd").onclick=()=>{
+    $("intDlg").close();
+    if(S){ S.closing=true; sessEnd(); }
+    setStatus(false,"已暂停"); hint.textContent="点麦克风开始新的记录";
+  };
+  async function checkPipeline(){
+    if(!listening || activeEngine!=="deepgram" || !S) return;
+    const tr=dg.stream && dg.stream.getAudioTracks()[0];
+    let dead=!tr || tr.readyState==="ended";
+    if(!dead && dg.ctx && dg.ctx.state!=="running"){
+      try{ await Promise.race([dg.ctx.resume(), new Promise(r=>setTimeout(r,600))]); }catch(e){}
+      dead = dg.ctx.state!=="running";
+    }
+    if(dead) interrupt();
+  }
+
+  // ----- 存储用量 -----
+  const mb=b=>b>=1073741824 ? (b/1073741824).toFixed(1)+"GB" : (b/1048576).toFixed(b>=10485760?0:1)+"MB";
+  async function refreshStoreInfo(){
+    const el=$("storeInfo");
+    try{
+      const e=await navigator.storage.estimate();
+      let per=""; try{ per=(await navigator.storage.persisted()) ? "已开启持久化存储" : "未开启持久化存储（系统空间紧张时可能被清理）"; }catch(_){}
+      el.textContent="已用 "+mb(e.usage||0)+(e.quota?" / 配额 "+mb(e.quota):"")+(per?"；"+per:"")+"。所有记录只保存在这台手机的浏览器里。";
+    }catch(e){ el.textContent="这个浏览器无法读取存储用量。"; }
+  }
+
+  // ----- 未完成会话恢复 -----
+  async function checkUnfinished(){
+    let rows; try{ rows=await dbAll("sessions"); }catch(e){ return; }
+    const list=[];
+    for(const r of rows.filter(r=>r.ended==null && !(S && S.id===r.id))){
+      const segs=await dbBySid("segments",r.id).catch(()=>[]);
+      const chunks=await dbTx(["audioChunks"],"readonly",t=>t.objectStore("audioChunks").index("sid").count(IDBKeyRange.only(r.id))).catch(()=>0);
+      if(!segs.length && !chunks){ dbDelSession(r.id).catch(()=>{}); continue; }
+      list.push({r,segs});
+    }
+    if(!list.length) return;
+    const box=$("recoverList"); box.textContent="";
+    list.forEach(({r,segs})=>{
+      const it=document.createElement("div"); it.className="rc-item";
+      const nm=document.createElement("div"); nm.className="nm"; nm.textContent=r.title;
+      const meta=document.createElement("div"); meta.className="meta"; meta.textContent="已保存 "+segs.filter(x=>x.kind!=="break").length+" 句字幕";
+      const btns=document.createElement("div"); btns.className="btns";
+      const ok=document.createElement("button"); ok.textContent="恢复";
+      ok.onclick=async()=>{
+        r.ended=Date.now(); r.dur=Math.max(r.dur||0, ...segs.map(x=>x.end||0));
+        try{ await dbPut("sessions",r); toast("已恢复"); }catch(e){ dbFail(e); }
+        it.remove(); if(!box.children.length) $("recoverDlg").close();
+      };
+      const no=document.createElement("button"); no.textContent="丢弃"; no.className="danger";
+      no.onclick=async()=>{
+        if(!confirm("丢弃「"+r.title+"」？字幕和录音会被删除。")) return;
+        await dbDelSession(r.id).catch(()=>{}); it.remove(); if(!box.children.length) $("recoverDlg").close();
+      };
+      btns.append(ok,no); it.append(nm,meta,btns); box.appendChild(it);
+    });
+    $("recoverDlg").showModal();
+  }
+  $("recoverClose").onclick=()=>$("recoverDlg").close();
+
+
+  // ---------- Tags ----------
+  const TAG_COLORS={"重点":"#E08A00","作业":"#2B7DE9","考试":"#D6453D","没听懂":"#8E5BD6"};
+  function tagColor(t){ if(TAG_COLORS[t]) return TAG_COLORS[t]; let h=0; for(const c of t) h=(h*31+c.charCodeAt(0))%360; return "hsl("+h+",55%,40%)"; }
+  function tagChip(t,onRemove){
+    const el=document.createElement("span"); el.className="tg"; el.textContent=t; el.style.background=tagColor(t);
+    if(onRemove){ el.classList.add("rm"); el.textContent=t+" ✕"; el.onclick=()=>onRemove(t); }
+    return el;
+  }
+  const markTag=()=>(settings.tagPresets&&settings.tagPresets[0])||"重点";
+  let pendingMark=false;              // 当前正在识别的句子确定后要打上标记
+  const knownTags=new Set();          // 预设 + 数据库里出现过的标签，用于菜单和补全
+  const allTagList=()=>Array.from(new Set((settings.tagPresets||[]).concat(Array.from(knownTags))));
+  async function loadKnownTags(){
+    try{
+      (await dbAll("sessions")).forEach(r=>(r.tags||[]).forEach(t=>knownTags.add(t)));
+      (await dbAll("segments")).forEach(r=>(r.tags||[]).forEach(t=>knownTags.add(t)));
+    }catch(e){}
+  }
+  const tagWatchers=[];               // 标签变化后需要刷新的界面
+  const tagsChanged=()=>tagWatchers.forEach(f=>{ try{ f(); }catch(e){} });
+
+  // 通用标签菜单：cur 为当前标签，onChange(新数组) 每次点选都会调用
+  let tagCtx=null;
+  function openTagMenu(title,cur,onChange){
+    tagCtx={tags:cur.slice(), onChange};
+    $("tagTitle").textContent=title; $("tagNew").value=""; drawTagPick();
+    if(!$("tagDlg").open) $("tagDlg").showModal();
+  }
+  function drawTagPick(){
+    const box=$("tagPick"); box.textContent="";
+    const list=allTagList(); tagCtx.tags.forEach(t=>{ if(!list.includes(t)) list.push(t); });
+    list.forEach(t=>{
+      const b=document.createElement("button"); b.textContent=t;
+      const on=tagCtx.tags.includes(t); b.classList.toggle("on",on); if(on) b.style.background=tagColor(t);
+      b.onclick=()=>{ toggleTagCtx(t); };
+      box.appendChild(b);
+    });
+  }
+  function toggleTagCtx(t){
+    const i=tagCtx.tags.indexOf(t);
+    if(i>=0) tagCtx.tags.splice(i,1); else tagCtx.tags.push(t);
+    knownTags.add(t); drawTagPick(); tagCtx.onChange(tagCtx.tags.slice());
+  }
+  function addNewTag(){
+    const v=$("tagNew").value.trim(); if(!v||!tagCtx) return;
+    $("tagNew").value="";
+    if(!tagCtx.tags.includes(v)) toggleTagCtx(v); else drawTagPick();
+  }
+  $("tagAddBtn").onclick=addNewTag;
+  $("tagNew").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); addNewTag(); } });
+  $("tagDone").onclick=()=>{ $("tagDlg").close(); tagCtx=null; };
+  $("tagDlg").addEventListener("click",e=>{ if(e.target===$("tagDlg")){ $("tagDlg").close(); tagCtx=null; } });
+
+  // 长按（触屏）或右键/系统长按菜单
+  function attachLongPress(el,fn){
+    let t=null;
+    const clear=()=>{ clearTimeout(t); t=null; };
+    el.addEventListener("touchstart",()=>{ clear(); t=setTimeout(()=>{ t=null; el._lp=Date.now(); fn(); },550); },{passive:true});
+    ["touchend","touchmove","touchcancel"].forEach(n=>el.addEventListener(n,clear,{passive:true}));
+    el.addEventListener("contextmenu",e=>{ e.preventDefault(); el._lp=Date.now(); fn(); });
+  }
+  function vibrate(){ try{ navigator.vibrate && navigator.vibrate(30); }catch(e){} }
+
+  // 实时字幕里的句子标签
+  function drawTags(e){
+    const box=e.tagsEl; box.textContent="";
+    (e.tags||[]).forEach(t=>box.appendChild(tagChip(t)));
+    const more=document.createElement("button"); more.className="tmore"; more.textContent="…"; more.setAttribute("aria-label","标签");
+    more.onclick=()=>editEntryTags(e); box.appendChild(more);
+  }
+  function editEntryTags(e){
+    openTagMenu("给这句加标签",e.tags||[],tags=>{ e.tags=tags; drawTags(e); segSave(e); tagsChanged(); });
+  }
+  function addTagToEntry(e,t){
+    if(!(e.tags||(e.tags=[])).includes(t)){ e.tags.push(t); knownTags.add(t); if(e.tagsEl) drawTags(e); segSave(e); tagsChanged(); }
+  }
+  // 收听时的「标记」按钮：标最近一句；当前句还在识别中，则等它确定后标记
+  function markLast(){
+    if(!S || S.closing || S.intAt!=null){ toast("开始收听后才能标记"); return; }
+    const tag=markTag();
+    if(liveEl || dg.finals.length){ pendingMark=true; toast("已标记当前句：#"+tag); vibrate(); return; }
+    let last=null; for(let i=entries.length-1;i>=0;i--){ if(entries[i].sid===S.id){ last=entries[i]; break; } }
+    if(!last){ toast("还没有可标记的句子"); return; }
+    addTagToEntry(last,tag); toast("已标记上一句：#"+tag); vibrate();
+  }
+  $("markBtn").onclick=markLast;
+
+  // ----- 标签管理（设置页）：改名、删除同步到所有会话 -----
+  async function tagUsage(){
+    const use={};
+    const add=(t,k)=>{ (use[t]||(use[t]={s:0,g:0}))[k]++; };
+    try{
+      (await dbAll("sessions")).forEach(r=>(r.tags||[]).forEach(t=>add(t,"s")));
+      (await dbAll("segments")).forEach(r=>(r.tags||[]).forEach(t=>add(t,"g")));
+    }catch(e){}
+    (settings.tagPresets||[]).forEach(t=>{ if(!use[t]) use[t]={s:0,g:0}; });
+    return use;
+  }
+  // map(tags)→新 tags 数组；用于改名（替换）和删除（过滤）
+  async function rewriteTags(map){
+    const same=(a,b)=>a.length===b.length && a.every((x,i)=>x===b[i]);
+    const rs=await dbAll("sessions"), gs=await dbAll("segments");
+    const rc=rs.filter(r=>{ const n=map(r.tags||[]); if(same(n,r.tags||[])) return false; r.tags=n; return true; });
+    const gc=gs.filter(r=>{ const n=map(r.tags||[]); if(same(n,r.tags||[])) return false; r.tags=n; return true; });
+    await dbTx(["sessions","segments"],"readwrite",t=>{ rc.forEach(r=>t.objectStore("sessions").put(r)); gc.forEach(r=>t.objectStore("segments").put(r)); });
+    // 内存中的实时字幕和当前会话
+    entries.forEach(e=>{ if(e.tags){ e.tags=map(e.tags); if(e.tagsEl) drawTags(e); } });
+    if(S) S.row.tags=map(S.row.tags||[]);
+  }
+  const uniq=a=>a.filter((x,i)=>a.indexOf(x)===i);
+  async function renameTag(old,nu){
+    nu=(nu||"").trim(); if(!nu || nu===old) return;
+    settings.tagPresets=uniq((settings.tagPresets||[]).map(t=>t===old?nu:t)); saveSettings();
+    knownTags.delete(old); knownTags.add(nu);
+    await rewriteTags(tags=>uniq(tags.map(t=>t===old?nu:t)));
+    tagsChanged();
+  }
+  async function deleteTag(t){
+    settings.tagPresets=(settings.tagPresets||[]).filter(x=>x!==t); saveSettings();
+    knownTags.delete(t);
+    await rewriteTags(tags=>tags.filter(x=>x!==t));
+    tagsChanged();
+  }
+  async function drawTagMgr(){
+    const box=$("tagMgr"); const use=await tagUsage(); box.textContent="";
+    const names=Object.keys(use);
+    if(!names.length){ box.textContent="还没有标签。"; return; }
+    names.forEach(t=>{
+      const row=document.createElement("div"); row.className="tm-row";
+      const cnt=document.createElement("span"); cnt.className="cnt"; cnt.textContent=use[t].s+" 个会话 · "+use[t].g+" 句";
+      const rn=document.createElement("button"); rn.textContent="改名";
+      rn.onclick=async()=>{ const n=prompt("把「"+t+"」改名为",t); if(n&&n.trim()&&n.trim()!==t){ try{ await renameTag(t,n); }catch(e){ dbFail(e); } drawTagMgr(); } };
+      const dl=document.createElement("button"); dl.textContent="删除";
+      dl.onclick=async()=>{ if(confirm("删除标签「"+t+"」？所有会话和句子上的这个标签都会被移除。")){ try{ await deleteTag(t); }catch(e){ dbFail(e); } drawTagMgr(); } };
+      row.append(tagChip(t),cnt,rn,dl); box.appendChild(row);
+    });
+  }
+  $("presetAdd").onclick=()=>{
+    const v=$("presetNew").value.trim(); if(!v) return; $("presetNew").value="";
+    if(!(settings.tagPresets||[]).includes(v)){ settings.tagPresets=(settings.tagPresets||[]).concat(v); saveSettings(); }
+    drawTagMgr();
+  };
+
+  // ---------- Records: list / filter / search ----------
+  let view="live";
+  const rd={rows:[],segs:new Map()};
+  const rf={q:"",tags:new Set(),sort:"new"};
+  const tv={tag:null};
+  function showView(v){
+    view=v; document.body.classList.toggle("v-records",v==="records");
+    document.querySelectorAll("#tabs button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.view===v)));
+    if(v==="records"){ if($("recDetail").hidden) recRefresh(); } else { pausePlayer(); scrollDown(); }
+  }
+  document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>showView(b.dataset.view));
+  function pane(name){ ["recHome","recTags","recDetail"].forEach(n=>{ $(n).hidden=(n!==name); }); $("records").scrollTop=0; }
+  async function loadRecData(){
+    const rows=await dbAll("sessions"), gs=await dbAll("segments");
+    rd.rows=rows; rd.segs=new Map();
+    gs.forEach(g=>{ let a=rd.segs.get(g.sid); if(!a){ a=[]; rd.segs.set(g.sid,a); } a.push(g); });
+  }
+  const segNo=g=>parseInt(String(g.id).split("-")[1],10)||0;
+  const sortSegs=a=>a.sort((x,y)=>(x.start-y.start)||(segNo(x)-segNo(y)));
+  function tagsOf(r){ const u=new Set(r.tags||[]); (rd.segs.get(r.id)||[]).forEach(g=>(g.tags||[]).forEach(t=>u.add(t))); return u; }
+  function plainFirstLine(md){
+    const l=(md||"").split("\n").map(x=>x.trim()).find(x=>x && !/^#/.test(x));
+    return l ? l.replace(/^[-*\d.\s]+/,"").replace(/\*\*/g,"") : "";
+  }
+  function recRefresh(){
+    loadRecData().then(()=>{ if(!$("recTags").hidden) renderTagView(); else if(!$("recDetail").hidden) return; else{ pane("recHome"); renderHome(); } })
+      .catch(()=>{ $("recItems").textContent="这个浏览器不能使用本地存储，无法查看记录。"; });
+  }
+  function filterChips(box,names,sel,multi,onPick,counts){
+    box.textContent="";
+    names.forEach(t=>{
+      const b=document.createElement("button"); b.textContent=t+(counts?" "+counts[t]:"");
+      const on=sel.has(t); b.classList.toggle("on",on); if(on) b.style.background=tagColor(t);
+      b.onclick=()=>onPick(t); box.appendChild(b);
+    });
+  }
+  function renderHome(){
+    const counts={}; rd.rows.forEach(r=>tagsOf(r).forEach(t=>{ counts[t]=(counts[t]||0)+1; }));
+    rf.tags.forEach(t=>{ if(!counts[t]) rf.tags.delete(t); });
+    const names=Object.keys(counts).sort((a,b)=>counts[b]-counts[a]);
+    filterChips($("recTagFilter"),names,rf.tags,true,t=>{ if(rf.tags.has(t)) rf.tags.delete(t); else rf.tags.add(t); renderHome(); },counts);
+    const q=rf.q.trim().toLowerCase(); const hits=new Map();
+    let list=rd.rows.filter(r=>{
+      if(rf.tags.size){ const u=tagsOf(r); if(![...rf.tags].some(t=>u.has(t))) return false; }
+      if(q){
+        if((r.title||"").toLowerCase().includes(q)) return true;
+        const g=(rd.segs.get(r.id)||[]).find(g=>(g.en||"").toLowerCase().includes(q)||(g.zh||"").toLowerCase().includes(q));
+        if(!g) return false; hits.set(r.id,g);
+      }
+      return true;
+    });
+    list.sort(rf.sort==="old" ? (a,b)=>a.created-b.created : rf.sort==="long" ? (a,b)=>(b.dur||0)-(a.dur||0) : (a,b)=>b.created-a.created);
+    $("recCount").textContent="共 "+list.length+" 条"+(list.length!==rd.rows.length?"（已筛选）":"");
+    const box=$("recItems"); box.textContent="";
+    if(!list.length){
+      const d=document.createElement("div"); d.className="empty";
+      d.innerHTML=rd.rows.length ? "<strong>没有符合条件的记录</strong>换个关键词或去掉标签筛选试试。" : "<strong>还没有记录</strong>每次点麦克风开始、再点停止，就会自动保存为一条记录。";
+      box.appendChild(d); return;
+    }
+    const p2=n=>String(n).padStart(2,"0");
+    list.forEach(r=>{
+      const c=document.createElement("div"); c.className="card";
+      const t=document.createElement("div"); t.className="ct"; t.textContent=r.title;
+      const d=new Date(r.created);
+      const nSeg=(rd.segs.get(r.id)||[]).filter(g=>g.kind!=="break").length;
+      const m=document.createElement("div"); m.className="cm";
+      m.textContent=(d.getMonth()+1)+"月"+d.getDate()+"日 "+p2(d.getHours())+":"+p2(d.getMinutes())+" · "+fmtT(r.dur||0)+" · "+nSeg+" 句"+(r.parts&&r.parts.length?" · 有录音":"")+(r.ended==null?" · 未结束":"");
+      c.append(t,m);
+      if((r.tags||[]).length){ const tl=document.createElement("div"); tl.className="tline"; r.tags.forEach(x=>tl.appendChild(tagChip(x))); c.appendChild(tl); }
+      const sm=plainFirstLine(r.summary);
+      if(sm){ const e=document.createElement("div"); e.className="cs"; e.textContent=sm; c.appendChild(e); }
+      const h=hits.get(r.id);
+      if(h){ const e=document.createElement("div"); e.className="hit"; e.textContent="["+fmtT(h.start)+"] "+(h.en||"")+(h.zh?"  "+h.zh:""); c.appendChild(e); }
+      c.onclick=()=>openDetail(r.id,h?{seek:h.start}:{});
+      box.appendChild(c);
+    });
+  }
+  let srchT=null;
+  $("recSearch").oninput=e=>{ clearTimeout(srchT); srchT=setTimeout(()=>{ rf.q=e.target.value; renderHome(); },200); };
+  $("recSort").onchange=e=>{ rf.sort=e.target.value; renderHome(); };
+
+  // ----- 按标签查看句子（跨会话） -----
+  $("openTagView").onclick=()=>{ pane("recTags"); renderTagView(); };
+  $("tvBack").onclick=()=>{ pane("recHome"); renderHome(); };
+  function renderTagView(){
+    const counts={}; rd.segs.forEach(a=>a.forEach(g=>(g.tags||[]).forEach(t=>{ counts[t]=(counts[t]||0)+1; })));
+    const names=Object.keys(counts).sort((a,b)=>counts[b]-counts[a]);
+    if(!tv.tag || !counts[tv.tag]) tv.tag=names[0]||null;
+    filterChips($("tvChips"),names,new Set(tv.tag?[tv.tag]:[]),false,t=>{ tv.tag=t; renderTagView(); },counts);
+    const box=$("tvList"); box.textContent="";
+    if(!tv.tag){ const d=document.createElement("div"); d.className="rec-note"; d.textContent="还没有带标签的句子。在实时字幕或记录详情里，点句子的「…」或长按即可加标签。"; box.appendChild(d); return; }
+    rd.rows.slice().sort((a,b)=>b.created-a.created).forEach(r=>{
+      const gs=sortSegs((rd.segs.get(r.id)||[]).filter(g=>(g.tags||[]).includes(tv.tag)));
+      if(!gs.length) return;
+      const h=document.createElement("div"); h.className="pl-h"; h.textContent=r.title; box.appendChild(h);
+      gs.forEach(g=>{
+        const row=document.createElement("div"); row.className="dseg";
+        const tm=document.createElement("span"); tm.className="dt"; tm.textContent=fmtT(g.start);
+        const tx=document.createElement("div"); tx.className="dtx";
+        const z=document.createElement("div"); z.className="z"; z.textContent=g.zh||"";
+        const e=document.createElement("div"); e.className="e"; e.textContent=g.en||"";
+        tx.append(z,e); row.append(tm,tx);
+        row.onclick=()=>openDetail(r.id,{seek:g.start});
+        box.appendChild(row);
+      });
+    });
+  }
+
+  // ---------- Session detail ----------
+  let det=null;   // {row, segs, segRows:[{g,el}], active}
+  let userScrollUntil=0;
+  ["wheel","touchmove"].forEach(n=>$("records").addEventListener(n,()=>{ userScrollUntil=Date.now()+4000; },{passive:true}));
+  async function openDetail(id,opts){
+    opts=opts||{};
+    let row, segs;
+    try{ row=await dbGet("sessions",id); segs=await dbBySid("segments",id); }catch(e){ toast("打开失败"); return; }
+    if(!row){ toast("这条记录已不存在"); return; }
+    freePlayer();
+    det={row, segs:sortSegs(segs), segRows:[], active:-1};
+    pane("recDetail"); $("detTitle").textContent=row.title;
+    drawDetTags(); renderDetList(); drawSum();
+    loadPlayer(row).then(()=>{ if(opts.seek!=null && det && det.row.id===id){ seekTo(opts.seek,false); hiliteAt(opts.seek,true); } });
+    if(opts.seek!=null) hiliteAt(opts.seek,true);
+  }
+  async function reloadDetail(){
+    if(!det) return; const id=det.row.id;
+    try{ det.row=await dbGet("sessions",id)||det.row; det.segs=sortSegs(await dbBySid("segments",id)); }catch(e){ return; }
+    drawDetTags(); renderDetList(); drawSum();
+  }
+  function closeDetail(){
+    freePlayer(); det=null; pane("recHome"); recRefresh();
+  }
+  $("detBack").onclick=closeDetail;
+  $("detRename").onclick=async()=>{
+    if(!det) return; const n=prompt("记录标题",det.row.title); if(!n||!n.trim()) return;
+    det.row.title=n.trim(); $("detTitle").textContent=det.row.title;
+    if(S && S.id===det.row.id) S.row.title=det.row.title;
+    dbPut("sessions",det.row).catch(dbFail);
+  };
+  $("detDelete").onclick=async()=>{
+    if(!det) return;
+    if(S && S.id===det.row.id){ toast("正在收听的记录不能删除，请先停止"); return; }
+    if(!confirm("删除「"+det.row.title+"」？字幕、标签、摘要和录音都会被删除，无法恢复。")) return;
+    try{ await dbDelSession(det.row.id); }catch(e){ dbFail(e); return; }
+    toast("已删除"); closeDetail();
+  };
+
+  // 会话标签：添加/删除，输入时自动补全已有标签
+  function drawDetTags(){
+    const box=$("detTags"); box.textContent=""; const row=det.row;
+    (row.tags||[]).forEach(t=>box.appendChild(tagChip(t,x=>{ row.tags=row.tags.filter(y=>y!==x); saveDetRow(); drawDetTags(); })));
+    const inp=document.createElement("input"); inp.type="text"; inp.placeholder="＋ 会话标签"; inp.maxLength=20; inp.setAttribute("list","tagList"); inp.autocomplete="off";
+    let dl=$("tagList"); if(!dl){ dl=document.createElement("datalist"); dl.id="tagList"; document.body.appendChild(dl); }
+    dl.textContent=""; allTagList().filter(t=>!(row.tags||[]).includes(t)).forEach(t=>{ const o=document.createElement("option"); o.value=t; dl.appendChild(o); });
+    const add=()=>{ const v=inp.value.trim(); if(!v) return; if(!row.tags) row.tags=[]; if(!row.tags.includes(v)){ row.tags.push(v); knownTags.add(v); saveDetRow(); } drawDetTags(); };
+    inp.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); add(); } });
+    inp.addEventListener("change",add);
+    box.appendChild(inp);
+  }
+  function saveDetRow(){ if(S && det && S.id===det.row.id) S.row.tags=det.row.tags; dbPut("sessions",det.row).catch(dbFail); }
+
+  function renderDetList(){
+    const box=$("detList"); box.textContent=""; det.segRows=[]; det.active=-1;
+    if(!det.segs.length){ const d=document.createElement("div"); d.className="rec-note"; d.textContent="这条记录还没有字幕。"; box.appendChild(d); return; }
+    det.segs.forEach(g=>{
+      if(g.kind==="break"){ const d=document.createElement("div"); d.className="divider"; d.textContent=g.en; box.appendChild(d); return; }
+      const row=document.createElement("div"); row.className="dseg";
+      const tm=document.createElement("span"); tm.className="dt"; tm.textContent=fmtT(g.start);
+      const tx=document.createElement("div"); tx.className="dtx";
+      const z=document.createElement("div"); z.className="z"; z.textContent=g.zh||"";
+      const e=document.createElement("div"); e.className="e"; e.textContent=g.en||"";
+      const tl=document.createElement("div"); tl.className="tline";
+      tx.append(z,e,tl); row.append(tm,tx);
+      const draw=()=>{
+        tl.textContent=""; (g.tags||[]).forEach(t=>tl.appendChild(tagChip(t)));
+        const more=document.createElement("button"); more.className="tmore"; more.textContent="…"; more.setAttribute("aria-label","标签");
+        more.onclick=ev=>{ ev.stopPropagation(); edit(); }; tl.appendChild(more);
+      };
+      const edit=()=>openTagMenu("给这句加标签",g.tags||[],tags=>{ g.tags=tags; draw(); dbPut("segments",g).catch(dbFail); });
+      draw();
+      row.onclick=()=>{ if(Date.now()-(row._lp||0)<700) return; seekTo(g.start,true); };
+      attachLongPress(row,edit);
+      box.appendChild(row); det.segRows.push({g,el:row});
+    });
+  }
+  function hiliteAt(T,force){
+    if(!det) return;
+    let a=-1; for(let i=0;i<det.segRows.length;i++){ if(det.segRows[i].g.start<=T+0.25) a=i; else break; }
+    if(a===det.active) return;
+    if(det.active>=0 && det.segRows[det.active]) det.segRows[det.active].el.classList.remove("active");
+    det.active=a;
+    if(a>=0){
+      const el=det.segRows[a].el; el.classList.add("active");
+      if(force || (!au.paused && Date.now()>userScrollUntil)) el.scrollIntoView({block:"center",behavior:force?"auto":"smooth"});
+    }
+  }
+
+  // ---------- Player（多段音频按时间轴拼接播放） ----------
+  const au=$("plAudio");
+  let P=null;       // {row, parts:[{n,offset,dur,url}], cur, dur, speed}
+  let plSpeed=1;
+  function pausePlayer(){ try{ au.pause(); }catch(e){} }
+  function freePlayer(){
+    pausePlayer(); if(P) P.parts.forEach(pt=>pt.url && URL.revokeObjectURL(pt.url)); P=null;
+    au.removeAttribute("src"); try{ au.load(); }catch(e){}
+    $("pPlay").textContent="▶"; $("pSeek").value=0; $("pTime").textContent="00:00 / 00:00";
+  }
+  async function loadPlayer(row){
+    $("pNote").hidden=true;
+    const my=P={row, parts:[], cur:-1, dur:row.dur||0};
+    let chunks=[]; try{ chunks=await dbBySid("audioChunks",row.id); }catch(e){}
+    if(P!==my) return;
+    const segEnd=Math.max(0,...(det?det.segs.map(g=>g.end||0):[0]));
+    my.dur=Math.max(row.dur||0,segEnd);
+    const rp=(row.parts||[]).slice().sort((a,b)=>a.n-b.n);
+    rp.forEach((pt,i)=>{
+      const list=chunks.filter(c=>c.part===pt.n).sort((a,b)=>a.idx-b.idx);
+      if(!list.length) return;
+      const next=rp[i+1]; const end=next?next.offset:my.dur;
+      my.parts.push({n:pt.n, offset:pt.offset, dur:Math.max(0,end-pt.offset), url:URL.createObjectURL(new Blob(list.map(c=>c.blob),{type:row.audioMime||"audio/webm"}))});
+    });
+    $("pSeek").max=my.dur; $("pSeek").disabled=!my.parts.length; $("pPlay").disabled=!my.parts.length; $("pBack15").disabled=!my.parts.length;
+    if(!my.parts.length){
+      const n=$("pNote"); n.hidden=false;
+      n.textContent=row.engine==="browser" ? "这条记录用「浏览器自带」引擎，没有录音，只有字幕。" : (settings.saveAudio?"这条记录没有保存录音，只有字幕。":"这条记录没有保存录音，只有字幕。");
+      updatePlayerUI(); return;
+    }
+    loadPart(0,0,false); updatePlayerUI();
+  }
+  const curT=()=>P&&P.cur>=0 ? P.parts[P.cur].offset+au.currentTime : 0;
+  function loadPart(i,local,play){
+    P.cur=i; const pt=P.parts[i];
+    const onmeta=()=>{
+      au.removeEventListener("loadedmetadata",onmeta);
+      const go=()=>{ au.playbackRate=plSpeed; try{ au.currentTime=local; }catch(e){} if(play) au.play().catch(()=>{}); updatePlayerUI(); };
+      // Chrome 的 MediaRecorder webm 没有时长信息，先跳到末尾让浏览器算出时长，再回到目标位置
+      if(au.duration===Infinity || isNaN(au.duration)){
+        au.currentTime=1e7;
+        const f=()=>{ au.removeEventListener("timeupdate",f); go(); };
+        au.addEventListener("timeupdate",f);
+      }else go();
+    };
+    au.addEventListener("loadedmetadata",onmeta);
+    au.src=pt.url; au.load();
+  }
+  function seekTo(T,play){
+    if(!P || !P.parts.length) return;
+    T=Math.max(0,Math.min(T,P.dur));
+    let i=0; P.parts.forEach((p,k)=>{ if(p.offset<=T+1e-6) i=k; });
+    const local=Math.max(0,T-P.parts[i].offset);
+    if(i===P.cur && au.readyState>0){ au.currentTime=local; if(play) au.play().catch(()=>{}); updatePlayerUI(); }
+    else loadPart(i,local,play);
+  }
+  function updatePlayerUI(){
+    if(!P) return; const T=curT();
+    $("pTime").textContent=fmtT(T)+" / "+fmtT(P.dur);
+    if(document.activeElement!==$("pSeek")) $("pSeek").value=T;
+    $("pPlay").textContent=au.paused?"▶":"⏸"; $("pPlay").setAttribute("aria-label",au.paused?"播放":"暂停");
+    hiliteAt(T,false);
+  }
+  au.addEventListener("timeupdate",updatePlayerUI);
+  au.addEventListener("play",updatePlayerUI); au.addEventListener("pause",updatePlayerUI);
+  au.addEventListener("ended",()=>{
+    if(P && P.cur<P.parts.length-1) loadPart(P.cur+1,0,true); else updatePlayerUI();
+  });
+  au.addEventListener("error",()=>{ if(P && P.parts.length){ const n=$("pNote"); n.hidden=false; n.textContent="这段录音无法播放（可能已损坏，或这个浏览器不支持该格式）。可以先导出音频用其他播放器打开。"; } });
+  $("pPlay").onclick=()=>{
+    if(!P || !P.parts.length) return;
+    if(P.cur<0){ seekTo(0,true); return; }
+    if(au.paused) au.play().catch(()=>{}); else au.pause();
+  };
+  $("pBack15").onclick=()=>{ if(P) seekTo(Math.max(0,curT()-15),!au.paused); };
+  $("pSeek").oninput=e=>{ if(P) seekTo(+e.target.value,!au.paused); };
+  document.querySelectorAll("#player [data-rate]").forEach(b=>b.onclick=()=>{
+    plSpeed=+b.dataset.rate; au.playbackRate=plSpeed; au.defaultPlaybackRate=plSpeed;
+    document.querySelectorAll("#player [data-rate]").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));
+  });
+  tagWatchers.push(()=>{ if(view!=="records") return; if(!$("recDetail").hidden) reloadDetail(); else recRefresh(); });
+
+  // ---------- Auto summary（走同一条中转/直连通道，独立队列，不占用实时翻译） ----------
+  const sumState={};      // 会话 id → {status:"running"|"error", text, progress, err}
+  const sumQueue=[]; let sumBusy=false;
+  const SUM_LIMIT=60000, SUM_CHUNK=50000;
+  const SUM_SYS="你是一名英文课程、讲座、会议的学习助理。根据用户提供的英文转写（每行以 [mm:ss] 时间戳开头），用简体中文输出 Markdown 摘要。严格使用下面的结构和标题，不要添加其他章节：\n\n"
+    +"## 一句话概括\n（一句话）\n\n"
+    +"## 主要内容\n（按主题分段，每段用加粗小标题，并在小标题里标注大致时间点，格式如 **主题名 [12:30]**；下面用要点列出内容）\n\n"
+    +"## 关键术语\n（每条：英文原词 — 中文解释；没有则写“无”）\n\n"
+    +"## 作业 / 待办 / 截止日期\n（逐条列出，并注明时间点 [mm:ss]；没有则写“无”）\n\n"
+    +"## 标记内容回顾\n（汇总用户标记过的句子，按标签分组，每组用加粗标签名作小标题；每条带时间点 [mm:ss] 和中文要点；标签为“没听懂”的句子要给出通俗易懂的解释；没有标记则写“无”）\n\n"
+    +"要求：时间点一律写成 [mm:ss] 或 [h:mm:ss]，并且必须来自原文的时间戳；转写可能有识别错误，请结合上下文与“场景与术语”合理纠正；不要编造转写里没有的内容。";
+  const PART_SYS="你是一名英文课程、讲座、会议的学习助理。下面是一段较长录音转写的其中一部分（每行以 [mm:ss] 时间戳开头）。请用简体中文整理这一部分的笔记：按主题分条，保留大致时间点 [mm:ss]；列出出现的关键术语（英文+中文解释）；列出作业、待办、截止日期；不要编造，不要写总结性的开头结尾。";
+  const sumReady=()=>translateReady();
+
+  async function readSSE(res,onEvent){
+    const reader=res.body.getReader(), dec=new TextDecoder(); let buf="";
+    while(true){
+      const {value,done}=await reader.read(); if(done) break;
+      buf+=dec.decode(value,{stream:true}).replace(/\r\n/g,"\n");
+      let i;
+      while((i=buf.indexOf("\n\n"))>=0){
+        const chunk=buf.slice(0,i); buf=buf.slice(i+2);
+        const line=chunk.split("\n").find(l=>l.startsWith("data:")); if(!line) continue;
+        let ev; try{ ev=JSON.parse(line.slice(5).trim()); }catch(_){ continue; }
+        onEvent(ev);
+      }
+    }
+  }
+  // 流式调用摘要模型；relay 走 Worker 的 /summary，直连则走 Claude API
+  async function llmStream(system,user,maxTokens,onText){
+    const relay=useRelay(), model=settings.sumModel; let res;
+    try{
+      if(relay){
+        res=await fetch(relayBase()+"/summary",{method:"POST",
+          headers:{"content-type":"application/json","authorization":"Bearer "+settings.relayToken},
+          body:JSON.stringify({provider:settings.provider, model, system, user, max_tokens:maxTokens})});
+      }else{
+        res=await fetch(API_URL,{method:"POST",
+          headers:{"content-type":"application/json","x-api-key":settings.apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+          body:JSON.stringify({model, max_tokens:maxTokens, stream:true, system, messages:[{role:"user",content:user}]})});
+      }
+    }catch(e){ throw new Error("网络连接失败"); }
+    if(!res.ok){
+      let em=""; try{ const j=await res.json(); em=(j.error&&(j.error.message||j.error))||""; }catch(_){}
+      if(relay && res.status===404) throw new Error("中转层还不支持摘要，请更新并重新部署 Worker（见 README）");
+      if(res.status===401) throw new Error(relay?"中转访问口令无效":"API 密钥无效");
+      if(res.status===402||/credit|balance|insufficient/i.test(String(em))) throw new Error("账户余额不足");
+      if(res.status===429) throw new Error("请求太频繁或额度用完，稍后重试");
+      throw new Error("摘要失败（"+res.status+"）"+(em?"："+em:""));
+    }
+    let out="";
+    await readSSE(res,ev=>{
+      if(relay){ if(typeof ev.t==="string"){ out+=ev.t; onText&&onText(out); } else if(ev.error) throw new Error(String(ev.error)); }
+      else if(ev.type==="content_block_delta" && ev.delta && ev.delta.type==="text_delta"){ out+=ev.delta.text; onText&&onText(out); }
+      else if(ev.type==="error") throw new Error((ev.error&&ev.error.message)||"stream error");
+    });
+    out=out.trim(); if(!out) throw new Error("模型没有返回内容");
+    return out;
+  }
+  async function summarize(row,segs,st){
+    const line=g=>"["+fmtT(g.start)+"] "+(g.en||"");
+    const lines=segs.map(line);
+    const head=[];
+    if((row.tags||[]).length) head.push("【会话标签（主题提示）】\n"+row.tags.join("、"));
+    const gl=(settings.glossary||"").trim(); if(gl) head.push("【场景与术语】\n"+gl);
+    const tagged=segs.filter(g=>(g.tags||[]).length).slice(0,300).map(g=>"["+fmtT(g.start)+"] ["+g.tags.join("、")+"] "+(g.en||""));
+    head.push("【带标记的句子】\n"+(tagged.length?tagged.join("\n"):"（无）"));
+    const ctx=head.join("\n\n");
+    const total=lines.join("\n").length;
+    const onText=t=>{ st.text=t; st.progress=""; sumRender(row.id); };
+    if(total<=SUM_LIMIT) return llmStream(SUM_SYS, ctx+"\n\n【完整英文转写】\n"+lines.join("\n"), 4096, onText);
+    // 长会话：先分段各自整理，再合并成最终摘要
+    const chunks=[]; let cur=[], n=0;
+    lines.forEach(l=>{ if(n+l.length>SUM_CHUNK && cur.length){ chunks.push(cur.join("\n")); cur=[]; n=0; } cur.push(l); n+=l.length+1; });
+    if(cur.length) chunks.push(cur.join("\n"));
+    const partials=[];
+    for(let i=0;i<chunks.length;i++){
+      st.progress="转写较长，正在分段整理（"+(i+1)+"/"+chunks.length+"）…"; st.text=""; sumRender(row.id);
+      partials.push(await llmStream(PART_SYS,"【第 "+(i+1)+"/"+chunks.length+" 段转写】\n"+chunks[i],2048));
+    }
+    st.progress="正在合并生成最终摘要…"; sumRender(row.id);
+    return llmStream(SUM_SYS+"\n\n注意：用户提供的是分段整理好的笔记而不是原始转写，请合并去重后按上面的结构输出，时间点沿用笔记里的 [mm:ss]。",
+      ctx+"\n\n【分段笔记】\n"+partials.map((p,i)=>"—— 第 "+(i+1)+" 段 ——\n"+p).join("\n\n"), 4096, onText);
+  }
+  function queueSummary(id){
+    if(sumState[id] && sumState[id].status==="running") return;
+    sumState[id]={status:"running", text:"", progress:"", err:""}; sumQueue.push(id); sumRender(id); runSums();
+  }
+  async function runSums(){
+    if(sumBusy) return; sumBusy=true;
+    try{
+      while(sumQueue.length){
+        const id=sumQueue.shift(), st=sumState[id];
+        try{
+          const row=await dbGet("sessions",id);
+          const segs=sortSegs((await dbBySid("segments",id)).filter(g=>g.kind!=="break"));
+          if(!row || !segs.length) throw new Error("没有可总结的字幕");
+          const text=await summarize(row,segs,st);
+          const fresh=(await dbGet("sessions",id))||row;   // 生成期间用户可能改了标签/标题，用最新的行来写
+          fresh.summary=text; fresh.summaryAt=Date.now(); await dbPut("sessions",fresh);
+          if(S && S.id===id){ S.row.summary=text; S.row.summaryAt=fresh.summaryAt; }
+          delete sumState[id];
+          if(det && det.row.id===id) det.row=fresh;
+          toast("「"+fresh.title+"」的摘要已生成");
+        }catch(e){ st.status="error"; st.err=(e&&e.message)||"未知错误"; }
+        sumRender(id);
+      }
+    }finally{ sumBusy=false; }
+  }
+  function sumRender(id){ if(det && det.row.id===id) drawSum(); }
+  const tsToSec=t=>t.split(":").reduce((a,x)=>a*60+(+x),0);
+  function jumpTo(sec){ if(!det) return; if(P && P.parts.length) seekTo(sec,true); hiliteAt(sec,true); }
+  function mdInline(el,text){
+    const re=/\*\*([^*]+)\*\*|\[((?:\d+:)?\d{1,2}:\d{2})\]/g; let last=0, m;
+    while((m=re.exec(text))){
+      if(m.index>last) el.appendChild(document.createTextNode(text.slice(last,m.index)));
+      if(m[1]!==undefined){ const b=document.createElement("strong"); mdInline(b,m[1]); el.appendChild(b); }
+      else{
+        const a=document.createElement("a"); a.className="ts"; a.href="#"; a.textContent="["+m[2]+"]";
+        const sec=tsToSec(m[2]); a.onclick=ev=>{ ev.preventDefault(); jumpTo(sec); }; el.appendChild(a);
+      }
+      last=re.lastIndex;
+    }
+    if(last<text.length) el.appendChild(document.createTextNode(text.slice(last)));
+  }
+  // 极简 Markdown 渲染：标题、加粗、有序/无序列表、[mm:ss] 可点击（全部用 DOM 构建，不注入 HTML）
+  function renderMd(box,md){
+    box.textContent=""; let list=null, ordered=false;
+    (md||"").split("\n").forEach(raw=>{
+      const line=raw.replace(/\s+$/,""); let m;
+      if(!line.trim()){ list=null; return; }
+      if((m=line.match(/^#{1,4}\s+(.*)$/))){ list=null; const h=document.createElement("div"); h.className="md-h"; mdInline(h,m[1]); box.appendChild(h); return; }
+      if((m=line.match(/^\s*[-*•]\s+(.*)$/))){
+        if(!list||ordered){ list=document.createElement("ul"); ordered=false; box.appendChild(list); }
+        const li=document.createElement("li"); mdInline(li,m[1]); list.appendChild(li); return;
+      }
+      if((m=line.match(/^\s*\d+[.)]\s+(.*)$/))){
+        if(!list||!ordered){ list=document.createElement("ol"); ordered=true; box.appendChild(list); }
+        const li=document.createElement("li"); mdInline(li,m[1]); list.appendChild(li); return;
+      }
+      list=null; const p=document.createElement("p"); mdInline(p,line); box.appendChild(p);
+    });
+  }
+  function drawSum(){
+    if(!det) return;
+    const row=det.row, st=sumState[row.id], body=$("sumBody"), err=$("sumErr"), gen=$("sumGen"), tm=$("sumTime");
+    const p2=n=>String(n).padStart(2,"0");
+    err.hidden=true; gen.disabled=false;
+    tm.textContent=row.summaryAt ? (()=>{ const d=new Date(row.summaryAt); return "生成于 "+(d.getMonth()+1)+"月"+d.getDate()+"日 "+p2(d.getHours())+":"+p2(d.getMinutes()); })() : "";
+    if(st && st.status==="running"){
+      gen.textContent="生成中…"; gen.disabled=true;
+      if(st.text) renderMd(body,st.text); else{ body.textContent=st.progress||"正在生成摘要…"; body.className="md muted"; return; }
+      body.className="md"; return;
+    }
+    body.className="md";
+    if(st && st.status==="error"){ err.hidden=false; err.textContent="摘要生成失败："+st.err; gen.textContent="重试"; }
+    else gen.textContent=row.summary?"重新生成":"生成摘要";
+    if(row.summary) renderMd(body,row.summary);
+    else if(!(st&&st.status==="error")){ body.textContent=sumReady()?"还没有摘要。停止收听后超过 10 句会自动生成，也可以点右上角「生成摘要」。":"还没有摘要。请先在设置里填好密钥或中转地址。"; body.className="md muted"; }
+    else body.textContent="";
+  }
+  $("sumGen").onclick=()=>{
+    if(!det) return;
+    if(!sumReady()){ openSettings(); toast(useRelay()?"请先填写中转地址和访问口令":"请先填写 Claude API 密钥"); return; }
+    if(det.row.summary && !(sumState[det.row.id]&&sumState[det.row.id].status==="error") && !confirm("重新生成会覆盖现有摘要，继续吗？")) return;
+    queueSummary(det.row.id);
+  };
+
+  // ---------- Export & backup ----------
+  const p2=n=>String(n).padStart(2,"0");
+  const safeName=n=>(n||"记录").replace(/[\\/:*?"<>|]/g,"-").trim()||"记录";
+  function download(blob,name){
+    const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),15000);
+  }
+  // iPhone 优先用系统分享面板（可直接存到“文件”/iCloud），不可用或失败则普通下载
+  async function deliver(files){
+    const ios=/iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.maxTouchPoints>1 && /Macintosh/.test(navigator.userAgent));
+    if(ios && navigator.share && navigator.canShare){
+      try{
+        const fs=files.map(f=>new File([f.blob],f.name,{type:f.blob.type||"application/octet-stream"}));
+        if(navigator.canShare({files:fs})){ await navigator.share({files:fs}); return; }
+      }catch(e){ if(e && e.name==="AbortError") return; }
+    }
+    files.forEach(f=>download(f.blob,f.name));
+  }
+  const AUDIO_EXT={"audio/webm":"webm","audio/mp4":"m4a","audio/aac":"aac"};
+  async function exportAudio(row){
+    const chunks=await dbBySid("audioChunks",row.id);
+    const rp=(row.parts||[]).slice().sort((a,b)=>a.n-b.n), ext=AUDIO_EXT[row.audioMime]||"bin", files=[];
+    rp.forEach(pt=>{
+      const list=chunks.filter(c=>c.part===pt.n).sort((a,b)=>a.idx-b.idx);
+      if(list.length) files.push({blob:new Blob(list.map(c=>c.blob),{type:row.audioMime}), name:safeName(row.title)+(rp.length>1?"-第"+pt.n+"段":"")+"."+ext});
+    });
+    if(!files.length) throw new Error("这条记录没有录音");
+    await deliver(files);
+    if(files.length>1) toast("因中断续录，共导出 "+files.length+" 段音频");
+  }
+  const srtTime=t=>{ t=Math.max(0,t); const ms=Math.round(t*1000), h=Math.floor(ms/3600000), m=Math.floor(ms%3600000/60000), s=Math.floor(ms%60000/1000); return p2(h)+":"+p2(m)+":"+p2(s)+","+String(ms%1000).padStart(3,"0"); };
+  function buildSrt(segs){
+    const list=segs.filter(g=>g.kind!=="break");
+    return list.map((g,i)=>{
+      const next=list[i+1]; let end=g.end;
+      if(!(end>g.start+0.2)) end=Math.min(g.start+3, next&&next.start>g.start ? next.start : g.start+3);
+      return (i+1)+"\n"+srtTime(g.start)+" --> "+srtTime(end)+"\n"+(g.en||"")+(g.zh?"\n"+g.zh:"");
+    }).join("\n\n")+"\n";
+  }
+  function buildMd(row,segs){
+    const d=new Date(row.created), out=[];
+    out.push("# "+row.title, "");
+    out.push("- 日期："+d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate())+" "+p2(d.getHours())+":"+p2(d.getMinutes()));
+    out.push("- 时长："+fmtT(row.dur||0));
+    if((row.tags||[]).length) out.push("- 标签："+row.tags.map(t=>"#"+t.replace(/\s+/g,"_")).join(" "));
+    out.push("", "## 摘要", "", row.summary ? row.summary : "（还没有生成摘要）", "", "## 全文（中英对照）", "");
+    segs.forEach(g=>{
+      if(g.kind==="break"){ out.push("*"+g.en+"*", ""); return; }
+      out.push("**["+fmtT(g.start)+"]** "+(g.en||"")+((g.tags||[]).length?"  "+g.tags.map(t=>"#"+t.replace(/\s+/g,"_")).join(" "):""));
+      if(g.zh) out.push("> "+g.zh);
+      out.push("");
+    });
+    return out.join("\n");
+  }
+  async function bundle(id){
+    const row=await dbGet("sessions",id), segs=sortSegs(await dbBySid("segments",id));
+    return Object.assign({},row,{segments:segs});
+  }
+  const backupBlob=list=>new Blob([JSON.stringify({app:"live-translation",version:1,exported:new Date().toISOString(),sessions:list},null,1)],{type:"application/json"});
+  const stamp=()=>{ const d=new Date(); return d.getFullYear()+p2(d.getMonth()+1)+p2(d.getDate())+"-"+p2(d.getHours())+p2(d.getMinutes()); };
+
+  $("detExport").onclick=()=>{
+    if(!det) return; const has=(det.row.parts||[]).length>0;
+    const b=document.querySelector('#expDlg [data-exp="audio"]'); b.disabled=!has;
+    $("expAudioNote").textContent=has?"."+(AUDIO_EXT[det.row.audioMime]||"bin")+"（多段续录会分别导出）":"这条记录没有录音";
+    $("expDlg").showModal();
+  };
+  $("expClose").onclick=()=>$("expDlg").close();
+  $("expDlg").addEventListener("click",e=>{ if(e.target===$("expDlg")) $("expDlg").close(); });
+  document.querySelectorAll("#expDlg [data-exp]").forEach(b=>b.onclick=async()=>{
+    if(!det) return; const kind=b.dataset.exp, row=det.row; $("expDlg").close();
+    try{
+      if(kind==="audio") await exportAudio(row);
+      else if(kind==="srt") await deliver([{blob:new Blob([buildSrt(sortSegs(await dbBySid("segments",row.id)))],{type:"text/plain;charset=utf-8"}), name:safeName(row.title)+".srt"}]);
+      else if(kind==="md") await deliver([{blob:new Blob([buildMd(row,sortSegs(await dbBySid("segments",row.id)))],{type:"text/plain;charset=utf-8"}), name:safeName(row.title)+".md"}]);
+      else await deliver([{blob:backupBlob([await bundle(row.id)]), name:safeName(row.title)+"-备份.json"}]);
+    }catch(e){ toast("导出失败："+((e&&e.message)||"未知错误")); }
+  });
+  $("backupAll").onclick=async()=>{
+    try{
+      const rows=await dbAll("sessions"); if(!rows.length){ toast("还没有记录可以备份"); return; }
+      const list=[]; for(const r of rows.sort((a,b)=>a.created-b.created)) list.push(await bundle(r.id));
+      await deliver([{blob:backupBlob(list), name:"同声字幕备份-"+stamp()+".json"}]);
+    }catch(e){ toast("导出失败："+((e&&e.message)||"未知错误")); }
+  };
+  $("backupImport").onclick=()=>$("backupFile").click();
+  const strs=a=>Array.isArray(a)?a.filter(x=>typeof x==="string"&&x.trim()).map(x=>x.trim().slice(0,20)):[];
+  const num=(v,d)=>Number.isFinite(+v)?+v:d;
+  async function importBackup(file){
+    let data; try{ data=JSON.parse(await file.text()); }catch(e){ toast("这不是有效的备份文件"); return; }
+    if(!data || data.app!=="live-translation" || !Array.isArray(data.sessions)){ toast("这不是有效的备份文件"); return; }
+    const local=new Map((await dbAll("sessions")).map(r=>[r.id,r]));
+    const items=data.sessions.filter(x=>x && Number.isFinite(+x.id));
+    if(!items.length){ toast("备份里没有记录"); return; }
+    const over=items.filter(x=>local.has(+x.id)).length;
+    if(!confirm("导入 "+items.length+" 条记录"+(over?"（其中 "+over+" 条已存在，字幕、标签和摘要会被备份内容覆盖，本机录音保留）":"")+"？")) return;
+    let n=0;
+    for(const x of items){
+      const id=+x.id, old=local.get(id);
+      const row={id, title:String(x.title||"导入的记录").slice(0,100), created:num(x.created,Date.now()), ended:num(x.ended,Date.now()), dur:num(x.dur,0),
+        tags:strs(x.tags), summary:typeof x.summary==="string"?x.summary:"", summaryAt:x.summaryAt==null?null:num(x.summaryAt,null),
+        audioMime:old?old.audioMime:null, parts:old?old.parts:[], engine:x.engine==="browser"?"browser":"deepgram"};
+      const segs=(Array.isArray(x.segments)?x.segments:[]).map((g,i)=>({
+        id:id+"-"+(i+1), sid:id, start:num(g&&g.start,0), end:num(g&&g.end,0), en:String((g&&g.en)||""), zh:String((g&&g.zh)||""),
+        tags:strs(g&&g.tags), kind:(g&&g.kind)==="break"?"break":"seg"}));
+      try{
+        await dbTx(["sessions","segments"],"readwrite",t=>{
+          t.objectStore("sessions").put(row);
+          const os=t.objectStore("segments"), r=os.index("sid").openKeyCursor(IDBKeyRange.only(id));
+          r.onsuccess=()=>{ const c=r.result; if(c){ os.delete(c.primaryKey); c.continue(); } else segs.forEach(g=>os.put(g)); };
+        });
+        n++;
+      }catch(e){ dbFail(e); break; }
+    }
+    afterImport();
+    toast("已导入 "+n+" 条记录");
+  }
+  function afterImport(){ loadKnownTags(); if(view==="records" && $("recDetail").hidden) recRefresh(); }
+  $("backupFile").onchange=e=>{ const f=e.target.files[0]; e.target.value=""; if(f) importBackup(f); };
+
   // ---------- Feed ----------
   feed.addEventListener("scroll",()=>{ stickToBottom = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 60; });
   function scrollDown(){ if(stickToBottom) feed.scrollTop=feed.scrollHeight; }
@@ -311,7 +1452,9 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     const div=document.createElement("div"); div.className="entry";
     const en=document.createElement("div"); en.className="en"; en.textContent=e.en;
     const zh=document.createElement("div"); zh.className="zh pending"; zh.textContent="翻译中…";
-    div.append(en,zh);
+    const tl=document.createElement("div"); tl.className="tline";
+    div.append(en,zh,tl); e.tagsEl=tl; drawTags(e);
+    attachLongPress(div,()=>editEntryTags(e));
     if(liveEl && liveEl.parentNode===feed) feed.insertBefore(div, liveEl); else feed.appendChild(div);
     e.el=zh; scrollDown();
   }
@@ -328,9 +1471,15 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     if(!liveEl){ liveEl=document.createElement("div"); liveEl.className="entry live"; liveEl.innerHTML='<div class="en"></div>'; feed.appendChild(liveEl); }
     liveEl.firstChild.textContent=text; scrollDown();
   }
-  function commit(text){
+  function commit(text,start,end){
     text=(text||"").trim(); if(!text) return;
-    const e={id:++seq, en:text, zh:"", status:"waiting"};
+    const e={id:++seq, en:text, zh:"", status:"waiting", tags:[]};
+    if(S){
+      e.sid=S.id; e.segId=S.id+"-"+(++S.segN);
+      e.end=end!=null?end:nowT(); e.start=start!=null?start:e.end; if(e.end<e.start) e.end=e.start;
+      if(pendingMark){ e.tags.push(markTag()); pendingMark=false; }
+      segSave(e);
+    }
     entries.push(e); renderEntry(e); queue.push(e); pump();
   }
 
@@ -339,7 +1488,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     if(busy) return;
     const e=queue.shift(); if(!e) return;
     busy=true;
-    try{ await translate(e); } finally{ busy=false; pump(); }
+    try{ await translate(e); } finally{ busy=false; segSave(e); pump(); }
   }
 
   async function translate(e){
@@ -430,8 +1579,9 @@ input[type=range]{width:100%;accent-color:var(--accent)}
       let interim="";
       for(let i=ev.resultIndex;i<ev.results.length;i++){
         const r=ev.results[i];
-        if(r.isFinal) commit(r[0].transcript); else interim+=r[0].transcript;
+        if(r.isFinal){ commit(r[0].transcript, uStartWall); uStartWall=null; } else interim+=r[0].transcript;
       }
+      if(interim && uStartWall==null && S) uStartWall=nowT();
       showLive(interim);
     };
     rec.onerror=(ev)=>{
@@ -442,6 +1592,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     };
     rec.onend=()=>{
       showLive("");
+      if(!listening && S && S.closing) sessEnd();
       if(listening){ clearTimeout(restartTimer); restartTimer=setTimeout(()=>{ try{ startRec(); }catch(e){} },200); }
     };
     rec.start();
@@ -465,7 +1616,7 @@ class PCM16 extends AudioWorkletProcessor{
   }
 }
 registerProcessor("pcm16",PCM16);`;
-  const dg={ctx:null,stream:null,node:null,ws:null,state:"idle",retries:0,finals:[],closing:false,secs:0,tick:null,retryTimer:null,closeTimer:null,reconnectNow:false};
+  const dg={uStart:null,uEnd:null,connOff:0,ctx:null,stream:null,node:null,ws:null,state:"idle",retries:0,finals:[],closing:false,secs:0,tick:null,retryTimer:null,closeTimer:null,reconnectNow:false};
   const fmt=s=>String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
   function dgRefresh(){
     if(activeEngine!=="deepgram") return;
@@ -473,6 +1624,7 @@ registerProcessor("pcm16",PCM16);`;
     const txt = dg.state==="connecting" ? "连接中… "+t
       : dg.state==="live" ? "收听中 "+t
       : dg.state==="retry" ? "重连中（"+dg.retries+"/3）"+t
+      : (S && S.intAt!=null && !S.closing) ? "已中断 "+t
       : "已暂停 "+t;
     setStatus(listening, txt);
   }
@@ -493,15 +1645,20 @@ registerProcessor("pcm16",PCM16);`;
     return "wss://api.deepgram.com/v1/listen?"+q;
   }
   function flushFinals(){
-    const t=dg.finals.join(" ").trim(); dg.finals=[];
-    if(t) commit(t);
+    const t=dg.finals.join(" ").trim(), st=dg.uStart, en=dg.uEnd; dg.finals=[]; dg.uStart=null; dg.uEnd=null;
+    if(t) commit(t, st, en);
   }
   function dgResult(msg){
     if(msg.type==="Results"){
       const alt=msg.channel && msg.channel.alternatives && msg.channel.alternatives[0];
       const text=((alt&&alt.transcript)||"").trim();
       if(msg.is_final){
-        if(text) dg.finals.push(text);
+        if(text){
+          // Deepgram 的时间从每次连接开始重新计，加上连接时刻的偏移才是会话时间轴
+          if(!dg.finals.length && typeof msg.start==="number") dg.uStart=dg.connOff+msg.start;
+          if(typeof msg.start==="number") dg.uEnd=dg.connOff+msg.start+(msg.duration||0);
+          dg.finals.push(text);
+        }
         if(msg.speech_final){ flushFinals(); showLive(""); }
         else showLive(dg.finals.join(" "));
       }else{
@@ -564,7 +1721,7 @@ registerProcessor("pcm16",PCM16);`;
     if(!listening || dg.closing) return;
     try{ ws=new WebSocket(dgUrl(),proto); }catch(e){ return dgFatal("无法连接 Deepgram，请检查密钥格式。"); }
     ws.binaryType="arraybuffer"; dg.ws=ws;
-    ws.onopen=()=>{ if(dg.ws!==ws) return; opened=true; dg.retries=0; dg.state="live"; hint.textContent="正在收听英文，再点一次停止"; dgRefresh(); };
+    ws.onopen=()=>{ if(dg.ws!==ws) return; opened=true; dg.retries=0; dg.state="live"; dg.connOff=nowT()||0; hint.textContent="正在收听英文，再点一次停止"; dgRefresh(); };
     ws.onmessage=ev=>{ if(dg.ws!==ws || typeof ev.data!=="string") return; try{ dgResult(JSON.parse(ev.data)); }catch(_){} };
     ws.onerror=()=>{};
     ws.onclose=ev=>{
@@ -585,8 +1742,9 @@ registerProcessor("pcm16",PCM16);`;
   }
   function finishDg(){
     clearTimeout(dg.closeTimer); dg.closing=false; dg.ws=null; dg.state="idle"; dgRefresh();
+    if(S && S.closing) sessEnd();
   }
-  async function startDeepgram(){
+  async function startDeepgram(resume){
     // AudioContext 必须在点击手势内同步创建，iPhone Safari 才允许出声
     const AC=window.AudioContext||window.webkitAudioContext;
     if(!AC || !window.AudioWorkletNode || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
@@ -613,7 +1771,12 @@ registerProcessor("pcm16",PCM16);`;
       src.connect(node); node.connect(mute); mute.connect(ctx.destination);
       node.port.onmessage=e=>{ const ws=dg.ws; if(ws && ws.readyState===1) ws.send(e.data); };
       dg.node=node;
-      stream.getAudioTracks().forEach(t=>{ t.onended=()=>{ if(listening){ stop(); showBanner("麦克风已中断（可能被其他应用占用），请重新点麦克风。"); } }; });
+      if(resume && S){
+        const ms=performance.now()-S.intAt; S.gapMs+=ms; S.intAt=null; S.closing=false;
+        addBreak(ms/1000);
+      }else sessBegin("deepgram");
+      audioStart(stream);
+      stream.getAudioTracks().forEach(t=>{ t.onended=()=>{ if(!listening) return; if(S) interrupt(); else{ stop(); showBanner("麦克风已中断（可能被其他应用占用），请重新点麦克风。"); } }; });
     }catch(err){
       releaseMic(); dg.state="idle";
       if(!listening){ dgRefresh(); return false; }
@@ -631,7 +1794,7 @@ registerProcessor("pcm16",PCM16);`;
   }
   function stopDeepgram(){
     clearTimeout(dg.retryTimer);
-    releaseMic(); dg.state="idle";
+    audioStop(); releaseMic(); dg.state="idle";
     const ws=dg.ws;
     if(ws && ws.readyState===1){
       dg.closing=true;
@@ -640,6 +1803,7 @@ registerProcessor("pcm16",PCM16);`;
     }else{
       if(ws){ dg.ws=null; try{ ws.close(); }catch(e){} }
       flushFinals(); showLive("");
+      if(S && S.closing) sessEnd();
     }
   }
 
@@ -656,23 +1820,35 @@ registerProcessor("pcm16",PCM16);`;
     if(!translateReady()){ openSettings(); toast(useRelay()?"请先填写中转地址和访问口令":"请先填写 Claude API 密钥"); return; }
     if(settings.engine==="deepgram" && !dgReady()){ openSettings(); toast("请先填写 Deepgram 密钥"); return; }
     hideBanner();
-    activeEngine=settings.engine;
+    if(S && S.closing){
+      if(dg.ws){ const o=dg.ws; dg.ws=null; flushFinals(); try{ o.close(); }catch(e){} }
+      await sessEnd();
+    }
+    const resuming = !!(S && S.intAt!=null && !S.closing && S.row.engine==="deepgram");
+    activeEngine = resuming ? "deepgram" : settings.engine;
     listening=true; setStatus(true,"收听中"); hint.textContent="正在收听英文，再点一次停止";
     acquireWake();
-    if(activeEngine==="deepgram"){ await startDeepgram(); return; }
-    try{ startRec(); }catch(e){ stop(); showBanner("语音识别启动失败，请重试。"); }
+    if(activeEngine==="deepgram"){ await startDeepgram(resuming); return; }
+    try{ startRec(); sessBegin("browser"); }catch(e){ stop(); showBanner("语音识别启动失败，请重试。"); }
   }
   function stop(){
     const wasListening=listening;
     listening=false; clearTimeout(restartTimer);
-    if(activeEngine==="deepgram"){ if(wasListening || dg.ctx) stopDeepgram(); dgRefresh(); if(!dg.secs) setStatus(false,"已暂停"); }
-    else{ try{ rec && rec.stop(); }catch(e){} setStatus(false,"已暂停"); }
+    if(S) freezeSession();
+    if(activeEngine==="deepgram"){ if(wasListening || dg.ctx) stopDeepgram(); else if(S) sessEnd(); dgRefresh(); if(!dg.secs) setStatus(false,"已暂停"); }
+    else{
+      try{ rec && rec.stop(); }catch(e){} setStatus(false,"已暂停");
+      if(S) setTimeout(()=>{ if(S && S.closing) sessEnd(); },1500);
+    }
     hint.textContent="点麦克风继续收听";
     try{ wakeLock && wakeLock.release(); }catch(e){} wakeLock=null;
   }
   mic.onclick=()=>{ listening?stop():start(); };
   document.addEventListener("visibilitychange",async()=>{
-    if(document.visibilityState==="visible" && listening && "wakeLock" in navigator){ try{ wakeLock=await navigator.wakeLock.request("screen"); }catch(e){} }
+    if(document.visibilityState!=="visible") return;
+    if(S && S.needPrompt) showIntDlg();
+    else if(listening) checkPipeline();
+    if(listening && "wakeLock" in navigator){ try{ wakeLock=await navigator.wakeLock.request("screen"); }catch(e){} }
   });
 
   // ---------- Typing / keyboard dictation ----------
@@ -699,7 +1875,7 @@ registerProcessor("pcm16",PCM16);`;
   };
   $("clearAll").onclick=()=>{
     if(!entries.length) return;
-    if(!confirm("确定清空所有翻译记录？")) return;
+    if(!confirm("确定清空当前屏幕上的字幕？「记录」里已保存的内容不会被删除。")) return;
     entries.length=0; queue.length=0; feed.innerHTML=""; feed.appendChild(empty); liveEl=null; toast("已清空");
   };
 
@@ -718,13 +1894,17 @@ registerProcessor("pcm16",PCM16);`;
   $("route").onchange=e=>{ if(listening) stop(); settings.route=e.target.value; saveSettings(); applySettings(); hideBanner(); checkEngine(); };
   $("relayUrl").oninput=e=>{ settings.relayUrl=e.target.value.trim(); saveSettings(); };
   $("relayToken").oninput=e=>{ settings.relayToken=e.target.value.trim(); saveSettings(); };
-  $("provider").onchange=e=>{ settings.provider=e.target.value; saveSettings(); fillModels(); };
+  $("provider").onchange=e=>{ settings.provider=e.target.value; saveSettings(); fillModels(); fillSumModels(); };
+  $("sumModel").onchange=e=>{ settings.sumModel=e.target.value; saveSettings(); };
+  $("saveAudio").onchange=e=>{ settings.saveAudio=e.target.value==="1"; saveSettings(); };
   $("dgKey").oninput=e=>{ settings.dgKey=e.target.value.trim(); saveSettings(); };
   $("engine").onchange=e=>{
     if(listening) stop();
     settings.engine=e.target.value; saveSettings(); applySettings();
     hideBanner(); hint.textContent="建议在安静环境，靠近说话人"; checkEngine();
   };
+  loadKnownTags();
+  checkUnfinished();
   $("size").oninput=e=>{ settings.size=+e.target.value; document.documentElement.style.setProperty("--zh-size", settings.size+"px"); saveSettings(); };
   $("glossary").oninput=e=>{ settings.glossary=e.target.value; saveSettings(); };
   document.querySelectorAll("#modeSeg button").forEach(b=>b.onclick=()=>{ settings.mode=b.dataset.mode; saveSettings(); applySettings(); });
