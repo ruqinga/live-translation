@@ -105,6 +105,33 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .row .note{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.5}
 .row .note a{color:var(--accent)}
 .keyok{color:#2E8B57}
+[hidden]{display:none!important}
+.tagbar{display:none;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.tagbar.show{display:flex}
+.tagbar button{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:8px 14px;font-size:14px;cursor:pointer}
+.tagbar button.main{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.tagmark{margin:6px 0;padding:6px 10px;border-radius:8px;background:var(--warn-bg);color:var(--warn-ink);font-size:13px}
+.rec-item{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;background:var(--bg)}
+.rec-item .nm{font-weight:600;font-size:16px;word-break:break-all}
+.rec-item .meta{font-size:13px;color:var(--muted);margin:4px 0 8px}
+.rec-item .btns,.pl-tools{display:flex;gap:8px;flex-wrap:wrap}
+.rec-item button,.pl-tools button,.back{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:7px 12px;font-size:14px;cursor:pointer}
+.rec-item button.danger{color:var(--rec)}
+.back{margin-bottom:10px}
+#plAudio{width:100%;margin:8px 0}
+.pl-h{font-size:14px;color:var(--muted);margin:14px 0 6px}
+.tagrow,.tr{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;line-height:1.5}
+.tagrow:hover,.tr:hover{background:var(--bg)}
+.tagrow .tm,.tr .tm{font-family:var(--font-en);font-size:13px;color:var(--accent);min-width:48px}
+.tagrow .lb{flex:1;word-break:break-all}
+.tagrow button{border:0;background:none;color:var(--muted);font-size:16px;padding:2px 6px;cursor:pointer}
+.tr{align-items:flex-start}
+.tr.active{background:var(--warn-bg)}
+.tr .tx{flex:1}
+.tr .tx .e{font-family:var(--font-en);font-size:13px;color:var(--muted)}
+.tr .tx .z{font-size:16px}
+.pl-scroll{max-height:32vh;overflow-y:auto}
+.rec-note{font-size:13px;color:var(--muted);line-height:1.5;margin:6px 0 12px}
 </style>
 </head>
 <body>
@@ -112,6 +139,9 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   <header>
     <h1>同声字幕</h1>
     <div class="status" id="status"><span class="dot"></span><span id="statusText">未开始</span></div>
+    <button class="icon-btn" id="openRec" aria-label="录音库">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 9v6M9 6v12M13 10v4M17 7v10M21 11v2"/></svg>
+    </button>
     <button class="icon-btn" id="openSettings" aria-label="设置">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
     </button>
@@ -127,6 +157,12 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   </main>
 
   <footer>
+    <div class="tagbar" id="tagbar">
+      <button class="main" data-tag="">🔖 标记</button>
+      <button data-tag="重点">重点</button>
+      <button data-tag="问题">问题</button>
+      <button data-tag="待办">待办</button>
+    </div>
     <div class="typebar" id="typebar">
       <textarea id="typeInput" placeholder="粘贴或输入英文…" enterkeyhint="send"></textarea>
       <button id="typeSend">翻译</button>
@@ -195,6 +231,14 @@ input[type=range]{width:100%;accent-color:var(--accent)}
       <div class="note">同样只保存在这台手机的浏览器里。在 <a href="https://console.deepgram.com" target="_blank" rel="noopener">Deepgram Console</a> 申请。</div>
     </div>
     <div class="row">
+      <label for="recSave">保存录音</label>
+      <select id="recSave">
+        <option value="1">保存到本机（约 115MB/小时）</option>
+        <option value="0">不保存</option>
+      </select>
+      <div class="note">仅 Deepgram 识别时可用，录音和标记只保存在这台手机的浏览器里，在右上角「录音库」回放。</div>
+    </div>
+    <div class="row">
       <label for="model">翻译模型</label>
       <select id="model"></select>
     </div>
@@ -231,6 +275,33 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   </div>
 </dialog>
 
+<dialog id="recDlg">
+  <div class="sheet">
+    <div id="recList">
+      <h2>录音库</h2>
+      <div id="recItems"></div>
+      <div class="rec-note" id="recStorage"></div>
+      <button class="done" id="closeRec">关闭</button>
+    </div>
+    <div id="recPlayer" hidden>
+      <button class="back" id="plBack">← 返回列表</button>
+      <h2 id="plTitle"></h2>
+      <audio id="plAudio" controls playsinline preload="metadata"></audio>
+      <div class="pl-tools">
+        <button data-rate="1">1x</button><button data-rate="1.25">1.25x</button><button data-rate="1.5">1.5x</button><button data-rate="2">2x</button>
+      </div>
+      <div class="pl-h">标记</div>
+      <div class="pl-tools">
+        <button id="plPrev">⏮ 上一个</button><button id="plNext">下一个 ⏭</button><button id="plAdd">🔖 在此处标记</button>
+      </div>
+      <div class="pl-scroll" id="plTags"></div>
+      <div class="pl-h">字幕（点一句跳到该处）</div>
+      <div class="pl-scroll" id="plTrans"></div>
+      <div class="pl-tools" style="margin-top:12px"><button id="plExportTxt">导出文字记录</button></div>
+    </div>
+  </div>
+</dialog>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -240,16 +311,17 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   const API_URL="https://api.anthropic.com/v1/messages";
 
-  let rec=null, listening=false, liveEl=null, wakeLock=null, restartTimer=null;
+  let sr=null, listening=false, liveEl=null, wakeLock=null, restartTimer=null;
   const entries=[]; const queue=[]; let busy=false; let seq=0; let stickToBottom=true;
 
-  const settings={route:"direct", relayUrl:"", relayToken:"", provider:"anthropic", apiKey:"", dgKey:"", engine:"deepgram", model:"claude-haiku-4-5-20251001", lang:"en-US", mode:"both", size:22, glossary:""};
+  const settings={route:"direct", relayUrl:"", relayToken:"", provider:"anthropic", saveRec:true, apiKey:"", dgKey:"", engine:"deepgram", model:"claude-haiku-4-5-20251001", lang:"en-US", mode:"both", size:22, glossary:""};
   try{ Object.assign(settings, JSON.parse(localStorage.getItem("lt-settings")||"{}")); }catch(e){}
   function saveSettings(){ try{ localStorage.setItem("lt-settings", JSON.stringify(settings)); }catch(e){} }
   function applySettings(){
     $("apiKey").value=settings.apiKey||"";
     $("dgKey").value=settings.dgKey||"";
     $("engine").value=settings.engine;
+    $("recSave").value=settings.saveRec?"1":"0";
     $("dgRow").style.display=(settings.engine==="deepgram" && !useRelay())?"":"none";
     $("route").value=settings.route; $("relayUrl").value=settings.relayUrl||""; $("relayToken").value=settings.relayToken||""; $("provider").value=settings.provider;
     $("relayRows").style.display=useRelay()?"":"none";
@@ -328,9 +400,10 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     if(!liveEl){ liveEl=document.createElement("div"); liveEl.className="entry live"; liveEl.innerHTML='<div class="en"></div>'; feed.appendChild(liveEl); }
     liveEl.firstChild.textContent=text; scrollDown();
   }
-  function commit(text){
+  function commit(text,t){
     text=(text||"").trim(); if(!text) return;
-    const e={id:++seq, en:text, zh:"", status:"waiting"};
+    const e={id:++seq, en:text, zh:"", status:"waiting", t:(t!=null?t:recPos()), sid:rec?rec.id:null};
+    if(rec) rec.ents.push(e);
     entries.push(e); renderEntry(e); queue.push(e); pump();
   }
 
@@ -339,7 +412,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     if(busy) return;
     const e=queue.shift(); if(!e) return;
     busy=true;
-    try{ await translate(e); } finally{ busy=false; pump(); }
+    try{ await translate(e); } finally{ busy=false; recSaveSoon(e.sid); pump(); }
   }
 
   async function translate(e){
@@ -424,9 +497,9 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     mic.classList.toggle("on",on); mic.setAttribute("aria-label", on?"停止收听":"开始收听");
   }
   function startRec(){
-    rec=new SR();
-    rec.lang=settings.lang; rec.continuous=true; rec.interimResults=true; rec.maxAlternatives=1;
-    rec.onresult=(ev)=>{
+    sr=new SR();
+    sr.lang=settings.lang; sr.continuous=true; sr.interimResults=true; sr.maxAlternatives=1;
+    sr.onresult=(ev)=>{
       let interim="";
       for(let i=ev.resultIndex;i<ev.results.length;i++){
         const r=ev.results[i];
@@ -434,18 +507,237 @@ input[type=range]{width:100%;accent-color:var(--accent)}
       }
       showLive(interim);
     };
-    rec.onerror=(ev)=>{
+    sr.onerror=(ev)=>{
       if(ev.error==="not-allowed"||ev.error==="service-not-allowed"){
         stop(); showBanner("麦克风权限被拒绝。请在浏览器的网站设置（或系统设置 → 隐私 → 麦克风）里允许此网站使用麦克风，然后刷新页面。");
       }else if(ev.error==="audio-capture"){ stop(); showBanner("没有检测到麦克风，请检查设备。"); }
       else if(ev.error==="network"){ hint.textContent="语音识别需要联网，正在重试…"; }
     };
-    rec.onend=()=>{
+    sr.onend=()=>{
       showLive("");
       if(listening){ clearTimeout(restartTimer); restartTimer=setTimeout(()=>{ try{ startRec(); }catch(e){} },200); }
     };
-    rec.start();
+    sr.start();
   }
+  // ---------- Recording & tags (IndexedDB, 16kHz mono WAV) ----------
+  const REC_RATE=16000;
+  let rec=null, idbP=null; const metas={}, saveTimers={};
+  const fmtT=sec=>{ sec=Math.max(0,Math.floor(sec)); const h=Math.floor(sec/3600), m=Math.floor(sec%3600/60), x=sec%60, p=n=>String(n).padStart(2,"0"); return (h?h+":":"")+p(m)+":"+p(x); };
+  function idb(){
+    return idbP||(idbP=new Promise((res,rej)=>{
+      if(!window.indexedDB){ rej(new Error("no idb")); return; }
+      const r=indexedDB.open("lt-rec",1);
+      r.onupgradeneeded=()=>{ const d=r.result; d.createObjectStore("sessions",{keyPath:"id"}); d.createObjectStore("chunks",{keyPath:["sid","idx"]}); };
+      r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);
+    }));
+  }
+  function tx(stores,mode,fn){
+    return idb().then(d=>new Promise((res,rej)=>{
+      const t=d.transaction(stores,mode); let out;
+      try{ out=fn(t); }catch(e){ rej(e); return; }
+      t.oncomplete=()=>res(out && out.result); t.onerror=()=>rej(t.error); t.onabort=()=>rej(t.error);
+    }));
+  }
+  const chunkRange=id=>IDBKeyRange.bound([id,0],[id,Infinity]);
+  function snapshot(m){
+    return {id:m.id, name:m.name, created:m.created, dur:m.samples/REC_RATE, bytes:m.samples*2, tags:m.tags,
+      entries:m.ents.map(e=>({t:e.t,en:e.en,zh:e.zh||""}))};
+  }
+  function putSession(m){ return tx(["sessions"],"readwrite",t=>t.objectStore("sessions").put(snapshot(m))); }
+  function recSaveSoon(id){
+    const m=id && metas[id]; if(!m) return;
+    clearTimeout(saveTimers[id]);
+    saveTimers[id]=setTimeout(()=>{ m.q=m.q.then(()=>putSession(m)).catch(()=>{}); },800);
+  }
+  const recPos=()=>rec ? rec.samples/REC_RATE : null;
+  function recFail(m,err){
+    if(m.failed) return; m.failed=true;
+    showBanner("录音保存失败（"+((err&&err.name)||"存储错误")+"，可能是手机存储空间不足）。语音识别和翻译不受影响，已录下的部分仍可回放。");
+  }
+  function recFlush(m){
+    if(!m.pendN) return;
+    const buf=new Int16Array(m.pendN); let o=0;
+    m.pend.forEach(a=>{ buf.set(a,o); o+=a.length; }); m.pend=[]; m.pendN=0;
+    const idx=m.idx++;
+    m.q=m.q.then(()=>tx(["chunks"],"readwrite",t=>t.objectStore("chunks").put({sid:m.id,idx,buf:buf.buffer}))).then(()=>putSession(m)).catch(err=>recFail(m,err));
+  }
+  function recPush(a){
+    const m=rec; if(!m || m.failed) return;
+    m.pend.push(a); m.pendN+=a.length; m.samples+=a.length;
+    if(m.pendN>=REC_RATE*5) recFlush(m);
+  }
+  function recStart(){
+    if(!settings.saveRec) return;
+    const d=new Date(), p=n=>String(n).padStart(2,"0");
+    const m={id:Date.now(), name:"录音 "+p(d.getMonth()+1)+"-"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes()),
+      created:Date.now(), samples:0, pend:[], pendN:0, idx:0, tags:[], ents:[], q:Promise.resolve(), failed:false};
+    metas[m.id]=m;
+    m.q=m.q.then(()=>putSession(m)).catch(err=>{ recFail(m,err); });
+    try{ navigator.storage && navigator.storage.persist && navigator.storage.persist(); }catch(e){}
+    rec=m; $("tagbar").classList.add("show");
+  }
+  function recFinish(){
+    const m=rec; if(!m) return;
+    rec=null; $("tagbar").classList.remove("show");
+    recFlush(m); m.q=m.q.then(()=>putSession(m)).catch(()=>{});
+    if(!m.samples) m.q=m.q.then(()=>recDelete(m.id)).catch(()=>{});
+    else toast("录音已保存到录音库");
+  }
+  function recDelete(id){
+    delete metas[id];
+    return tx(["sessions","chunks"],"readwrite",t=>{ t.objectStore("sessions").delete(id); t.objectStore("chunks").delete(chunkRange(id)); });
+  }
+  function addTag(label){
+    const m=rec; if(!m) return;
+    const t=m.samples/REC_RATE, n=m.tags.length+1;
+    const tag={id:n+"-"+Date.now(), t, label:label||("标记"+n)};
+    m.tags.push(tag);
+    hideEmpty();
+    const el=document.createElement("div"); el.className="tagmark"; el.textContent="🔖 "+fmtT(t)+"  "+tag.label;
+    if(liveEl && liveEl.parentNode===feed) feed.insertBefore(el,liveEl); else feed.appendChild(el);
+    scrollDown(); recSaveSoon(m.id); toast("已标记 "+fmtT(t));
+    try{ navigator.vibrate && navigator.vibrate(30); }catch(e){}
+  }
+  document.querySelectorAll("#tagbar button").forEach(b=>b.onclick=()=>addTag(b.dataset.tag));
+
+  function wavHeader(bytes){
+    const h=new DataView(new ArrayBuffer(44)), w=(o,s)=>{ for(let i=0;i<s.length;i++) h.setUint8(o+i,s.charCodeAt(i)); };
+    w(0,"RIFF"); h.setUint32(4,36+bytes,true); w(8,"WAVEfmt "); h.setUint32(16,16,true); h.setUint16(20,1,true); h.setUint16(22,1,true);
+    h.setUint32(24,REC_RATE,true); h.setUint32(28,REC_RATE*2,true); h.setUint16(32,2,true); h.setUint16(34,16,true); w(36,"data"); h.setUint32(40,bytes,true);
+    return h.buffer;
+  }
+  async function loadWav(id){
+    const chunks=await tx(["chunks"],"readonly",t=>t.objectStore("chunks").getAll(chunkRange(id)));
+    const bytes=chunks.reduce((n,c)=>n+c.buf.byteLength,0);
+    return new Blob([wavHeader(bytes)].concat(chunks.map(c=>c.buf)),{type:"audio/wav"});
+  }
+  const getSession=id=>tx(["sessions"],"readonly",t=>t.objectStore("sessions").get(id));
+  const allSessions=()=>tx(["sessions"],"readonly",t=>t.objectStore("sessions").getAll());
+  function download(blob,name){
+    const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),10000);
+  }
+  const safeName=n=>n.replace(/[\\/:*?"<>|]/g,"-");
+
+  // ----- Library UI -----
+  const recDlg=$("recDlg"); let pl=null;
+  const mb=b=>(b/1048576).toFixed(b>1048576*10?0:1)+"MB";
+  async function renderList(){
+    const box=$("recItems"); box.textContent="";
+    let list=[];
+    try{ list=(await allSessions()).sort((a,b)=>b.created-a.created); }
+    catch(e){ box.textContent="这个浏览器不能使用本地存储，无法保存或回放录音。"; return; }
+    if(!list.length){ const d=document.createElement("div"); d.className="rec-note"; d.textContent="还没有录音。用 Deepgram 引擎开始收听后，录音会自动出现在这里。"; box.appendChild(d); }
+    list.forEach(m=>{
+      const live=rec && rec.id===m.id;
+      const it=document.createElement("div"); it.className="rec-item";
+      const nm=document.createElement("div"); nm.className="nm"; nm.textContent=m.name;
+      const meta=document.createElement("div"); meta.className="meta";
+      const d=new Date(m.created), p=n=>String(n).padStart(2,"0");
+      meta.textContent=(d.getMonth()+1)+"月"+d.getDate()+"日 "+p(d.getHours())+":"+p(d.getMinutes())+" · "+fmtT(m.dur)+" · "+mb(m.bytes||0)+" · "+m.tags.length+" 个标记"+(live?" · 录音中":"");
+      const btns=document.createElement("div"); btns.className="btns";
+      const mk=(t,fn,cls)=>{ const b=document.createElement("button"); b.textContent=t; if(cls) b.className=cls; b.onclick=fn; btns.appendChild(b); };
+      if(!live){
+        mk("播放",()=>openPlayer(m.id));
+        mk("改名",async()=>{ const n=prompt("录音名称",m.name); if(n&&n.trim()){ m.name=n.trim(); await mutate(m.id,r=>{ r.name=m.name; }); renderList(); } });
+        mk("导出音频",async()=>{ try{ download(await loadWav(m.id),safeName(m.name)+".wav"); }catch(e){ toast("导出失败"); } });
+        mk("删除",async()=>{ if(confirm("删除「"+m.name+"」？录音和标记都会被删除。")){ await recDelete(m.id).catch(()=>{}); renderList(); } },"danger");
+      }
+      it.append(nm,meta,btns); box.appendChild(it);
+    });
+    try{
+      const e=await navigator.storage.estimate();
+      $("recStorage").textContent="本站已用 "+mb(e.usage||0)+(e.quota?" / 可用约 "+mb(e.quota):"")+"。录音只在这台手机的这个浏览器里，清除网站数据会丢失，重要的请先导出。";
+    }catch(e){ $("recStorage").textContent="录音只在这台手机的这个浏览器里，清除网站数据会丢失，重要的请先导出。"; }
+  }
+  async function mutate(id,fn){
+    const r=await getSession(id); if(!r) return null;
+    fn(r); await tx(["sessions"],"readwrite",t=>t.objectStore("sessions").put(r));
+    if(metas[id]){ metas[id].name=r.name; metas[id].tags=r.tags; }
+    return r;
+  }
+  $("openRec").onclick=()=>{ $("recPlayer").hidden=true; $("recList").hidden=false; renderList(); recDlg.showModal(); };
+  $("closeRec").onclick=()=>{ closePlayer(); recDlg.close(); };
+  recDlg.addEventListener("click",e=>{ if(e.target===recDlg){ closePlayer(); recDlg.close(); } });
+  recDlg.addEventListener("close",closePlayer);
+
+  // ----- Player -----
+  const au=$("plAudio");
+  function closePlayer(){
+    au.pause(); if(pl&&pl.url) URL.revokeObjectURL(pl.url); au.removeAttribute("src"); au.load(); pl=null;
+  }
+  async function openPlayer(id){
+    let meta, blob;
+    try{ meta=await getSession(id); blob=await loadWav(id); }catch(e){ toast("打开失败"); return; }
+    if(!meta) return;
+    closePlayer();
+    pl={meta, url:URL.createObjectURL(blob), active:-1};
+    au.src=pl.url; au.playbackRate=1;
+    $("plTitle").textContent=meta.name;
+    $("recList").hidden=true; $("recPlayer").hidden=false;
+    renderTags(); renderTrans();
+  }
+  $("plBack").onclick=()=>{ closePlayer(); $("recPlayer").hidden=true; $("recList").hidden=false; renderList(); };
+  document.querySelectorAll("[data-rate]").forEach(b=>b.onclick=()=>{ au.playbackRate=+b.dataset.rate; });
+  function seek(t){ au.currentTime=Math.max(0,t); au.play().catch(()=>{}); }
+  const sortedTags=()=>pl.meta.tags.slice().sort((a,b)=>a.t-b.t);
+  function persistTags(){ mutate(pl.meta.id,r=>{ r.tags=pl.meta.tags; }); }
+  function renderTags(){
+    const box=$("plTags"); box.textContent="";
+    const tags=sortedTags();
+    if(!tags.length){ const d=document.createElement("div"); d.className="rec-note"; d.textContent="还没有标记。"; box.appendChild(d); return; }
+    tags.forEach(tg=>{
+      const row=document.createElement("div"); row.className="tagrow";
+      const tm=document.createElement("span"); tm.className="tm"; tm.textContent=fmtT(tg.t);
+      const lb=document.createElement("span"); lb.className="lb"; lb.textContent=tg.label;
+      const ed=document.createElement("button"); ed.textContent="✎"; ed.setAttribute("aria-label","改名");
+      const del=document.createElement("button"); del.textContent="✕"; del.setAttribute("aria-label","删除标记");
+      row.onclick=()=>seek(tg.t-2);
+      ed.onclick=ev=>{ ev.stopPropagation(); const n=prompt("标记名称",tg.label); if(n&&n.trim()){ tg.label=n.trim(); persistTags(); renderTags(); } };
+      del.onclick=ev=>{ ev.stopPropagation(); pl.meta.tags=pl.meta.tags.filter(x=>x!==tg); persistTags(); renderTags(); };
+      row.append(tm,lb,ed,del); box.appendChild(row);
+    });
+  }
+  function renderTrans(){
+    const box=$("plTrans"); box.textContent=""; pl.rows=[];
+    const list=(pl.meta.entries||[]).filter(e=>e.t!=null);
+    if(!list.length){ const d=document.createElement("div"); d.className="rec-note"; d.textContent="没有带时间的字幕。"; box.appendChild(d); return; }
+    list.forEach(e=>{
+      const row=document.createElement("div"); row.className="tr"; row.dataset.t=e.t;
+      const tm=document.createElement("span"); tm.className="tm"; tm.textContent=fmtT(e.t);
+      const tx=document.createElement("div"); tx.className="tx";
+      const z=document.createElement("div"); z.className="z"; z.textContent=e.zh||"";
+      const en=document.createElement("div"); en.className="e"; en.textContent=e.en;
+      if(settings.mode==="zh") tx.append(z); else tx.append(z,en);
+      row.onclick=()=>seek(e.t-0.3);
+      row.append(tm,tx); box.appendChild(row); pl.rows.push({t:e.t,row});
+    });
+  }
+  au.addEventListener("timeupdate",()=>{
+    if(!pl||!pl.rows) return;
+    let a=-1; const cur=au.currentTime+0.3;
+    for(let i=0;i<pl.rows.length;i++){ if(pl.rows[i].t<=cur) a=i; else break; }
+    if(a!==pl.active){
+      if(pl.active>=0 && pl.rows[pl.active]) pl.rows[pl.active].row.classList.remove("active");
+      pl.active=a;
+      if(a>=0){ const r=pl.rows[a].row; r.classList.add("active"); const box=$("plTrans"); box.scrollTop=r.offsetTop-box.offsetTop-box.clientHeight/3; }
+    }
+  });
+  $("plPrev").onclick=()=>{ if(!pl) return; const c=au.currentTime; const p=sortedTags().filter(t=>t.t-2<c-1).pop(); if(p) seek(p.t-2); else toast("前面没有标记了"); };
+  $("plNext").onclick=()=>{ if(!pl) return; const c=au.currentTime; const n=sortedTags().find(t=>t.t-2>c+1); if(n) seek(n.t-2); else toast("后面没有标记了"); };
+  $("plAdd").onclick=()=>{
+    if(!pl) return; const t=au.currentTime, n=pl.meta.tags.length+1;
+    pl.meta.tags.push({id:n+"-"+Date.now(), t, label:"标记"+n}); persistTags(); renderTags(); toast("已标记 "+fmtT(t));
+  };
+  $("plExportTxt").onclick=()=>{
+    if(!pl) return; const m=pl.meta;
+    const items=(m.entries||[]).map(e=>({t:e.t==null?-1:e.t,k:0,txt:(settings.mode==="zh"?"":e.en+"\n")+(e.zh||"")}))
+      .concat(m.tags.map(g=>({t:g.t,k:-1,txt:"🔖 "+g.label})));
+    items.sort((a,b)=>a.t-b.t||a.k-b.k);
+    const body=items.map(i=>(i.t>=0?"["+fmtT(Math.max(0,i.t))+"] ":"")+i.txt).join("\n\n");
+    download(new Blob([m.name+"\n\n"+body],{type:"text/plain;charset=utf-8"}),safeName(m.name)+".txt");
+  };
+
   // ---------- Deepgram streaming ----------
   const WORKLET_SRC = `
 class PCM16 extends AudioWorkletProcessor{
@@ -465,7 +757,7 @@ class PCM16 extends AudioWorkletProcessor{
   }
 }
 registerProcessor("pcm16",PCM16);`;
-  const dg={ctx:null,stream:null,node:null,ws:null,state:"idle",retries:0,finals:[],closing:false,secs:0,tick:null,retryTimer:null,closeTimer:null,reconnectNow:false};
+  const dg={utterStart:null,connBase:0,ctx:null,stream:null,node:null,ws:null,state:"idle",retries:0,finals:[],closing:false,secs:0,tick:null,retryTimer:null,closeTimer:null,reconnectNow:false};
   const fmt=s=>String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
   function dgRefresh(){
     if(activeEngine!=="deepgram") return;
@@ -493,15 +785,18 @@ registerProcessor("pcm16",PCM16);`;
     return "wss://api.deepgram.com/v1/listen?"+q;
   }
   function flushFinals(){
-    const t=dg.finals.join(" ").trim(); dg.finals=[];
-    if(t) commit(t);
+    const t=dg.finals.join(" ").trim(), at=dg.utterStart; dg.finals=[]; dg.utterStart=null;
+    if(t) commit(t, at);
   }
   function dgResult(msg){
     if(msg.type==="Results"){
       const alt=msg.channel && msg.channel.alternatives && msg.channel.alternatives[0];
       const text=((alt&&alt.transcript)||"").trim();
       if(msg.is_final){
-        if(text) dg.finals.push(text);
+        if(text){
+          if(!dg.finals.length && rec && typeof msg.start==="number") dg.utterStart=dg.connBase+msg.start;
+          dg.finals.push(text);
+        }
         if(msg.speech_final){ flushFinals(); showLive(""); }
         else showLive(dg.finals.join(" "));
       }else{
@@ -564,7 +859,7 @@ registerProcessor("pcm16",PCM16);`;
     if(!listening || dg.closing) return;
     try{ ws=new WebSocket(dgUrl(),proto); }catch(e){ return dgFatal("无法连接 Deepgram，请检查密钥格式。"); }
     ws.binaryType="arraybuffer"; dg.ws=ws;
-    ws.onopen=()=>{ if(dg.ws!==ws) return; opened=true; dg.retries=0; dg.state="live"; hint.textContent="正在收听英文，再点一次停止"; dgRefresh(); };
+    ws.onopen=()=>{ if(dg.ws!==ws) return; opened=true; dg.retries=0; dg.state="live"; dg.connBase=recPos()||0; hint.textContent="正在收听英文，再点一次停止"; dgRefresh(); };
     ws.onmessage=ev=>{ if(dg.ws!==ws || typeof ev.data!=="string") return; try{ dgResult(JSON.parse(ev.data)); }catch(_){} };
     ws.onerror=()=>{};
     ws.onclose=ev=>{
@@ -611,11 +906,12 @@ registerProcessor("pcm16",PCM16);`;
       const node=new AudioWorkletNode(ctx,"pcm16",{numberOfInputs:1,numberOfOutputs:1,channelCount:1,processorOptions:{inRate:ctx.sampleRate}});
       const mute=ctx.createGain(); mute.gain.value=0;
       src.connect(node); node.connect(mute); mute.connect(ctx.destination);
-      node.port.onmessage=e=>{ const ws=dg.ws; if(ws && ws.readyState===1) ws.send(e.data); };
+      node.port.onmessage=e=>{ recPush(new Int16Array(e.data)); const ws=dg.ws; if(ws && ws.readyState===1) ws.send(e.data); };
       dg.node=node;
+      recStart();
       stream.getAudioTracks().forEach(t=>{ t.onended=()=>{ if(listening){ stop(); showBanner("麦克风已中断（可能被其他应用占用），请重新点麦克风。"); } }; });
     }catch(err){
-      releaseMic(); dg.state="idle";
+      releaseMic(); dg.state="idle"; recFinish();
       if(!listening){ dgRefresh(); return false; }
       const n=err&&err.name;
       if(n==="NotAllowedError"||n==="SecurityError") showBanner("麦克风权限被拒绝。请在浏览器的网站设置（或系统设置 → 隐私 → 麦克风）里允许此网站使用麦克风，然后刷新页面。");
@@ -631,7 +927,7 @@ registerProcessor("pcm16",PCM16);`;
   }
   function stopDeepgram(){
     clearTimeout(dg.retryTimer);
-    releaseMic(); dg.state="idle";
+    releaseMic(); dg.state="idle"; recFinish();
     const ws=dg.ws;
     if(ws && ws.readyState===1){
       dg.closing=true;
@@ -666,7 +962,7 @@ registerProcessor("pcm16",PCM16);`;
     const wasListening=listening;
     listening=false; clearTimeout(restartTimer);
     if(activeEngine==="deepgram"){ if(wasListening || dg.ctx) stopDeepgram(); dgRefresh(); if(!dg.secs) setStatus(false,"已暂停"); }
-    else{ try{ rec && rec.stop(); }catch(e){} setStatus(false,"已暂停"); }
+    else{ try{ sr && sr.stop(); }catch(e){} setStatus(false,"已暂停"); }
     hint.textContent="点麦克风继续收听";
     try{ wakeLock && wakeLock.release(); }catch(e){} wakeLock=null;
   }
@@ -713,12 +1009,13 @@ registerProcessor("pcm16",PCM16);`;
     settings.lang=e.target.value; saveSettings();
     if(!listening) return;
     if(activeEngine==="deepgram"){ if(dg.ws && dg.ws.readyState===1){ dg.reconnectNow=true; try{ dg.ws.send(JSON.stringify({type:"CloseStream"})); }catch(_){} } }
-    else{ try{ rec.stop(); }catch(_){} }
+    else{ try{ sr.stop(); }catch(_){} }
   };
   $("route").onchange=e=>{ if(listening) stop(); settings.route=e.target.value; saveSettings(); applySettings(); hideBanner(); checkEngine(); };
   $("relayUrl").oninput=e=>{ settings.relayUrl=e.target.value.trim(); saveSettings(); };
   $("relayToken").oninput=e=>{ settings.relayToken=e.target.value.trim(); saveSettings(); };
   $("provider").onchange=e=>{ settings.provider=e.target.value; saveSettings(); fillModels(); };
+  $("recSave").onchange=e=>{ settings.saveRec=e.target.value==="1"; saveSettings(); };
   $("dgKey").oninput=e=>{ settings.dgKey=e.target.value.trim(); saveSettings(); };
   $("engine").onchange=e=>{
     if(listening) stop();
