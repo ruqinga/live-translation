@@ -2296,7 +2296,7 @@ registerProcessor("pcm16",PCM16);`;
   const AAI_MODELS=["universal-3-6-pro","universal-3-5-pro","u3-rt-pro"];
   const SENT_END=/[.!?。！？]["'”’)\]]*$/;
   class AssemblyAIEngine extends WsEngine{
-    constructor(h){ super(h); this.modelIdx=0; this.turn=null; this.pendingErr=null; this.preFails=0; this.quick=0; this.liveAt=0; this.lastFail="socket"; }
+    constructor(h){ super(h); this.modelIdx=0; this.turn=null; this.doneOrder=-1; this.pendingErr=null; this.preFails=0; this.quick=0; this.liveAt=0; this.lastFail="socket"; }
     get label(){ return "AssemblyAI"; }
     models(){ return (settings.aaiModel && settings.aaiModel!=="auto") ? [settings.aaiModel] : AAI_MODELS; }
     model(){ const m=this.models(); return m[Math.min(this.modelIdx,m.length-1)]; }
@@ -2326,7 +2326,7 @@ registerProcessor("pcm16",PCM16);`;
     terminateMessage(){ return JSON.stringify({type:"Terminate"}); }
     restartNow(){}        // AssemblyAI 的英文模型不区分口音，口音设置对它无影响
     onMessage(m){
-      if(m.type==="Begin"){ this.preFails=0; this.liveAt=performance.now(); this.markLive(); }
+      if(m.type==="Begin"){ this.preFails=0; this.doneOrder=-1; this.liveAt=performance.now(); this.markLive(); }   // 每个新连接的 turn_order 从头计
       else if(m.type==="Turn") this.onTurn(m);
       else if(m.type==="Termination"){ this.flush(); this.h.onPartial(""); if(this.ws){ try{ this.ws.close(); }catch(e){} } }
       else if(m.type==="Error" || m.error){ this.pendingErr={code:m.error_code, msg:String(m.error||"")}; if(this.ws){ try{ this.ws.close(); }catch(e){} } }
@@ -2339,6 +2339,7 @@ registerProcessor("pcm16",PCM16);`;
       return t.words.length ? this.restWords(t).map(w=>w.text).join(" ").trim() : t.tokens.slice(t.consumed).join(" ").trim();
     }
     onTurn(m){
+      if(m.turn_order===this.doneOrder) return;     // 这一轮已经送出去了（例如未格式化版本超时后，带标点的版本才迟到）
       const words=Array.isArray(m.words)?m.words.filter(w=>w && typeof w.text==="string"):[];
       let t=this.turn;
       if(t && t.order!==m.turn_order){ this.flush(); t=null; }     // 上一轮没等到 end_of_turn 就来了新轮次：先把剩下的送出去
@@ -2368,6 +2369,7 @@ registerProcessor("pcm16",PCM16);`;
       this.h.onFinal({text:seg.map(w=>w.text).join(" "), startSec:this.tl(seg[0].start/1000), endSec:this.tl(seg[cut].end/1000)});
     }
     finishTurn(t){
+      this.doneOrder=t.order;
       const text=this.restText(t); if(!text) return;
       const r=this.restWords(t);
       this.h.onFinal({text, startSec:r.length?this.tl(r[0].start/1000):null, endSec:r.length?this.tl(r[r.length-1].end/1000):null});
