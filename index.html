@@ -16,7 +16,7 @@
 :root{
   --bg:#F2F4F1; --panel:#FFFFFF; --ink:#16202B; --muted:#687481; --line:#D8DDD8;
   --accent:#2B59C3; --accent-ink:#FFFFFF; --rec:#D6453D; --warn-bg:#FFF4D6; --warn-ink:#6B4E00;
-  --zh-size:22px;
+  --fs:22px;
   --font-en:"Figtree",-apple-system,"Segoe UI",Roboto,sans-serif;
   --font-zh:"PingFang SC","Hiragino Sans GB","Noto Sans SC","Microsoft YaHei",system-ui,sans-serif;
   box-sizing:border-box;
@@ -51,18 +51,25 @@ header h1{font-size:17px;font-weight:600;margin:0;flex:1}
 .banner.show{display:block}
 
 #feed{flex:1;overflow-y:auto;padding:8px 16px 24px;overscroll-behavior:contain}
+/* 末尾留出空白：当前句缩回时内容变矮，滚动位置不会被浏览器强行上拉，正在看的内容不跳动 */
+#feed::after{content:"";display:block;height:35vh}
 .empty{color:var(--muted);text-align:center;margin-top:18vh;line-height:1.8;font-size:15px;padding:0 12px}
 .empty strong{color:var(--ink);font-weight:600;display:block;font-size:18px;margin-bottom:6px}
 .entry{padding:14px 0;border-bottom:1px solid var(--line)}
 .entry:last-child{border-bottom:0}
-.en{font-family:var(--font-en);font-size:14px;line-height:1.5;color:var(--muted)}
-.zh{font-size:var(--zh-size);line-height:1.6;margin-top:4px;min-height:1.6em;word-break:break-word}
+.en{font-family:var(--font-en);font-size:var(--fs);line-height:1.5;color:var(--muted);transition:font-size .3s ease}
+.zh{font-size:var(--fs);line-height:1.6;margin-top:4px;min-height:1.6em;word-break:break-word;transition:font-size .3s ease}
+/* 只有当前句放大约 1.3 倍：正在识别的预览行、正在翻译的那一句 */
+.entry.cur .en,.entry.cur .zh,.live .en{font-size:calc(var(--fs)*1.3)}
 .zh.pending{color:var(--muted)}
 .zh.error{color:var(--rec);font-size:15px}
 .retry{margin-left:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:2px 10px;font-size:14px;cursor:pointer}
 .live .en{color:var(--ink);font-style:italic;opacity:.75}
-body.zh-only .en{display:none}
-body.zh-only .live .en{display:block}
+/* 只看中文：当前句仍显示英文，翻译完成后英文平滑收起 */
+body.zh-only .entry .en{max-height:0;opacity:0;overflow:hidden;transition:max-height .3s ease,opacity .3s ease,font-size .3s ease}
+body.zh-only .entry.cur .en{max-height:12em;opacity:1}
+body.zh-only .entry.live .en{max-height:none;opacity:.75}
+@media (prefers-reduced-motion:reduce){.en,.zh,body.zh-only .entry .en,.dseg .e,.dseg .z{transition:none!important}}
 
 footer{border-top:1px solid var(--line);padding:12px 16px 14px;background:var(--bg)}
 .controls{display:grid;grid-template-columns:1fr auto 1fr;align-items:center}
@@ -132,7 +139,8 @@ body.v-records #feed,body.v-records footer{display:none}
 .rh-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
 .rh-tags button{border:2px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:3px 12px;font-size:13px;cursor:pointer}
 .rh-tags button.on{color:#fff;border-color:transparent}
-.rh-actions{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:13px;color:var(--muted)}
+.rh-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px;font-size:13px;color:var(--muted)}
+.rh-actions button{white-space:nowrap}
 .rh-actions button,.det-top button,.pbtn{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:6px 12px;font-size:14px;cursor:pointer}
 .card{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;background:var(--panel);cursor:pointer}
 .card .ct{font-weight:600;font-size:16px;word-break:break-all}
@@ -142,6 +150,7 @@ body.v-records #feed,body.v-records footer{display:none}
 .det-top{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
 .det-title{flex:1;font-weight:600;font-size:17px;word-break:break-all;min-width:120px}
 .det-top.wide .det-title{flex-basis:100%;order:10}
+.det-title .retitle{margin-left:8px;padding:3px 10px;font-size:12px;font-weight:400;vertical-align:middle}
 .det-top button.danger{color:var(--rec)}
 .player{position:sticky;top:-10px;z-index:5;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px}
 .p-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
@@ -157,8 +166,10 @@ body.v-records #feed,body.v-records footer{display:none}
 .dseg.active{background:var(--warn-bg)}
 .dseg .dt{font-family:var(--font-en);font-size:13px;color:var(--accent);min-width:44px;padding-top:2px}
 .dseg .dtx{flex:1;min-width:0}
-.dseg .e{font-family:var(--font-en);font-size:14px;color:var(--muted);line-height:1.5;word-break:break-word}
-.dseg .z{font-size:17px;line-height:1.6;word-break:break-word}
+.dseg .e{font-family:var(--font-en);font-size:var(--fs);color:var(--muted);line-height:1.5;word-break:break-word;transition:font-size .3s ease}
+.dseg .z{font-size:var(--fs);line-height:1.6;word-break:break-word;transition:font-size .3s ease}
+.dseg.active .e,.dseg.active .z{font-size:calc(var(--fs)*1.3)}
+#detList::after{content:"";display:block;height:50vh}
 body.zh-only .dseg .e{display:none}
 .sumbox{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px;background:var(--panel)}
 .sum-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
@@ -174,6 +185,38 @@ body.zh-only .dseg .e{display:none}
 .exp-list button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:12px 14px;font-size:16px;cursor:pointer;text-align:left}
 .exp-list button small{font-size:12px;color:var(--muted)}
 .exp-list button:disabled{opacity:.45;cursor:not-allowed}
+.folderbar{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.folderbar::-webkit-scrollbar{display:none}
+.fchip{flex:0 0 auto;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:6px 14px;font-size:14px;cursor:pointer;white-space:nowrap}
+.fchip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.fchip.plus{padding:6px 12px;font-weight:600}
+.fline{display:flex;justify-content:flex-end;margin-bottom:6px}
+#folderChip{border:0;background:none;color:var(--muted);font-size:13px;cursor:pointer;padding:2px 4px}
+.det-sub{font-size:13px;color:var(--muted);margin:-4px 0 8px}
+.swipe{position:relative;overflow:hidden;border-radius:12px;margin-bottom:10px}
+.swipe .card{margin-bottom:0;position:relative;transition:transform .2s ease;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.sw-actions{position:absolute;right:0;top:0;bottom:0;display:flex;width:140px}
+.sw-actions button{flex:1;border:0;color:#fff;font-size:15px;cursor:pointer;background:#2B7DE9}
+.sw-actions button.danger{background:var(--rec);color:#fff}
+.card .chk{display:none;float:left;width:22px;height:22px;margin:2px 10px 0 0;border:2px solid var(--line);border-radius:50%;flex:0 0 auto}
+body.selecting .card .chk{display:block}
+.card.sel{outline:2px solid var(--accent)}
+.card.sel .chk{background:var(--accent);border-color:var(--accent);box-shadow:inset 0 0 0 3px var(--panel)}
+#selBar{display:none;align-items:center;gap:10px;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);background:var(--panel)}
+body.v-records.selecting #selBar{display:flex}
+#selBar button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:8px 12px;font-size:14px;cursor:pointer}
+#selBar button.danger{color:var(--rec)}
+#selBar button:disabled{opacity:.4}
+#selCount{font-size:13px;color:var(--muted)}
+.tr-item{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;background:var(--panel)}
+.tr-item .btns{display:flex;gap:8px;margin-top:8px}
+.tr-item .btns button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:6px 14px;font-size:14px;cursor:pointer}
+.tr-item .btns button.danger{color:var(--rec)}
+.fm-row{display:flex;align-items:center;gap:8px;padding:8px 6px;border-bottom:1px solid var(--line);background:var(--panel)}
+.fm-row .handle{cursor:grab;color:var(--muted);font-size:20px;padding:0 6px;touch-action:none;user-select:none}
+.fm-row .nm{flex:1;word-break:break-all}
+.fm-row button.act{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:4px 10px;font-size:13px;cursor:pointer}
+.fm-row.drag{position:relative;z-index:3;box-shadow:0 4px 14px rgba(0,0,0,.25)}
 .done.alt{background:var(--bg);color:var(--ink);border:1px solid var(--line)}
 .divider{margin:8px 0;padding:6px 10px;border-radius:8px;background:var(--bg);border:1px dashed var(--line);color:var(--muted);font-size:13px;text-align:center}
 .rec-note{font-size:13px;color:var(--muted);line-height:1.5;margin:6px 0 12px}
@@ -211,13 +254,20 @@ body.zh-only .dseg .e{display:none}
 
   <section id="records" aria-live="polite">
     <div id="recHome">
+      <div class="folderbar" id="folderBar"></div>
       <div class="rh-tools">
         <input type="search" id="recSearch" placeholder="搜索标题、英文、中文" autocomplete="off">
         <select id="recSort"><option value="new">最新优先</option><option value="old">最早优先</option><option value="long">时长最长</option></select>
       </div>
       <div class="rh-tags" id="recTagFilter"></div>
-      <div class="rh-actions"><button id="openTagView">按标签查看句子</button><span id="recCount"></span></div>
+      <div class="rh-actions"><button id="openTagView">按标签查看句子</button><button id="openTrash">最近删除</button><button id="openFolderMgr">管理文件夹</button></div>
+      <div class="rh-actions"><span id="recCount" style="flex:1"></span><button id="selToggle">选择</button></div>
       <div id="recItems"></div>
+    </div>
+    <div id="recTrash" hidden>
+      <div class="det-top"><button id="trBack">← 记录</button><div class="det-title">最近删除</div><button id="trClear" class="danger">全部清空</button></div>
+      <div class="rec-note">删除的记录会保留 30 天，之后自动彻底清除。恢复后回到原来的文件夹（文件夹已删除则放入未分类）。</div>
+      <div id="trList"></div>
     </div>
     <div id="recTags" hidden>
       <div class="det-top"><button id="tvBack">← 记录</button><div class="det-title">按标签查看句子</div></div>
@@ -227,10 +277,9 @@ body.zh-only .dseg .e{display:none}
     <div id="recDetail" hidden>
       <div class="det-top wide">
         <button id="detBack">← 记录</button>
-        <div class="det-title" id="detTitle"></div>
+        <div class="det-title"><span id="detTitle"></span><button class="pbtn retitle" id="detRetitle">重新生成标题</button></div>
         <button id="detExport">导出</button>
-        <button id="detRename">重命名</button>
-        <button id="detDelete" class="danger">删除</button>
+        <button id="detMore">更多</button>
       </div>
       <div class="player" id="player">
         <div class="p-row">
@@ -245,6 +294,7 @@ body.zh-only .dseg .e{display:none}
         <div class="p-note" id="pNote" hidden></div>
         <audio id="plAudio" preload="metadata" playsinline hidden></audio>
       </div>
+      <div class="det-sub" id="detSub"></div>
       <div class="det-tags" id="detTags"></div>
       <div class="sumbox" id="detSum">
         <div class="sum-head"><b>摘要</b><span class="sum-time" id="sumTime"></span><span style="flex:1"></span><button class="pbtn" id="sumGen">生成摘要</button></div>
@@ -255,7 +305,16 @@ body.zh-only .dseg .e{display:none}
     </div>
   </section>
 
+  <div id="selBar">
+    <button id="selAll">全选</button>
+    <span id="selCount">已选 0 条</span>
+    <span style="flex:1"></span>
+    <button id="selMove">移动到…</button>
+    <button id="selDel" class="danger">删除</button>
+  </div>
+
   <footer>
+    <div class="fline"><button id="folderChip">📁 存入：未分类 ▾</button></div>
     <div class="typebar" id="typebar">
       <textarea id="typeInput" placeholder="粘贴或输入英文…" enterkeyhint="send"></textarea>
       <button id="typeSend">翻译</button>
@@ -363,7 +422,7 @@ body.zh-only .dseg .e{display:none}
       </div>
     </div>
     <div class="row">
-      <label for="size">中文字号</label>
+      <label for="size">字幕字号</label>
       <input type="range" id="size" min="16" max="34" step="1" value="22">
     </div>
     <div class="row">
@@ -404,6 +463,44 @@ body.zh-only .dseg .e{display:none}
     <div class="rec-note">上次的收听没有正常结束（可能是刷新、崩溃或被系统关闭），下面的内容已经保存在本机，可以恢复或丢弃。</div>
     <div id="recoverList"></div>
     <button class="done" id="recoverClose">稍后处理</button>
+  </div>
+</dialog>
+
+<dialog id="pickDlg">
+  <div class="sheet">
+    <h2 id="pickTitle">移动到文件夹</h2>
+    <div class="exp-list" id="pickList"></div>
+    <button class="done alt" id="pickClose">取消</button>
+  </div>
+</dialog>
+
+<dialog id="fmDlg">
+  <div class="sheet">
+    <h2>管理文件夹</h2>
+    <div class="rec-note">拖动左边的 ☰ 调整顺序。一个记录只属于一个文件夹，用来归档（如课程名）；标签用来标记内容。</div>
+    <div id="fmList"></div>
+    <div class="tagadd" style="margin-top:10px"><input type="text" id="fmNew" placeholder="新建文件夹" maxlength="20" autocomplete="off"><button id="fmAdd">添加</button></div>
+    <button class="done" id="fmClose">完成</button>
+  </div>
+</dialog>
+
+<dialog id="fdelDlg">
+  <div class="sheet">
+    <h2 id="fdelTitle">删除文件夹</h2>
+    <div class="rec-note" id="fdelNote"></div>
+    <div class="exp-list">
+      <button id="fdelMove">删除文件夹，记录移到未分类</button>
+      <button id="fdelAll" style="color:var(--rec)">连同其中记录一起删除<small>记录会先放进「最近删除」</small></button>
+    </div>
+    <button class="done alt" id="fdelClose">取消</button>
+  </div>
+</dialog>
+
+<dialog id="menuDlg">
+  <div class="sheet">
+    <h2 id="menuTitle">更多</h2>
+    <div class="exp-list" id="menuList"></div>
+    <button class="done alt" id="menuClose">取消</button>
   </div>
 </dialog>
 
@@ -450,7 +547,7 @@ body.zh-only .dseg .e{display:none}
   let rec=null, listening=false, liveEl=null, wakeLock=null, restartTimer=null;
   const entries=[]; const queue=[]; let busy=false; let seq=0; let stickToBottom=true;
 
-  const settings={route:"direct", relayUrl:"", relayToken:"", provider:"anthropic", saveAudio:true, tagPresets:["重点","作业","考试","没听懂"], sumModel:"", apiKey:"", dgKey:"", engine:"deepgram", model:"claude-haiku-4-5-20251001", lang:"en-US", mode:"both", size:22, glossary:""};
+  const settings={route:"direct", relayUrl:"", relayToken:"", provider:"anthropic", lastFolder:null, saveAudio:true, tagPresets:["重点","作业","考试","没听懂"], sumModel:"", apiKey:"", dgKey:"", engine:"deepgram", model:"claude-haiku-4-5-20251001", lang:"en-US", mode:"both", size:22, glossary:""};
   try{ Object.assign(settings, JSON.parse(localStorage.getItem("lt-settings")||"{}")); }catch(e){}
   function saveSettings(){ try{ localStorage.setItem("lt-settings", JSON.stringify(settings)); }catch(e){} }
   function applySettings(){
@@ -466,7 +563,7 @@ body.zh-only .dseg .e{display:none}
     $("accent").value=settings.lang;
     $("size").value=settings.size;
     $("glossary").value=settings.glossary||"";
-    document.documentElement.style.setProperty("--zh-size", settings.size+"px");
+    document.documentElement.style.setProperty("--fs", settings.size+"px");
     document.body.classList.toggle("zh-only", settings.mode==="zh");
     document.querySelectorAll("#modeSeg button").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.mode===settings.mode)));
   }
@@ -527,14 +624,17 @@ body.zh-only .dseg .e{display:none}
   function db(){
     return dbP||(dbP=new Promise((res,rej)=>{
       if(!window.indexedDB){ rej(new Error("no indexedDB")); return; }
-      const r=indexedDB.open("lt-db",1);
-      r.onupgradeneeded=()=>{
+      const r=indexedDB.open("lt-db",2);
+      r.onupgradeneeded=ev=>{
         const d=r.result;
-        d.createObjectStore("sessions",{keyPath:"id"});
-        d.createObjectStore("segments",{keyPath:"id"}).createIndex("sid","sid");
-        d.createObjectStore("audioChunks",{keyPath:["sid","idx"]}).createIndex("sid","sid");
+        if(ev.oldVersion<1){
+          d.createObjectStore("sessions",{keyPath:"id"});
+          d.createObjectStore("segments",{keyPath:"id"}).createIndex("sid","sid");
+          d.createObjectStore("audioChunks",{keyPath:["sid","idx"]}).createIndex("sid","sid");
+        }
+        if(ev.oldVersion<2) d.createObjectStore("folders",{keyPath:"id"});   // v2：文件夹（一层）
       };
-      r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); r.onblocked=()=>rej(new Error("blocked"));
+      r.onsuccess=()=>{ const d=r.result; d.onversionchange=()=>{ d.close(); dbP=null; }; res(d); }; r.onerror=()=>rej(r.error); r.onblocked=()=>rej(new Error("blocked"));
     }));
   }
   function dbTx(stores,mode,fn){
@@ -577,8 +677,9 @@ body.zh-only .dseg .e{display:none}
   function sessBegin(engine){
     const d=new Date(), p=n=>String(n).padStart(2,"0");
     const row={id:Date.now(), title:p(d.getMonth()+1)+"月"+p(d.getDate())+"日 "+p(d.getHours())+":"+p(d.getMinutes()),
-      created:Date.now(), ended:null, dur:0, tags:[], summary:"", summaryAt:null, audioMime:null, parts:[], engine};
-    S={id:row.id, row, t0:performance.now(), gapMs:0, intAt:null, intT:0, segN:0, closing:false, ending:false, chunkIdx:0, writes:[], mrDones:[], mr:null, needPrompt:false};
+      created:Date.now(), ended:null, dur:0, tags:[], summary:"", summaryAt:null, audioMime:null, parts:[], engine, titleEdited:false, titleAuto:false,
+      folderId:validFolderId(settings.lastFolder), deletedAt:null};
+    S={id:row.id, row, t0:performance.now(), gapMs:0, intAt:null, intT:0, segN:0, nSeg:0, titled:false, closing:false, ending:false, chunkIdx:0, writes:[], mrDones:[], mr:null, needPrompt:false};
     uStartWall=null; pendingMark=false;
     dbPut("sessions",row).catch(dbFail);
     askPersist();
@@ -877,8 +978,8 @@ body.zh-only .dseg .e{display:none}
 
   // ---------- Records: list / filter / search ----------
   let view="live";
-  const rd={rows:[],segs:new Map()};
-  const rf={q:"",tags:new Set(),sort:"new"};
+  const rd={rows:[],trash:[],segs:new Map()};   // rows：正常记录；trash：最近删除
+  const rf={q:"",tags:new Set(),sort:"new",folder:"all"};
   const tv={tag:null};
   function showView(v){
     view=v; document.body.classList.toggle("v-records",v==="records");
@@ -886,10 +987,10 @@ body.zh-only .dseg .e{display:none}
     if(v==="records"){ if($("recDetail").hidden) recRefresh(); } else { pausePlayer(); scrollDown(); }
   }
   document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>showView(b.dataset.view));
-  function pane(name){ ["recHome","recTags","recDetail"].forEach(n=>{ $(n).hidden=(n!==name); }); $("records").scrollTop=0; }
+  function pane(name){ ["recHome","recTags","recTrash","recDetail"].forEach(n=>{ $(n).hidden=(n!==name); }); $("records").scrollTop=0; }
   async function loadRecData(){
     const rows=await dbAll("sessions"), gs=await dbAll("segments");
-    rd.rows=rows; rd.segs=new Map();
+    rd.rows=rows.filter(r=>r.deletedAt==null); rd.trash=rows.filter(r=>r.deletedAt!=null); rd.segs=new Map();
     gs.forEach(g=>{ let a=rd.segs.get(g.sid); if(!a){ a=[]; rd.segs.set(g.sid,a); } a.push(g); });
   }
   const segNo=g=>parseInt(String(g.id).split("-")[1],10)||0;
@@ -900,7 +1001,7 @@ body.zh-only .dseg .e{display:none}
     return l ? l.replace(/^[-*\d.\s]+/,"").replace(/\*\*/g,"") : "";
   }
   function recRefresh(){
-    loadRecData().then(()=>{ if(!$("recTags").hidden) renderTagView(); else if(!$("recDetail").hidden) return; else{ pane("recHome"); renderHome(); } })
+    loadRecData().then(()=>{ if(!$("recTags").hidden) renderTagView(); else if(!$("recTrash").hidden) renderTrash(); else if(!$("recDetail").hidden) return; else{ pane("recHome"); renderHome(); } })
       .catch(()=>{ $("recItems").textContent="这个浏览器不能使用本地存储，无法查看记录。"; });
   }
   function filterChips(box,names,sel,multi,onPick,counts){
@@ -912,12 +1013,15 @@ body.zh-only .dseg .e{display:none}
     });
   }
   function renderHome(){
+    drawFolderBar();
     const counts={}; rd.rows.forEach(r=>tagsOf(r).forEach(t=>{ counts[t]=(counts[t]||0)+1; }));
     rf.tags.forEach(t=>{ if(!counts[t]) rf.tags.delete(t); });
     const names=Object.keys(counts).sort((a,b)=>counts[b]-counts[a]);
     filterChips($("recTagFilter"),names,rf.tags,true,t=>{ if(rf.tags.has(t)) rf.tags.delete(t); else rf.tags.add(t); renderHome(); },counts);
     const q=rf.q.trim().toLowerCase(); const hits=new Map();
     let list=rd.rows.filter(r=>{
+      if(rf.folder==="none" && r.folderId!=null) return false;
+      if(rf.folder!=="all" && rf.folder!=="none" && r.folderId!==rf.folder) return false;
       if(rf.tags.size){ const u=tagsOf(r); if(![...rf.tags].some(t=>u.has(t))) return false; }
       if(q){
         if((r.title||"").toLowerCase().includes(q)) return true;
@@ -927,6 +1031,8 @@ body.zh-only .dseg .e{display:none}
       return true;
     });
     list.sort(rf.sort==="old" ? (a,b)=>a.created-b.created : rf.sort==="long" ? (a,b)=>(b.dur||0)-(a.dur||0) : (a,b)=>b.created-a.created);
+    visibleIds=list.map(r=>r.id); sel.ids.forEach(id=>{ if(!visibleIds.includes(id)) sel.ids.delete(id); }); updateSelBar();
+    $("openTrash").textContent="最近删除"+(rd.trash.length?" ("+rd.trash.length+")":"");
     $("recCount").textContent="共 "+list.length+" 条"+(list.length!==rd.rows.length?"（已筛选）":"");
     const box=$("recItems"); box.textContent="";
     if(!list.length){
@@ -936,20 +1042,33 @@ body.zh-only .dseg .e{display:none}
     }
     const p2=n=>String(n).padStart(2,"0");
     list.forEach(r=>{
-      const c=document.createElement("div"); c.className="card";
+      const wrap=document.createElement("div"); wrap.className="swipe";
+      const acts=document.createElement("div"); acts.className="sw-actions";
+      const bm=document.createElement("button"); bm.textContent="移动"; bm.onclick=e=>{ e.stopPropagation(); moveOne(r); };
+      const bd=document.createElement("button"); bd.className="danger"; bd.textContent="删除"; bd.onclick=e=>{ e.stopPropagation(); trashOne(r); };
+      acts.append(bm,bd);
+      const c=document.createElement("div"); c.className="card"; c.classList.toggle("sel",sel.ids.has(r.id));
+      const chk=document.createElement("span"); chk.className="chk"; c.appendChild(chk);
       const t=document.createElement("div"); t.className="ct"; t.textContent=r.title;
       const d=new Date(r.created);
       const nSeg=(rd.segs.get(r.id)||[]).filter(g=>g.kind!=="break").length;
       const m=document.createElement("div"); m.className="cm";
-      m.textContent=(d.getMonth()+1)+"月"+d.getDate()+"日 "+p2(d.getHours())+":"+p2(d.getMinutes())+" · "+fmtT(r.dur||0)+" · "+nSeg+" 句"+(r.parts&&r.parts.length?" · 有录音":"")+(r.ended==null?" · 未结束":"");
+      m.textContent=(d.getMonth()+1)+"月"+d.getDate()+"日 "+p2(d.getHours())+":"+p2(d.getMinutes())+" · "+fmtT(r.dur||0)+" · "+nSeg+" 句"+(r.parts&&r.parts.length?" · 有录音":"")+(r.ended==null?" · 未结束":"")+(rf.folder==="all"&&r.folderId!=null&&folderById(r.folderId)?" · 📁"+folderName(r.folderId):"");
       c.append(t,m);
       if((r.tags||[]).length){ const tl=document.createElement("div"); tl.className="tline"; r.tags.forEach(x=>tl.appendChild(tagChip(x))); c.appendChild(tl); }
       const sm=plainFirstLine(r.summary);
       if(sm){ const e=document.createElement("div"); e.className="cs"; e.textContent=sm; c.appendChild(e); }
       const h=hits.get(r.id);
       if(h){ const e=document.createElement("div"); e.className="hit"; e.textContent="["+fmtT(h.start)+"] "+(h.en||"")+(h.zh?"  "+h.zh:""); c.appendChild(e); }
-      c.onclick=()=>openDetail(r.id,h?{seek:h.start}:{});
-      box.appendChild(c);
+      c.onclick=()=>{
+        if(Date.now()-(wrap._swiped||0)<300 || Date.now()-(c._lp||0)<700) return;
+        if(openSwipe){ closeSwipe(); return; }
+        if(sel.on){ if(sel.ids.has(r.id)) sel.ids.delete(r.id); else sel.ids.add(r.id); c.classList.toggle("sel",sel.ids.has(r.id)); updateSelBar(); return; }
+        openDetail(r.id,h?{seek:h.start}:{});
+      };
+      attachSwipe(wrap,c,r);
+      attachLongPress(c,()=>{ if(!sel.on) cardMenu(r); });
+      wrap.append(acts,c); box.appendChild(wrap);
     });
   }
   let srchT=null;
@@ -960,7 +1079,7 @@ body.zh-only .dseg .e{display:none}
   $("openTagView").onclick=()=>{ pane("recTags"); renderTagView(); };
   $("tvBack").onclick=()=>{ pane("recHome"); renderHome(); };
   function renderTagView(){
-    const counts={}; rd.segs.forEach(a=>a.forEach(g=>(g.tags||[]).forEach(t=>{ counts[t]=(counts[t]||0)+1; })));
+    const counts={}; rd.rows.forEach(r=>(rd.segs.get(r.id)||[]).forEach(g=>(g.tags||[]).forEach(t=>{ counts[t]=(counts[t]||0)+1; })));
     const names=Object.keys(counts).sort((a,b)=>counts[b]-counts[a]);
     if(!tv.tag || !counts[tv.tag]) tv.tag=names[0]||null;
     filterChips($("tvChips"),names,new Set(tv.tag?[tv.tag]:[]),false,t=>{ tv.tag=t; renderTagView(); },counts);
@@ -983,10 +1102,270 @@ body.zh-only .dseg .e{display:none}
     });
   }
 
+  // ---------- Folders（一层，会话只属于一个文件夹；folderId 为空 = 未分类） ----------
+  let folders=[], foldersLoaded=false;
+  const folderById=id=>folders.find(f=>f.id===id)||null;
+  const folderName=id=>{ const f=folderById(id); return f?f.name:"未分类"; };
+  function validFolderId(id){ if(id==null) return null; return (!foldersLoaded || folderById(id)) ? id : null; }
+  async function loadFolders(){
+    try{ folders=(await dbAll("folders")).sort((a,b)=>(a.order-b.order)||(a.created-b.created)); }catch(e){ folders=[]; }
+    foldersLoaded=true;
+    if(settings.lastFolder!=null && !folderById(settings.lastFolder)){ settings.lastFolder=null; saveSettings(); }
+    drawFolderChip();
+  }
+  async function createFolder(name){
+    name=(name||"").trim().slice(0,20); if(!name) return null;
+    const dup=folders.find(f=>f.name===name); if(dup) return dup;
+    const f={id:Date.now(), name, created:Date.now(), order:folders.reduce((m,x)=>Math.max(m,x.order),0)+1};
+    await dbPut("folders",f); folders.push(f); return f;
+  }
+  async function renameFolder(id,name){
+    const f=folderById(id); name=(name||"").trim().slice(0,20); if(!f||!name||name===f.name) return;
+    f.name=name; await dbPut("folders",f); drawFolderChip();
+  }
+  async function reorderFolders(ids){
+    ids.forEach((id,i)=>{ const f=folderById(id); if(f) f.order=i+1; });
+    folders.sort((a,b)=>a.order-b.order);
+    await dbTx(["folders"],"readwrite",t=>{ folders.forEach(f=>t.objectStore("folders").put(f)); });
+  }
+  // mode: "move" 记录移到未分类；"trash" 连同记录一起放进最近删除
+  async function deleteFolder(id,mode){
+    const rows=(await dbAll("sessions")).filter(r=>r.folderId===id);
+    const now=Date.now();
+    rows.forEach(r=>{ r.folderId=null; if(mode==="trash" && !(S&&S.id===r.id)) r.deletedAt=now; if(S&&S.id===r.id) S.row.folderId=null; });
+    await dbTx(["sessions","folders"],"readwrite",t=>{ rows.forEach(r=>t.objectStore("sessions").put(r)); t.objectStore("folders").delete(id); });
+    folders=folders.filter(f=>f.id!==id);
+    if(settings.lastFolder===id){ settings.lastFolder=null; saveSettings(); }
+    if(rf.folder===id) rf.folder="all";
+    drawFolderChip();
+  }
+  function drawFolderChip(){
+    if(settings.lastFolder!=null && foldersLoaded && !folderById(settings.lastFolder)) settings.lastFolder=null;
+    $("folderChip").textContent="📁 存入："+folderName(settings.lastFolder)+" ▾";
+  }
+  // 通用文件夹选择：cb(folderId|null)；里面可直接新建
+  function pickFolder(title,cur,cb){
+    $("pickTitle").textContent=title; const box=$("pickList"); box.textContent="";
+    const add=(label,id)=>{ const b=document.createElement("button"); b.textContent=(id===cur?"✓ ":"")+label; b.onclick=()=>{ $("pickDlg").close(); cb(id); }; box.appendChild(b); };
+    add("未分类",null); folders.forEach(f=>add(f.name,f.id));
+    const nb=document.createElement("button"); nb.textContent="＋ 新建文件夹";
+    nb.onclick=async()=>{ const n=prompt("文件夹名称"); if(!n||!n.trim()) return; try{ const f=await createFolder(n); if(f){ $("pickDlg").close(); cb(f.id); } }catch(e){ dbFail(e); } };
+    box.appendChild(nb);
+    $("pickDlg").showModal();
+  }
+  $("pickClose").onclick=()=>$("pickDlg").close();
+  $("folderChip").onclick=()=>pickFolder("下一次记录存入哪个文件夹",settings.lastFolder,id=>{
+    settings.lastFolder=id; saveSettings(); drawFolderChip();
+    if(S && !S.closing){ S.row.folderId=id; sessSave(); }   // 正在录的这条也一起移过去
+  });
+
+  // 文件夹管理：重命名、删除、拖动排序（用 pointer 事件，触屏和鼠标都能拖）
+  function dragSort(list,onDone){
+    list.querySelectorAll(".handle").forEach(h=>h.addEventListener("pointerdown",ev=>{
+      ev.preventDefault();
+      const row=h.closest(".fm-row"), rows=[...list.children], idx0=rows.indexOf(row), startY=ev.clientY;
+      const rects=rows.map(r=>r.getBoundingClientRect());
+      row.classList.add("drag"); h.setPointerCapture(ev.pointerId);
+      const move=e=>{ row.style.transform="translateY("+(e.clientY-startY)+"px)"; };
+      const up=e=>{
+        h.removeEventListener("pointermove",move); h.removeEventListener("pointerup",up); h.removeEventListener("pointercancel",up);
+        const c=rects[idx0].top+rects[idx0].height/2+(e.clientY-startY);
+        let to=rects.findIndex(r=>c<r.bottom); if(to<0) to=rows.length-1;
+        row.classList.remove("drag"); row.style.transform="";
+        if(to!==idx0){ if(to>idx0) rows[to].after(row); else rows[to].before(row); onDone([...list.children].map(r=>+r.dataset.id)); }
+      };
+      h.addEventListener("pointermove",move); h.addEventListener("pointerup",up); h.addEventListener("pointercancel",up);
+    }));
+  }
+  function drawFolderMgr(){
+    const box=$("fmList"); box.textContent="";
+    if(!folders.length){ const d=document.createElement("div"); d.className="rec-note"; d.textContent="还没有文件夹。"; box.appendChild(d); }
+    folders.forEach(f=>{
+      const row=document.createElement("div"); row.className="fm-row"; row.dataset.id=f.id;
+      const h=document.createElement("span"); h.className="handle"; h.textContent="☰"; h.setAttribute("aria-label","拖动排序");
+      const nm=document.createElement("span"); nm.className="nm"; nm.textContent=f.name;
+      const rn=document.createElement("button"); rn.className="act"; rn.textContent="重命名";
+      rn.onclick=async()=>{ const n=prompt("文件夹名称",f.name); if(n&&n.trim()){ try{ await renameFolder(f.id,n); }catch(e){ dbFail(e); } drawFolderMgr(); recFolderChanged(); } };
+      const dl=document.createElement("button"); dl.className="act"; dl.textContent="删除";
+      dl.onclick=()=>askDeleteFolder(f);
+      row.append(h,nm,rn,dl); box.appendChild(row);
+    });
+    dragSort(box,async ids=>{ try{ await reorderFolders(ids); }catch(e){ dbFail(e); } recFolderChanged(); });
+  }
+  function recFolderChanged(){ if(view==="records" && $("recHome").hidden===false) { drawFolderBar(); renderHome(); } }
+  $("openFolderMgr").onclick=()=>{ drawFolderMgr(); $("fmDlg").showModal(); };
+  $("fmClose").onclick=()=>$("fmDlg").close();
+  $("fmAdd").onclick=async()=>{ const v=$("fmNew").value; $("fmNew").value=""; if(!v.trim()) return; try{ await createFolder(v); }catch(e){ dbFail(e); } drawFolderMgr(); recFolderChanged(); };
+  $("fmNew").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); $("fmAdd").click(); } });
+  let fdel=null;
+  async function askDeleteFolder(f){
+    const n=(await dbAll("sessions")).filter(r=>r.folderId===f.id && r.deletedAt==null).length;
+    fdel=f; $("fdelTitle").textContent="删除文件夹「"+f.name+"」";
+    $("fdelNote").textContent=n?"里面有 "+n+" 条记录，怎么处理？":"这个文件夹是空的。";
+    $("fdelAll").style.display=n?"":"none";
+    $("fdelMove").textContent=n?"删除文件夹，记录移到未分类":"删除文件夹";
+    $("fdelDlg").showModal();
+  }
+  const finishFdel=async mode=>{
+    const f=fdel; $("fdelDlg").close(); if(!f) return;
+    try{ await deleteFolder(f.id,mode); toast(mode==="trash"?"已删除，记录在「最近删除」里":"已删除文件夹"); }catch(e){ dbFail(e); }
+    fdel=null; drawFolderMgr(); await loadRecData().catch(()=>{}); recFolderChanged();
+  };
+  $("fdelMove").onclick=()=>finishFdel("move");
+  $("fdelAll").onclick=()=>finishFdel("trash");
+  $("fdelClose").onclick=()=>$("fdelDlg").close();
+
+  // ---------- 移动与最近删除 ----------
+  const TRASH_DAYS=30;
+  async function patchSessions(ids,fn){
+    const rows=[]; for(const id of ids){ const r=await dbGet("sessions",id); if(r) rows.push(r); }
+    rows.forEach(fn);
+    await dbTx(["sessions"],"readwrite",t=>{ rows.forEach(r=>t.objectStore("sessions").put(r)); });
+    rows.forEach(r=>{ if(S && S.id===r.id){ S.row.folderId=r.folderId; } });
+    return rows;
+  }
+  const moveSessions=(ids,folderId)=>patchSessions(ids,r=>{ r.folderId=folderId; });
+  const recording=id=>S && S.id===id;
+  async function trashSessions(ids){
+    const ok=ids.filter(id=>!recording(id)); if(ok.length!==ids.length) toast("正在收听的记录不能删除，请先停止");
+    const now=Date.now(); await patchSessions(ok,r=>{ r.deletedAt=now; }); return ok.length;
+  }
+  const restoreSessions=ids=>patchSessions(ids,r=>{ r.deletedAt=null; if(r.folderId!=null && !folderById(r.folderId)) r.folderId=null; });
+  async function purgeSessions(ids){ for(const id of ids){ if(!recording(id)) await dbDelSession(id); } }   // 同时删除字幕和音频分片，释放空间
+  async function purgeExpired(){
+    try{
+      const cut=Date.now()-TRASH_DAYS*86400000;
+      const old=(await dbAll("sessions")).filter(r=>r.deletedAt!=null && r.deletedAt<cut).map(r=>r.id);
+      if(old.length) await purgeSessions(old);
+    }catch(e){}
+  }
+
+  // ---------- Records: folder bar / swipe / select / trash ----------
+  const sel={on:false, ids:new Set()};
+  let openSwipe=null;
+  function closeSwipe(){ if(openSwipe){ openSwipe.card.style.transform=""; openSwipe.open=false; openSwipe=null; } }
+  function drawFolderBar(){
+    const box=$("folderBar"); box.textContent="";
+    if(rf.folder!=="all" && rf.folder!=="none" && !folderById(rf.folder)) rf.folder="all";
+    const chip=(label,key,n)=>{
+      const b=document.createElement("button"); b.className="fchip"; b.textContent=label+(n!=null?" "+n:"");
+      b.setAttribute("aria-pressed",String(rf.folder===key));
+      b.onclick=()=>{ rf.folder=key; closeSwipe(); drawFolderBar(); renderHome(); };
+      box.appendChild(b); return b;
+    };
+    chip("全部","all",rd.rows.length);
+    chip("未分类","none",rd.rows.filter(r=>r.folderId==null).length);
+    folders.forEach(f=>{
+      const b=chip(f.name,f.id,rd.rows.filter(r=>r.folderId===f.id).length);
+      attachLongPress(b,()=>{ drawFolderMgr(); $("fmDlg").showModal(); });   // 长按文件夹进入管理
+    });
+    const plus=document.createElement("button"); plus.className="fchip plus"; plus.textContent="＋"; plus.setAttribute("aria-label","新建文件夹");
+    plus.onclick=async()=>{ const n=prompt("新建文件夹"); if(!n||!n.trim()) return; try{ const f=await createFolder(n); if(f){ rf.folder=f.id; } }catch(e){ dbFail(e); } drawFolderBar(); renderHome(); };
+    box.appendChild(plus);
+  }
+  function setSelMode(on){
+    sel.on=on; sel.ids.clear(); closeSwipe();
+    document.body.classList.toggle("selecting",on);
+    $("selToggle").textContent=on?"完成":"选择";
+    updateSelBar(); renderHome();
+  }
+  function updateSelBar(){
+    const n=sel.ids.size; $("selCount").textContent="已选 "+n+" 条";
+    $("selMove").disabled=!n; $("selDel").disabled=!n;
+    $("selAll").textContent=(visibleIds.length && sel.ids.size===visibleIds.length)?"取消全选":"全选";
+  }
+  let visibleIds=[];
+  $("selToggle").onclick=()=>setSelMode(!sel.on);
+  $("selAll").onclick=()=>{ if(sel.ids.size===visibleIds.length) sel.ids.clear(); else visibleIds.forEach(id=>sel.ids.add(id)); updateSelBar(); renderHome(); };
+  $("selMove").onclick=()=>{
+    const ids=[...sel.ids]; if(!ids.length) return;
+    pickFolder("移动 "+ids.length+" 条记录到…",undefined,async fid=>{ try{ await moveSessions(ids,fid); toast("已移动到「"+folderName(fid)+"」"); }catch(e){ dbFail(e); } setSelMode(false); recRefresh(); });
+  };
+  $("selDel").onclick=async()=>{
+    const ids=[...sel.ids]; if(!ids.length) return;
+    if(!confirm("删除 "+ids.length+" 条记录？它们会先放进「最近删除」，30 天内可以恢复。")) return;
+    try{ const n=await trashSessions(ids); if(n) toast("已移到最近删除"); }catch(e){ dbFail(e); }
+    setSelMode(false); recRefresh();
+  };
+  // 单条：长按菜单（和左滑并存）
+  function cardMenu(r){
+    $("menuTitle").textContent=r.title; const box=$("menuList"); box.textContent="";
+    const add=(label,fn,danger)=>{ const b=document.createElement("button"); b.textContent=label; if(danger) b.style.color="var(--rec)"; b.onclick=()=>{ $("menuDlg").close(); fn(); }; box.appendChild(b); };
+    add("移动到…",()=>moveOne(r));
+    add("多选",()=>{ setSelMode(true); sel.ids.add(r.id); updateSelBar(); renderHome(); });
+    add("删除",()=>trashOne(r),true);
+    $("menuDlg").showModal();
+  }
+  $("menuClose").onclick=()=>$("menuDlg").close();
+  function moveOne(r){ pickFolder("移动到文件夹",r.folderId==null?null:r.folderId,async fid=>{ try{ await moveSessions([r.id],fid); toast("已移动到「"+folderName(fid)+"」"); }catch(e){ dbFail(e); } closeSwipe(); recRefresh(); }); }
+  async function trashOne(r){ try{ const n=await trashSessions([r.id]); if(n) toast("已移到最近删除"); }catch(e){ dbFail(e); } closeSwipe(); recRefresh(); }
+  // 左滑露出“移动/删除”
+  function attachSwipe(wrap,card,r){
+    const W=140; let x0=null,y0=0,dx=0,drag=false,st={card,open:false};
+    card.addEventListener("pointerdown",e=>{ if(sel.on) return; x0=e.clientX; y0=e.clientY; drag=false; if(openSwipe && openSwipe!==st) closeSwipe(); });
+    card.addEventListener("pointermove",e=>{
+      if(x0==null) return;
+      const ddx=e.clientX-x0, ddy=e.clientY-y0;
+      if(!drag){ if(Math.abs(ddx)>10 && Math.abs(ddx)>Math.abs(ddy)*1.5){ drag=true; try{ card.setPointerCapture(e.pointerId); }catch(_){} } else return; }
+      dx=Math.max(-W,Math.min(0,(st.open?-W:0)+ddx)); card.style.transition="none"; card.style.transform="translateX("+dx+"px)";
+    });
+    const end=()=>{
+      if(drag){ st.open=dx<-W/2; card.style.transition=""; card.style.transform=st.open?"translateX(-"+W+"px)":""; openSwipe=st.open?st:(openSwipe===st?null:openSwipe); wrap._swiped=Date.now(); }
+      x0=null; drag=false;
+    };
+    card.addEventListener("pointerup",end); card.addEventListener("pointercancel",end);
+    card._st=st;
+  }
+  function renderTrash(){
+    const box=$("trList"); box.textContent="";
+    const list=rd.trash.slice().sort((a,b)=>b.deletedAt-a.deletedAt);
+    $("trClear").style.display=list.length?"":"none";
+    if(!list.length){ const d=document.createElement("div"); d.className="empty"; d.innerHTML="<strong>没有最近删除的记录</strong>删除的记录会在这里保留 30 天。"; box.appendChild(d); return; }
+    list.forEach(r=>{
+      const it=document.createElement("div"); it.className="tr-item";
+      const t=document.createElement("div"); t.className="ct"; t.style.fontWeight="600"; t.textContent=r.title;
+      const left=Math.max(0,Math.ceil((r.deletedAt+TRASH_DAYS*86400000-Date.now())/86400000));
+      const n=(rd.segs.get(r.id)||[]).filter(g=>g.kind!=="break").length;
+      const m=document.createElement("div"); m.className="cm"; m.style.cssText="font-size:13px;color:var(--muted);margin:3px 0";
+      m.textContent="还剩 "+left+" 天自动清除 · "+fmtT(r.dur||0)+" · "+n+" 句"+(r.parts&&r.parts.length?" · 有录音":"");
+      const btns=document.createElement("div"); btns.className="btns";
+      const rs=document.createElement("button"); rs.textContent="恢复";
+      rs.onclick=async()=>{ try{ await restoreSessions([r.id]); toast("已恢复"); }catch(e){ dbFail(e); } await loadRecData().catch(()=>{}); renderTrash(); };
+      const pg=document.createElement("button"); pg.className="danger"; pg.textContent="永久删除";
+      pg.onclick=async()=>{ if(!confirm("永久删除「"+r.title+"」？字幕和录音都会被删除，无法恢复。")) return; try{ await purgeSessions([r.id]); toast("已永久删除"); }catch(e){ dbFail(e); } await loadRecData().catch(()=>{}); renderTrash(); };
+      btns.append(rs,pg); it.append(t,m,btns); box.appendChild(it);
+    });
+  }
+  $("openTrash").onclick=async()=>{ await purgeExpired(); try{ await loadRecData(); }catch(e){} pane("recTrash"); renderTrash(); };
+  $("trBack").onclick=()=>{ pane("recHome"); recRefresh(); };
+  $("trClear").onclick=async()=>{
+    if(!rd.trash.length) return;
+    if(!confirm("清空「最近删除」？这 "+rd.trash.length+" 条记录的字幕和录音都会被永久删除。")) return;
+    try{ await purgeSessions(rd.trash.map(r=>r.id)); toast("已清空"); }catch(e){ dbFail(e); }
+    await loadRecData().catch(()=>{}); renderTrash();
+  };
+
   // ---------- Session detail ----------
   let det=null;   // {row, segs, segRows:[{g,el}], active}
   let userScrollUntil=0;
-  ["wheel","touchmove"].forEach(n=>$("records").addEventListener(n,()=>{ userScrollUntil=Date.now()+4000; },{passive:true}));
+  let userScrollStamp=0;
+  ["wheel","touchmove"].forEach(n=>$("records").addEventListener(n,()=>{ userScrollUntil=Date.now()+4000; userScrollStamp=performance.now(); },{passive:true}));
+  // 放大/缩小句子会让下面的内容位移。每一帧把锚点句的屏幕位置拉回目标位置，正在看的内容就不会跳；
+  // toTop 为 null 时原地不动，否则平滑滚到该位置（同时完成自动滚动）。
+  let stabTok=0;
+  function stabilize(el,box,startTop,toTop,dur){
+    const tok=++stabTok, t0=performance.now();
+    const D=(window.matchMedia && matchMedia("(prefers-reduced-motion:reduce)").matches) ? 0 : dur;
+    const end=toTop==null ? startTop : toTop;
+    const step=now=>{
+      if(tok!==stabTok || userScrollStamp>t0) return;   // 被新的高亮或用户手动滚动打断
+      const k=D ? Math.min(1,(now-t0)/D) : 1, e=k<.5 ? 2*k*k : 1-Math.pow(-2*k+2,2)/2;
+      const d=el.getBoundingClientRect().top-(startTop+(end-startTop)*e);
+      if(Math.abs(d)>0.5) box.scrollTop+=d;
+      if(k<1) requestAnimationFrame(step);
+    };
+    step(t0+(D?0:1e6)); if(D) requestAnimationFrame(step);
+  }
   async function openDetail(id,opts){
     opts=opts||{};
     let row, segs;
@@ -994,7 +1373,7 @@ body.zh-only .dseg .e{display:none}
     if(!row){ toast("这条记录已不存在"); return; }
     freePlayer();
     det={row, segs:sortSegs(segs), segRows:[], active:-1};
-    pane("recDetail"); $("detTitle").textContent=row.title;
+    pane("recDetail"); $("detTitle").textContent=row.title; drawDetSub();
     drawDetTags(); renderDetList(); drawSum();
     loadPlayer(row).then(()=>{ if(opts.seek!=null && det && det.row.id===id){ seekTo(opts.seek,false); hiliteAt(opts.seek,true); } });
     if(opts.seek!=null) hiliteAt(opts.seek,true);
@@ -1008,18 +1387,27 @@ body.zh-only .dseg .e{display:none}
     freePlayer(); det=null; pane("recHome"); recRefresh();
   }
   $("detBack").onclick=closeDetail;
-  $("detRename").onclick=async()=>{
+  function drawDetSub(){ if(det) $("detSub").textContent="📁 "+folderName(det.row.folderId==null?null:det.row.folderId); }
+  function renameDetail(){
     if(!det) return; const n=prompt("记录标题",det.row.title); if(!n||!n.trim()) return;
-    det.row.title=n.trim(); $("detTitle").textContent=det.row.title;
-    if(S && S.id===det.row.id) S.row.title=det.row.title;
+    det.row.title=n.trim(); det.row.titleEdited=true; $("detTitle").textContent=det.row.title;
+    if(S && S.id===det.row.id){ S.row.title=det.row.title; S.row.titleEdited=true; }
     dbPut("sessions",det.row).catch(dbFail);
-  };
-  $("detDelete").onclick=async()=>{
-    if(!det) return;
-    if(S && S.id===det.row.id){ toast("正在收听的记录不能删除，请先停止"); return; }
-    if(!confirm("删除「"+det.row.title+"」？字幕、标签、摘要和录音都会被删除，无法恢复。")) return;
-    try{ await dbDelSession(det.row.id); }catch(e){ dbFail(e); return; }
-    toast("已删除"); closeDetail();
+  }
+  $("detMore").onclick=()=>{
+    if(!det) return; $("menuTitle").textContent="更多"; const box=$("menuList"); box.textContent="";
+    const add=(label,fn,danger,note)=>{ const b=document.createElement("button"); b.textContent=label; if(note){ const sm=document.createElement("small"); sm.textContent=note; b.appendChild(sm); } if(danger) b.style.color="var(--rec)"; b.onclick=()=>{ $("menuDlg").close(); fn(); }; box.appendChild(b); };
+    add("重命名",renameDetail);
+    add("移动到文件夹",()=>pickFolder("移动到文件夹",det.row.folderId==null?null:det.row.folderId,async fid=>{
+      try{ await moveSessions([det.row.id],fid); det.row.folderId=fid; drawDetSub(); toast("已移动到「"+folderName(fid)+"」"); }catch(e){ dbFail(e); }
+    }),false,"当前："+folderName(det.row.folderId==null?null:det.row.folderId));
+    add("删除",async()=>{
+      if(recording(det.row.id)){ toast("正在收听的记录不能删除，请先停止"); return; }
+      if(!confirm("删除「"+det.row.title+"」？它会先放进「最近删除」，30 天内可以恢复。")) return;
+      try{ await trashSessions([det.row.id]); }catch(e){ dbFail(e); return; }
+      toast("已移到最近删除"); closeDetail();
+    },true);
+    $("menuDlg").showModal();
   };
 
   // 会话标签：添加/删除，输入时自动补全已有标签
@@ -1064,12 +1452,18 @@ body.zh-only .dseg .e{display:none}
     if(!det) return;
     let a=-1; for(let i=0;i<det.segRows.length;i++){ if(det.segRows[i].g.start<=T+0.25) a=i; else break; }
     if(a===det.active) return;
-    if(det.active>=0 && det.segRows[det.active]) det.segRows[det.active].el.classList.remove("active");
+    const box=$("records"), prev=det.active>=0 ? det.segRows[det.active] : null, next=a>=0 ? det.segRows[a] : null;
+    const anchor=next ? next.el : (prev ? prev.el : null);
+    const startTop=anchor ? anchor.getBoundingClientRect().top : 0;
+    if(prev) prev.el.classList.remove("active");
+    if(next) next.el.classList.add("active");
     det.active=a;
-    if(a>=0){
-      const el=det.segRows[a].el; el.classList.add("active");
-      if(force || (!au.paused && Date.now()>userScrollUntil)) el.scrollIntoView({block:"center",behavior:force?"auto":"smooth"});
-    }
+    if(!anchor) return;
+    const auto=force || (!au.paused && Date.now()>userScrollUntil);
+    if(!auto && !prev) return;   // 第一次高亮：没有上一句缩回，也不用滚动，无需锚定（避免把无关的布局变化当成位移去追）
+    let toTop=null;
+    if(auto && next){ const r=box.getBoundingClientRect(); toTop=r.top+r.height*0.35; }   // 高亮句放在屏幕偏上 1/3 处
+    stabilize(anchor,box,startTop,toTop,force?0:360);
   }
 
   // ---------- Player（多段音频按时间轴拼接播放） ----------
@@ -1154,11 +1548,62 @@ body.zh-only .dseg .e{display:none}
   });
   tagWatchers.push(()=>{ if(view!=="records") return; if(!$("recDetail").hidden) reloadDetail(); else recRefresh(); });
 
+  // ---------- Auto title ----------
+  const TITLE_SYS="你是标题助手。根据英文课程、讲座或会议转写的一部分，起一个中文标题，概括主题，不超过 15 个字。只输出标题本身，不要引号、书名号、标点和解释。";
+  function cleanTitle(t){
+    t=(t||"").split("\n")[0].replace(/^\s*标题[:：]\s*/,"").replace(/^[\s"'“”‘’《》「」『』。.!！,，:：]+|[\s"'“”‘’《》「」『』。.!！,，:：]+$/g,"");
+    const a=Array.from(t); return a.length>15 ? a.slice(0,15).join("") : t;
+  }
+  // 摘要输出的第一行是“标题：xxx”，拆出来；没有这一行就原样返回
+  function splitTitle(text){
+    const m=(text||"").match(/^\s*标题[:：][ \t]*([^\n]*)\n*/);
+    return m ? {title:cleanTitle(m[1]), body:text.slice(m[0].length)} : {title:"", body:text};
+  }
+  async function genTitle(tags,texts){
+    const head=[];
+    if((tags||[]).length) head.push("【会话标签（主题提示）】\n"+tags.join("、"));
+    const gl=(settings.glossary||"").trim(); if(gl) head.push("【场景与术语】\n"+gl);
+    head.push("【转写】\n"+texts.join(" ").slice(0,6000));
+    return cleanTitle(await llmStream(TITLE_SYS,head.join("\n\n"),64,null,{model:settings.model,path:"/translate"}));   // 用快速模型，走翻译同一通道
+  }
+  // 自动标题只在“用户没手动改过”时生效
+  async function applyAutoTitle(id,title){
+    if(!title) return false;
+    if(S && S.id===id){ if(S.row.titleEdited) return false; S.row.title=title; S.row.titleAuto=true; sessSave(); }
+    else{ const r=await dbGet("sessions",id); if(!r || r.titleEdited) return false; r.title=title; r.titleAuto=true; await dbPut("sessions",r); }
+    if(det && det.row.id===id){ det.row.title=title; det.row.titleAuto=true; $("detTitle").textContent=title; }
+    return true;
+  }
+  async function autoTitleLive(s){
+    if(s.row.titleEdited || !translateReady()) return;
+    try{
+      const title=await genTitle(s.row.tags, entries.filter(e=>e.sid===s.id).map(e=>e.en));
+      await applyAutoTitle(s.id,title);
+    }catch(e){ /* 静默失败：保留临时标题，结束时的摘要还会再给一次标题 */ }
+  }
+  $("detRetitle").onclick=async()=>{
+    if(!det) return;
+    if(!sumReady()){ openSettings(); toast(useRelay()?"请先填写中转地址和访问口令":"请先填写 Claude API 密钥"); return; }
+    const b=$("detRetitle"), id=det.row.id; b.disabled=true; b.textContent="生成中…";
+    try{
+      const segs=det.segs.filter(g=>g.kind!=="break");
+      if(!segs.length) throw new Error("没有字幕");
+      const title=await genTitle(det.row.tags, segs.map(g=>g.en));
+      if(!title) throw new Error("模型没有返回标题");
+      // 用户主动点了“重新生成”，就以新标题为准，之后仍可被自动更新
+      if(S && S.id===id){ S.row.titleEdited=false; } else{ const r=await dbGet("sessions",id); if(r){ r.titleEdited=false; await dbPut("sessions",r); } }
+      det.row.titleEdited=false;
+      await applyAutoTitle(id,title);
+      toast("标题已更新");
+    }catch(e){ toast("生成标题失败："+((e&&e.message)||"未知错误")); }
+    finally{ b.disabled=false; b.textContent="重新生成标题"; }
+  };
+
   // ---------- Auto summary（走同一条中转/直连通道，独立队列，不占用实时翻译） ----------
   const sumState={};      // 会话 id → {status:"running"|"error", text, progress, err}
   const sumQueue=[]; let sumBusy=false;
   const SUM_LIMIT=60000, SUM_CHUNK=50000;
-  const SUM_SYS="你是一名英文课程、讲座、会议的学习助理。根据用户提供的英文转写（每行以 [mm:ss] 时间戳开头），用简体中文输出 Markdown 摘要。严格使用下面的结构和标题，不要添加其他章节：\n\n"
+  const SUM_SYS="你是一名英文课程、讲座、会议的学习助理。根据用户提供的英文转写（每行以 [mm:ss] 时间戳开头），用简体中文输出 Markdown 摘要。输出的第一行必须是“标题：”加一个不超过 15 个字的中文标题（概括主题，不加引号和标点），然后空一行，再严格使用下面的结构和标题，不要添加其他章节：\n\n"
     +"## 一句话概括\n（一句话）\n\n"
     +"## 主要内容\n（按主题分段，每段用加粗小标题，并在小标题里标注大致时间点，格式如 **主题名 [12:30]**；下面用要点列出内容）\n\n"
     +"## 关键术语\n（每条：英文原词 — 中文解释；没有则写“无”）\n\n"
@@ -1183,11 +1628,12 @@ body.zh-only .dseg .e{display:none}
     }
   }
   // 流式调用摘要模型；relay 走 Worker 的 /summary，直连则走 Claude API
-  async function llmStream(system,user,maxTokens,onText){
-    const relay=useRelay(), model=settings.sumModel; let res;
+  async function llmStream(system,user,maxTokens,onText,opts){
+    opts=opts||{};
+    const relay=useRelay(), model=opts.model||settings.sumModel; let res;
     try{
       if(relay){
-        res=await fetch(relayBase()+"/summary",{method:"POST",
+        res=await fetch(relayBase()+(opts.path||"/summary"),{method:"POST",
           headers:{"content-type":"application/json","authorization":"Bearer "+settings.relayToken},
           body:JSON.stringify({provider:settings.provider, model, system, user, max_tokens:maxTokens})});
       }else{
@@ -1223,7 +1669,7 @@ body.zh-only .dseg .e{display:none}
     head.push("【带标记的句子】\n"+(tagged.length?tagged.join("\n"):"（无）"));
     const ctx=head.join("\n\n");
     const total=lines.join("\n").length;
-    const onText=t=>{ st.text=t; st.progress=""; sumRender(row.id); };
+    const onText=t=>{ st.text=splitTitle(t).body; st.progress=""; sumRender(row.id); };
     if(total<=SUM_LIMIT) return llmStream(SUM_SYS, ctx+"\n\n【完整英文转写】\n"+lines.join("\n"), 4096, onText);
     // 长会话：先分段各自整理，再合并成最终摘要
     const chunks=[]; let cur=[], n=0;
@@ -1251,13 +1697,15 @@ body.zh-only .dseg .e{display:none}
           const row=await dbGet("sessions",id);
           const segs=sortSegs((await dbBySid("segments",id)).filter(g=>g.kind!=="break"));
           if(!row || !segs.length) throw new Error("没有可总结的字幕");
-          const text=await summarize(row,segs,st);
+          const raw=await summarize(row,segs,st);
+          const sp=splitTitle(raw), text=sp.body||raw;      // 同一次调用顺带返回标题；解析失败则保留原标题
           const fresh=(await dbGet("sessions",id))||row;   // 生成期间用户可能改了标签/标题，用最新的行来写
           fresh.summary=text; fresh.summaryAt=Date.now(); await dbPut("sessions",fresh);
           if(S && S.id===id){ S.row.summary=text; S.row.summaryAt=fresh.summaryAt; }
           delete sumState[id];
           if(det && det.row.id===id) det.row=fresh;
-          toast("「"+fresh.title+"」的摘要已生成");
+          if(sp.title) await applyAutoTitle(id,sp.title);
+          toast("「"+((det&&det.row.id===id)?det.row.title:fresh.title)+"」的摘要已生成");
         }catch(e){ st.status="error"; st.err=(e&&e.message)||"未知错误"; }
         sumRender(id);
       }
@@ -1380,7 +1828,9 @@ body.zh-only .dseg .e{display:none}
     const row=await dbGet("sessions",id), segs=sortSegs(await dbBySid("segments",id));
     return Object.assign({},row,{segments:segs});
   }
-  const backupBlob=list=>new Blob([JSON.stringify({app:"live-translation",version:1,exported:new Date().toISOString(),sessions:list},null,1)],{type:"application/json"});
+  // 备份 v2：带文件夹。all=true 导出全部文件夹，否则只带这些会话用到的文件夹
+  const backupBlob=(list,all)=>new Blob([JSON.stringify({app:"live-translation",version:2,exported:new Date().toISOString(),
+    folders:folders.filter(f=>all||list.some(x=>x.folderId===f.id)), sessions:list},null,1)],{type:"application/json"});
   const stamp=()=>{ const d=new Date(); return d.getFullYear()+p2(d.getMonth()+1)+p2(d.getDate())+"-"+p2(d.getHours())+p2(d.getMinutes()); };
 
   $("detExport").onclick=()=>{
@@ -1404,7 +1854,7 @@ body.zh-only .dseg .e{display:none}
     try{
       const rows=await dbAll("sessions"); if(!rows.length){ toast("还没有记录可以备份"); return; }
       const list=[]; for(const r of rows.sort((a,b)=>a.created-b.created)) list.push(await bundle(r.id));
-      await deliver([{blob:backupBlob(list), name:"同声字幕备份-"+stamp()+".json"}]);
+      await deliver([{blob:backupBlob(list,true), name:"同声字幕备份-"+stamp()+".json"}]);
     }catch(e){ toast("导出失败："+((e&&e.message)||"未知错误")); }
   };
   $("backupImport").onclick=()=>$("backupFile").click();
@@ -1416,14 +1866,22 @@ body.zh-only .dseg .e{display:none}
     const local=new Map((await dbAll("sessions")).map(r=>[r.id,r]));
     const items=data.sessions.filter(x=>x && Number.isFinite(+x.id));
     if(!items.length){ toast("备份里没有记录"); return; }
+    // 文件夹：旧版备份没有这个字段，记录一律放入“未分类”
+    const inFolders=(Array.isArray(data.folders)?data.folders:[]).filter(f=>f && Number.isFinite(+f.id) && typeof f.name==="string" && f.name.trim())
+      .map((f,i)=>({id:+f.id, name:f.name.trim().slice(0,20), created:num(f.created,Date.now()), order:num(f.order,i+1)}));
     const over=items.filter(x=>local.has(+x.id)).length;
     if(!confirm("导入 "+items.length+" 条记录"+(over?"（其中 "+over+" 条已存在，字幕、标签和摘要会被备份内容覆盖，本机录音保留）":"")+"？")) return;
+    if(inFolders.length){
+      try{ await dbTx(["folders"],"readwrite",t=>{ inFolders.forEach(f=>t.objectStore("folders").put(f)); }); await loadFolders(); }catch(e){ dbFail(e); }
+    }
     let n=0;
     for(const x of items){
       const id=+x.id, old=local.get(id);
       const row={id, title:String(x.title||"导入的记录").slice(0,100), created:num(x.created,Date.now()), ended:num(x.ended,Date.now()), dur:num(x.dur,0),
         tags:strs(x.tags), summary:typeof x.summary==="string"?x.summary:"", summaryAt:x.summaryAt==null?null:num(x.summaryAt,null),
-        audioMime:old?old.audioMime:null, parts:old?old.parts:[], engine:x.engine==="browser"?"browser":"deepgram"};
+        audioMime:old?old.audioMime:null, parts:old?old.parts:[], engine:x.engine==="browser"?"browser":"deepgram",
+        titleEdited:!!x.titleEdited, titleAuto:!!x.titleAuto,
+        folderId:(x.folderId!=null && folderById(+x.folderId)) ? +x.folderId : null, deletedAt:x.deletedAt==null?null:num(x.deletedAt,null)};
       const segs=(Array.isArray(x.segments)?x.segments:[]).map((g,i)=>({
         id:id+"-"+(i+1), sid:id, start:num(g&&g.start,0), end:num(g&&g.end,0), en:String((g&&g.en)||""), zh:String((g&&g.zh)||""),
         tags:strs(g&&g.tags), kind:(g&&g.kind)==="break"?"break":"seg"}));
@@ -1439,17 +1897,18 @@ body.zh-only .dseg .e{display:none}
     afterImport();
     toast("已导入 "+n+" 条记录");
   }
-  function afterImport(){ loadKnownTags(); if(view==="records" && $("recDetail").hidden) recRefresh(); }
+  function afterImport(){ loadKnownTags(); loadFolders(); if(view==="records" && $("recDetail").hidden) recRefresh(); }
   $("backupFile").onchange=e=>{ const f=e.target.files[0]; e.target.value=""; if(f) importBackup(f); };
 
   // ---------- Feed ----------
-  feed.addEventListener("scroll",()=>{ stickToBottom = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 60; });
-  function scrollDown(){ if(stickToBottom) feed.scrollTop=feed.scrollHeight; }
+  const tailH=()=>window.innerHeight*0.35;   // 与 #feed::after 的高度（35vh）一致
+  feed.addEventListener("scroll",()=>{ stickToBottom = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 60+tailH(); });
+  function scrollDown(){ if(stickToBottom) feed.scrollTop=Math.max(0,feed.scrollHeight-feed.clientHeight-tailH()); }
   function hideEmpty(){ if(empty.parentNode) empty.remove(); }
 
   function renderEntry(e){
     hideEmpty();
-    const div=document.createElement("div"); div.className="entry";
+    const div=document.createElement("div"); div.className="entry cur"; e.row=div;   // 翻译中的一句放大，完成后缩回
     const en=document.createElement("div"); en.className="en"; en.textContent=e.en;
     const zh=document.createElement("div"); zh.className="zh pending"; zh.textContent="翻译中…";
     const tl=document.createElement("div"); tl.className="tline";
@@ -1462,7 +1921,7 @@ body.zh-only .dseg .e{display:none}
   function setError(e,msg){
     const z=e.el; z.className="zh error"; z.textContent=msg;
     const b=document.createElement("button"); b.className="retry"; b.textContent="重试";
-    b.onclick=()=>{ z.className="zh pending"; z.textContent="翻译中…"; e.status="waiting"; queue.push(e); pump(); };
+    b.onclick=()=>{ z.className="zh pending"; z.textContent="翻译中…"; e.status="waiting"; if(e.row) e.row.classList.add("cur"); queue.push(e); pump(); };
     z.appendChild(b);
   }
   function showLive(text){
@@ -1479,6 +1938,7 @@ body.zh-only .dseg .e{display:none}
       e.end=end!=null?end:nowT(); e.start=start!=null?start:e.end; if(e.end<e.start) e.end=e.start;
       if(pendingMark){ e.tags.push(markTag()); pendingMark=false; }
       segSave(e);
+      if(++S.nSeg>=15 && !S.titled){ S.titled=true; autoTitleLive(S); }
     }
     entries.push(e); renderEntry(e); queue.push(e); pump();
   }
@@ -1488,7 +1948,7 @@ body.zh-only .dseg .e{display:none}
     if(busy) return;
     const e=queue.shift(); if(!e) return;
     busy=true;
-    try{ await translate(e); } finally{ busy=false; segSave(e); pump(); }
+    try{ await translate(e); } finally{ busy=false; if(e.row) e.row.classList.remove("cur"); segSave(e); pump(); }
   }
 
   async function translate(e){
@@ -1904,8 +2364,10 @@ registerProcessor("pcm16",PCM16);`;
     hideBanner(); hint.textContent="建议在安静环境，靠近说话人"; checkEngine();
   };
   loadKnownTags();
+  loadFolders();
+  purgeExpired();          // 每次打开应用时清理超过 30 天的“最近删除”
   checkUnfinished();
-  $("size").oninput=e=>{ settings.size=+e.target.value; document.documentElement.style.setProperty("--zh-size", settings.size+"px"); saveSettings(); };
+  $("size").oninput=e=>{ settings.size=+e.target.value; document.documentElement.style.setProperty("--fs", settings.size+"px"); saveSettings(); };
   $("glossary").oninput=e=>{ settings.glossary=e.target.value; saveSettings(); };
   document.querySelectorAll("#modeSeg button").forEach(b=>b.onclick=()=>{ settings.mode=b.dataset.mode; saveSettings(); applySettings(); });
 })();
