@@ -544,7 +544,7 @@ body.v-records.selecting #selBar{display:flex}
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   const API_URL="https://api.anthropic.com/v1/messages";
 
-  let rec=null, listening=false, liveEl=null, wakeLock=null, restartTimer=null;
+  let listening=false, liveEl=null, wakeLock=null;
   const entries=[]; const queue=[]; let busy=false; let seq=0; let stickToBottom=true;
 
   const settings={route:"direct", relayUrl:"", relayToken:"", provider:"anthropic", lastFolder:null, saveAudio:true, tagPresets:["重点","作业","考试","没听懂"], sumModel:"", apiKey:"", dgKey:"", engine:"deepgram", model:"claude-haiku-4-5-20251001", lang:"en-US", mode:"both", size:22, glossary:""};
@@ -666,7 +666,6 @@ body.v-records.selecting #selBar{display:flex}
   // ---------- Sessions ----------
   const fmtT=sec=>{ sec=Math.max(0,Math.floor(sec)); const h=Math.floor(sec/3600), m=Math.floor(sec%3600/60), x=sec%60, p=n=>String(n).padStart(2,"0"); return (h?h+":":"")+p(m)+":"+p(x); };
   let S=null;          // 当前会话（内存中的状态）
-  let uStartWall=null; // 浏览器引擎：当前句开始的会话时间
   // 会话时间轴：从开始（录音开始）算起的秒数；中断期间冻结，恢复后接着走
   const nowT=()=> S ? (S.intAt!=null ? S.intT : Math.max(0,(performance.now()-S.t0-S.gapMs)/1000)) : null;
   let persistAsked=false;
@@ -680,7 +679,7 @@ body.v-records.selecting #selBar{display:flex}
       created:Date.now(), ended:null, dur:0, tags:[], summary:"", summaryAt:null, audioMime:null, parts:[], engine, titleEdited:false, titleAuto:false,
       folderId:validFolderId(settings.lastFolder), deletedAt:null};
     S={id:row.id, row, t0:performance.now(), gapMs:0, intAt:null, intT:0, segN:0, nSeg:0, titled:false, closing:false, ending:false, chunkIdx:0, writes:[], mrDones:[], mr:null, needPrompt:false};
-    uStartWall=null; pendingMark=false;
+    pendingMark=false;
     dbPut("sessions",row).catch(dbFail);
     askPersist();
     return S;
@@ -698,7 +697,7 @@ body.v-records.selecting #selBar{display:flex}
     try{ await audioFlush(s); }catch(e){}
     const row=s.row;
     row.ended=Date.now(); row.dur=s.intAt!=null ? s.intT : nowT();
-    S=null; uStartWall=null; pendingMark=false;
+    S=null; pendingMark=false;
     let segs=[]; try{ segs=await dbBySid("segments",row.id); }catch(e){}
     const real=segs.filter(x=>x.kind!=="break");
     if(!real.length && !row.parts.length && row.dur<2){ dbDelSession(row.id).catch(()=>{}); return; }
@@ -761,12 +760,12 @@ body.v-records.selecting #selBar{display:flex}
     scrollDown();
   }
   function interrupt(){
-    if(!S || S.closing || S.intAt!=null || activeEngine!=="deepgram" || !listening) return;
+    if(!S || S.closing || S.intAt!=null || !listening || !ENGINES[activeEngine] || !ENGINES[activeEngine].usesMic) return;
     S.intT=nowT(); S.intAt=performance.now();
     listening=false;
-    stopDeepgram();
+    audioStop(); releaseCapture(); if(eng) eng.stop();
     try{ wakeLock && wakeLock.release(); }catch(e){} wakeLock=null;
-    setStatus(false,"已中断 "+fmt(dg.secs)); hint.textContent="录音已中断，点麦克风继续";
+    engState="idle"; setStatus(false,"已中断 "+fmt(listenSecs)); hint.textContent="录音已中断，点麦克风继续";
     if(document.visibilityState==="visible") showIntDlg(); else S.needPrompt=true;
   }
   function showIntDlg(){ if(S){ S.needPrompt=false; if(!$("intDlg").open) $("intDlg").showModal(); } }
@@ -777,12 +776,12 @@ body.v-records.selecting #selBar{display:flex}
     setStatus(false,"已暂停"); hint.textContent="点麦克风开始新的记录";
   };
   async function checkPipeline(){
-    if(!listening || activeEngine!=="deepgram" || !S) return;
-    const tr=dg.stream && dg.stream.getAudioTracks()[0];
+    if(!listening || !cap || !S) return;
+    const tr=cap.stream && cap.stream.getAudioTracks()[0];
     let dead=!tr || tr.readyState==="ended";
-    if(!dead && dg.ctx && dg.ctx.state!=="running"){
-      try{ await Promise.race([dg.ctx.resume(), new Promise(r=>setTimeout(r,600))]); }catch(e){}
-      dead = dg.ctx.state!=="running";
+    if(!dead && cap.ctx && cap.ctx.state!=="running"){
+      try{ await Promise.race([cap.ctx.resume(), new Promise(r=>setTimeout(r,600))]); }catch(e){}
+      dead = cap.ctx.state!=="running";
     }
     if(dead) interrupt();
   }
@@ -913,7 +912,7 @@ body.v-records.selecting #selBar{display:flex}
   function markLast(){
     if(!S || S.closing || S.intAt!=null){ toast("开始收听后才能标记"); return; }
     const tag=markTag();
-    if(liveEl || dg.finals.length){ pendingMark=true; toast("已标记当前句：#"+tag); vibrate(); return; }
+    if(liveEl || (eng && eng.hasPending())){ pendingMark=true; toast("已标记当前句：#"+tag); vibrate(); return; }
     let last=null; for(let i=entries.length-1;i>=0;i--){ if(entries[i].sid===S.id){ last=entries[i]; break; } }
     if(!last){ toast("还没有可标记的句子"); return; }
     addTagToEntry(last,tag); toast("已标记上一句：#"+tag); vibrate();
@@ -2027,38 +2026,15 @@ body.v-records.selecting #selBar{display:flex}
     }
   }
 
-  // ---------- Speech recognition ----------
+  // ---------- 状态栏 ----------
   function setStatus(on,text){
     $("status").classList.toggle("on",on); $("statusText").textContent=text;
     mic.classList.toggle("on",on); mic.setAttribute("aria-label", on?"停止收听":"开始收听");
   }
-  function startRec(){
-    rec=new SR();
-    rec.lang=settings.lang; rec.continuous=true; rec.interimResults=true; rec.maxAlternatives=1;
-    rec.onresult=(ev)=>{
-      let interim="";
-      for(let i=ev.resultIndex;i<ev.results.length;i++){
-        const r=ev.results[i];
-        if(r.isFinal){ commit(r[0].transcript, uStartWall); uStartWall=null; } else interim+=r[0].transcript;
-      }
-      if(interim && uStartWall==null && S) uStartWall=nowT();
-      showLive(interim);
-    };
-    rec.onerror=(ev)=>{
-      if(ev.error==="not-allowed"||ev.error==="service-not-allowed"){
-        stop(); showBanner("麦克风权限被拒绝。请在浏览器的网站设置（或系统设置 → 隐私 → 麦克风）里允许此网站使用麦克风，然后刷新页面。");
-      }else if(ev.error==="audio-capture"){ stop(); showBanner("没有检测到麦克风，请检查设备。"); }
-      else if(ev.error==="network"){ hint.textContent="语音识别需要联网，正在重试…"; }
-    };
-    rec.onend=()=>{
-      showLive("");
-      if(!listening && S && S.closing) sessEnd();
-      if(listening){ clearTimeout(restartTimer); restartTimer=setTimeout(()=>{ try{ startRec(); }catch(e){} },200); }
-    };
-    rec.start();
-  }
-  // ---------- Deepgram streaming ----------
-  const WORKLET_SRC = `
+
+  // ---------- 公共模块：麦克风采集 → 16kHz 单声道 Int16 PCM（AudioWorklet，每块约 100ms） ----------
+  // 各流式引擎（Deepgram、AssemblyAI、以后的 Soniox）都从这里取音频，录音存档（MediaRecorder）用同一个 MediaStream。
+  const PCM_WORKLET_SRC = `
 class PCM16 extends AudioWorkletProcessor{
   constructor(o){ super(); this.ratio=o.processorOptions.inRate/16000; this.pos=0; this.acc=0; this.cnt=0; this.buf=new Int16Array(1600); this.n=0; }
   process(inputs){
@@ -2076,170 +2052,320 @@ class PCM16 extends AudioWorkletProcessor{
   }
 }
 registerProcessor("pcm16",PCM16);`;
-  const dg={uStart:null,uEnd:null,connOff:0,ctx:null,stream:null,node:null,ws:null,state:"idle",retries:0,finals:[],closing:false,secs:0,tick:null,retryTimer:null,closeTimer:null,reconnectNow:false};
-  const fmt=s=>String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
-  function dgRefresh(){
-    if(activeEngine!=="deepgram") return;
-    const t=fmt(dg.secs);
-    const txt = dg.state==="connecting" ? "连接中… "+t
-      : dg.state==="live" ? "收听中 "+t
-      : dg.state==="retry" ? "重连中（"+dg.retries+"/3）"+t
-      : (S && S.intAt!=null && !S.closing) ? "已中断 "+t
-      : "已暂停 "+t;
-    setStatus(listening, txt);
+  // 必须在点击手势内同步调用：iPhone Safari 只允许在手势里创建 AudioContext。不支持时返回 null。
+  function createCapture(){
+    const AC=window.AudioContext||window.webkitAudioContext;
+    if(!AC || !window.AudioWorkletNode || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return null;
+    const cap={ctx:new AC(), stream:null, node:null, sinks:[], closed:false};
+    try{ cap.ctx.resume(); }catch(e){}
+    cap.addSink=fn=>{ if(!cap.sinks.includes(fn)) cap.sinks.push(fn); };      // fn(Int16Array)：100ms 一块
+    cap.removeSink=fn=>{ cap.sinks=cap.sinks.filter(f=>f!==fn); };
+    cap.open=async()=>{
+      const stream=await navigator.mediaDevices.getUserMedia({audio:{channelCount:1,echoCancellation:false,noiseSuppression:true,autoGainControl:true}});
+      cap.stream=stream;
+      if(cap.closed){ stream.getTracks().forEach(t=>t.stop()); return; }
+      const url=URL.createObjectURL(new Blob([PCM_WORKLET_SRC],{type:"application/javascript"}));
+      try{ await cap.ctx.audioWorklet.addModule(url); } finally{ URL.revokeObjectURL(url); }
+      if(cap.closed) return;
+      await cap.ctx.resume();
+      const src=cap.ctx.createMediaStreamSource(stream);
+      const node=new AudioWorkletNode(cap.ctx,"pcm16",{numberOfInputs:1,numberOfOutputs:1,channelCount:1,processorOptions:{inRate:cap.ctx.sampleRate}});
+      const mute=cap.ctx.createGain(); mute.gain.value=0;
+      src.connect(node); node.connect(mute); mute.connect(cap.ctx.destination);
+      node.port.onmessage=e=>{ const a=new Int16Array(e.data); for(const f of cap.sinks.slice()) f(a); };
+      cap.node=node;
+    };
+    cap.close=()=>{
+      cap.closed=true;
+      try{ cap.node && (cap.node.port.onmessage=null, cap.node.disconnect()); }catch(e){}
+      try{ cap.stream && cap.stream.getTracks().forEach(t=>t.stop()); }catch(e){}
+      try{ cap.ctx.state!=="closed" && cap.ctx.close(); }catch(e){}
+      cap.sinks=[];
+    };
+    return cap;
   }
-  function dgKeyterms(){
+  // 「场景与术语」里的英文单词/短语，作为识别引擎的术语提示（各家对数量和长度的限制不同，由调用方传入）
+  function extractKeyterms(max,maxLen){
     const g=settings.glossary||"", out=[], seen=new Set();
     const re=/[A-Za-z][A-Za-z0-9'’.\-]*(?:[ \t]+[A-Za-z][A-Za-z0-9'’.\-]*)*/g; let m;
     while((m=re.exec(g))){
       const t=m[0].replace(/[.\-]+$/,"").trim(), k=t.toLowerCase();
-      if(t.length<2||t.length>60||seen.has(k)) continue;
-      seen.add(k); out.push(t); if(out.length>=30) break;
+      if(t.length<2||t.length>maxLen||seen.has(k)) continue;
+      seen.add(k); out.push(t); if(out.length>=max) break;
     }
     return out;
   }
-  function dgUrl(){
-    const p={model:"nova-3",language:settings.lang,smart_format:"true",punctuate:"true",interim_results:"true",endpointing:"300",utterance_end_ms:"1000",encoding:"linear16",sample_rate:"16000",channels:"1"};
-    let q=Object.keys(p).map(k=>k+"="+encodeURIComponent(p[k])).join("&");
-    dgKeyterms().forEach(t=>{ q+="&keyterm="+encodeURIComponent(t); });
-    return "wss://api.deepgram.com/v1/listen?"+q;
-  }
-  function flushFinals(){
-    const t=dg.finals.join(" ").trim(), st=dg.uStart, en=dg.uEnd; dg.finals=[]; dg.uStart=null; dg.uEnd=null;
-    if(t) commit(t, st, en);
-  }
-  function dgResult(msg){
-    if(msg.type==="Results"){
-      const alt=msg.channel && msg.channel.alternatives && msg.channel.alternatives[0];
-      const text=((alt&&alt.transcript)||"").trim();
-      if(msg.is_final){
-        if(text){
-          // Deepgram 的时间从每次连接开始重新计，加上连接时刻的偏移才是会话时间轴
-          if(!dg.finals.length && typeof msg.start==="number") dg.uStart=dg.connOff+msg.start;
-          if(typeof msg.start==="number") dg.uEnd=dg.connOff+msg.start+(msg.duration||0);
-          dg.finals.push(text);
-        }
-        if(msg.speech_final){ flushFinals(); showLive(""); }
-        else showLive(dg.finals.join(" "));
+
+  // ---------- 识别引擎适配器 ----------
+  // 统一接口（每个引擎一个类）：
+  //   engine.start(mediaStream, options)   options: {capture, lang, keyterms}
+  //   engine.stop()        优雅停止：发结束消息、等最后一句 flush 后关闭，完成时回调 onClosed
+  //   engine.abort()       立即丢弃（开始新会话前用）
+  //   engine.restartNow()  语言等设置变了，立即重连
+  //   engine.hasPending()  是否有还没确定的一句（标记按钮用）
+  // 事件（构造时传入的 handlers）：
+  //   onPartial(text)                      临时结果，显示在预览行
+  //   onFinal({text,startSec,endSec})      确定的一句，送去翻译并存储；时间已换算到录音时间轴
+  //   onStatus({state})                    connecting / live / retry / idle
+  //   onError(中文错误信息)                致命错误，停止收听
+  //   onHint(text) / onClosed() / now()    提示文字 / 引擎已完全关闭 / 当前录音时间轴位置（秒）
+  //
+  // WebSocket 流式引擎的公共基类：连接、重连（最多 3 次，间隔 1/2/4 秒）、优雅停止、时间轴偏移。
+  // 时间戳换算：引擎返回的时间从「这一次连接」开始计，断线重连会从 0 重新算，所以每次连接成功时记下
+  // 当时的录音时间轴位置 connOff，点句跳播和存储用的都是 connOff + 引擎时间。
+  class WsEngine{
+    constructor(h){ this.h=h; this.ws=null; this.state="idle"; this.retries=0; this.closing=false; this.stopped=false; this.ready=false;
+      this.connOff=0; this.retryTimer=null; this.closeTimer=null; this.reconnectNow=false; this.cap=null; this.sink=null; this.opts=null; }
+    get label(){ return "识别服务"; }
+    // ---- 子类实现 ----
+    async auth(){ throw new Error("not implemented"); }   // → {url, protocols?}；失败抛出带 .fatal（中文）的错误表示不必重试
+    onSocketOpen(){ this.markLive(); }                    // WebSocket 打开后；子类可改为等服务端的“开始”消息再 markLive()
+    onMessage(m){}
+    flush(){}                                             // 把还没确定的文字当作一句送出
+    hasPending(){ return false; }
+    terminateMessage(){ return null; }                    // 停止时发送的结束消息（字符串）
+    async classifyClose(ev,opened){ return null; }        // → {fatal:"中文"} / {retryNow:true} / null（普通重连）
+    // ---- 公共 ----
+    isLive(){ return this.state==="live"; }
+    setState(st){ this.state=st; this.h.onStatus({state:st,retries:this.retries}); }
+    tl(sec){ return this.connOff+sec; }                   // 引擎时间 → 录音时间轴
+    markLive(){ this.retries=0; this.ready=true; this.connOff=this.h.now(); this.setState("live"); }
+    start(stream,opts){
+      this.opts=opts||{}; this.cap=this.opts.capture; this.stopped=false; this.closing=false; this.retries=0;
+      this.sink=a=>{ const ws=this.ws; if(ws && this.ready && ws.readyState===1) ws.send(a); };
+      if(this.cap) this.cap.addSink(this.sink);
+      this.setState("connecting"); this.connect();
+    }
+    async connect(){
+      if(this.stopped || this.closing) return;
+      let a;
+      try{ a=await this.auth(); }
+      catch(err){ if(this.stopped||this.closing) return; if(err && err.fatal) return this.h.onError(err.fatal); return this.retry(); }
+      if(this.stopped||this.closing) return;
+      let ws, opened=false; this.ready=false;
+      try{ ws=a.protocols ? new WebSocket(a.url,a.protocols) : new WebSocket(a.url); }
+      catch(e){ return this.h.onError("无法连接"+this.label+"，请检查密钥或地址格式。"); }
+      ws.binaryType="arraybuffer"; this.ws=ws;
+      ws.onopen=()=>{ if(this.ws!==ws) return; opened=true; this.onSocketOpen(); };
+      ws.onmessage=ev=>{ if(this.ws!==ws || typeof ev.data!=="string") return; let m; try{ m=JSON.parse(ev.data); }catch(_){ return; } this.onMessage(m); };
+      ws.onerror=()=>{};
+      ws.onclose=ev=>{
+        if(this.ws!==ws) return;
+        this.ws=null; this.ready=false; this.flush(); this.h.onPartial("");
+        if(this.closing){ this.finish(); return; }
+        if(this.stopped) return;
+        if(this.reconnectNow){ this.reconnectNow=false; this.connect(); return; }
+        this.dropped(ev,opened);
+      };
+    }
+    async dropped(ev,opened){
+      let r=null; try{ r=await this.classifyClose(ev,opened); }catch(e){}
+      if(this.stopped||this.closing) return;
+      if(r && r.fatal) return this.h.onError(r.fatal);
+      if(r && r.retryNow) return this.connect();
+      this.retry();
+    }
+    retry(){
+      if(this.retries>=3) return this.h.onError("网络已断开，自动重连 3 次仍失败。请检查网络后再点麦克风。");
+      this.retries++; this.setState("retry");
+      this.h.onHint("连接中断，正在自动重连…");
+      this.retryTimer=setTimeout(()=>this.connect(),1000*Math.pow(2,this.retries-1));
+    }
+    detach(){ this.stopped=true; clearTimeout(this.retryTimer); if(this.cap && this.sink) this.cap.removeSink(this.sink); }
+    stop(){
+      if(this.stopped && !this.ws) return;
+      this.detach();
+      const ws=this.ws;
+      if(ws && ws.readyState===1){
+        this.closing=true; this.ready=false;
+        try{ const m=this.terminateMessage(); if(m) ws.send(m); }catch(e){}
+        this.closeTimer=setTimeout(()=>{ try{ ws.close(); }catch(e){} },3000);   // 最多等 3 秒拿最后一句
       }else{
-        showLive(dg.finals.concat(text?[text]:[]).join(" "));
+        if(ws){ this.ws=null; try{ ws.close(); }catch(e){} }
+        this.flush(); this.h.onPartial(""); this.state="idle"; this.h.onStatus({state:"idle"}); this.h.onClosed();
       }
-    }else if(msg.type==="UtteranceEnd"){
-      if(dg.finals.length){ flushFinals(); showLive(""); }
+    }
+    finish(){ clearTimeout(this.closeTimer); this.closing=false; this.ws=null; this.state="idle"; this.h.onStatus({state:"idle"}); this.h.onClosed(); }
+    abort(){
+      this.detach(); clearTimeout(this.closeTimer);
+      const ws=this.ws; this.ws=null; this.closing=false; this.ready=false;
+      try{ ws && ws.close(); }catch(e){}
+      this.flush(); this.h.onPartial(""); this.state="idle";
+    }
+    restartNow(){   // 设置变了（如口音/语言）：让当前连接优雅结束后立刻重连
+      const ws=this.ws; if(!ws || ws.readyState!==1 || this.stopped) return;
+      this.reconnectNow=true; this.ready=false;
+      try{ const m=this.terminateMessage(); if(m) ws.send(m); }catch(e){}
+      setTimeout(()=>{ try{ if(this.ws===ws) ws.close(); }catch(e){} },3000);
     }
   }
-  function dgFatal(msg){ stop(); showBanner(msg); }
-  async function dgProbe(){
+
+  // ----- Deepgram 适配器 -----
+  class DeepgramEngine extends WsEngine{
+    constructor(h){ super(h); this.finals=[]; this.uStart=null; this.uEnd=null; }
+    get label(){ return "Deepgram"; }
+    url(){
+      const p={model:"nova-3",language:settings.lang,smart_format:"true",punctuate:"true",interim_results:"true",endpointing:"300",utterance_end_ms:"1000",encoding:"linear16",sample_rate:"16000",channels:"1"};
+      let q=Object.keys(p).map(k=>k+"="+encodeURIComponent(p[k])).join("&");
+      (this.opts.keyterms||[]).forEach(t=>{ q+="&keyterm="+encodeURIComponent(t); });
+      return "wss://api.deepgram.com/v1/listen?"+q;
+    }
+    async auth(){
+      if(!useRelay()) return {url:this.url(), protocols:["token",settings.dgKey]};
+      let r;
+      try{ r=await fetch(relayBase()+"/deepgram-token",{headers:{authorization:"Bearer "+settings.relayToken}}); }
+      catch(e){ throw new Error("relay-net"); }
+      if(r.status===401){ const err=new Error("relay-401"); err.fatal="中转访问口令无效，请在设置里检查。"; throw err; }
+      if(!r.ok){
+        let m=""; try{ m=(await r.json()).error||""; }catch(_){}
+        const err=new Error("relay-"+r.status);
+        if(r.status===402||/balance|credit|insufficient/i.test(m)) err.fatal="Deepgram 余额不足，请充值后重试。";
+        else if(r.status===403) err.fatal="Deepgram 密钥无效或权限不足（需要 Member 权限），请检查 Worker 里的 DEEPGRAM_API_KEY。";
+        throw err;
+      }
+      const j=await r.json(); if(!j.access_token) throw new Error("relay-bad");
+      return {url:this.url(), protocols:["bearer",j.access_token]};
+    }
+    hasPending(){ return this.finals.length>0; }
+    flush(){
+      const t=this.finals.join(" ").trim(), st=this.uStart, en=this.uEnd; this.finals=[]; this.uStart=null; this.uEnd=null;
+      if(t) this.h.onFinal({text:t,startSec:st,endSec:en});
+    }
+    terminateMessage(){ return JSON.stringify({type:"CloseStream"}); }
+    onMessage(msg){
+      if(msg.type==="Results"){
+        const alt=msg.channel && msg.channel.alternatives && msg.channel.alternatives[0];
+        const text=((alt&&alt.transcript)||"").trim();
+        if(msg.is_final){
+          if(text){
+            if(!this.finals.length && typeof msg.start==="number") this.uStart=this.tl(msg.start);
+            if(typeof msg.start==="number") this.uEnd=this.tl(msg.start+(msg.duration||0));
+            this.finals.push(text);
+          }
+          if(msg.speech_final) this.flush(); else this.h.onPartial(this.finals.join(" "));
+        }else{
+          this.h.onPartial(this.finals.concat(text?[text]:[]).join(" "));
+        }
+      }else if(msg.type==="UtteranceEnd"){
+        if(this.finals.length) this.flush();
+      }
+    }
+    async classifyClose(ev,opened){
+      const reason=ev.reason||"";
+      if(/insufficient|credit|balance|402/i.test(reason)) return {fatal:"Deepgram 余额不足，请到 Deepgram Console 充值后重试。"};
+      if(/401|unauthor|credential|invalid/i.test(reason)) return {fatal:"Deepgram 密钥无效，请在设置里检查是否复制完整。"};
+      if(!opened && !useRelay()){
+        // 浏览器拿不到握手的 HTTP 状态码，用一次 REST 请求判断密钥是否有问题
+        let st=0; try{ st=(await fetch("https://api.deepgram.com/v1/projects",{headers:{Authorization:"Token "+settings.dgKey}})).status; }catch(e){}
+        if(st===401) return {fatal:"Deepgram 密钥无效（401），请在设置里检查是否复制完整。"};
+        if(st===402) return {fatal:"Deepgram 余额不足（402），请到 Deepgram Console 充值后重试。"};
+      }
+      return null;
+    }
+  }
+
+  // ----- 浏览器自带（Web Speech）适配器：不走公共采集，麦克风由浏览器自己管 -----
+  class BrowserEngine{
+    constructor(h){ this.h=h; this.state="idle"; this.retries=0; this.stopped=true; this.rec=null; this.uStart=null; this.timer=null; this.fb=null; this.closedCalled=false; }
+    isLive(){ return false; }
+    hasPending(){ return this.uStart!=null; }
+    start(){
+      if(!SR) throw new Error("no SpeechRecognition");
+      this.stopped=false; this.closedCalled=false; this.begin(); this.state="live"; this.h.onStatus({state:"live"});
+    }
+    begin(){
+      const rec=this.rec=new SR();
+      rec.lang=settings.lang; rec.continuous=true; rec.interimResults=true; rec.maxAlternatives=1;
+      rec.onresult=ev=>{
+        let interim="";
+        for(let i=ev.resultIndex;i<ev.results.length;i++){
+          const r=ev.results[i];
+          if(r.isFinal){ this.h.onFinal({text:r[0].transcript,startSec:this.uStart,endSec:null}); this.uStart=null; } else interim+=r[0].transcript;
+        }
+        if(interim && this.uStart==null) this.uStart=this.h.now();
+        this.h.onPartial(interim);
+      };
+      rec.onerror=ev=>{
+        if(ev.error==="not-allowed"||ev.error==="service-not-allowed") this.h.onError("麦克风权限被拒绝。请在浏览器的网站设置（或系统设置 → 隐私 → 麦克风）里允许此网站使用麦克风，然后刷新页面。");
+        else if(ev.error==="audio-capture") this.h.onError("没有检测到麦克风，请检查设备。");
+        else if(ev.error==="network") this.h.onHint("语音识别需要联网，正在重试…");
+      };
+      rec.onend=()=>{
+        this.h.onPartial("");
+        if(this.stopped){ this.done(); return; }
+        clearTimeout(this.timer); this.timer=setTimeout(()=>{ try{ this.begin(); }catch(e){} },200);
+      };
+      rec.start();
+    }
+    done(){ clearTimeout(this.fb); if(this.closedCalled) return; this.closedCalled=true; this.state="idle"; this.h.onClosed(); }
+    stop(){
+      if(this.stopped && this.closedCalled) return;
+      this.stopped=true; clearTimeout(this.timer);
+      try{ this.rec && this.rec.stop(); }catch(e){}
+      this.fb=setTimeout(()=>this.done(),1500);     // 浏览器没回 onend 时的兜底
+    }
+    abort(){ this.stopped=true; this.closedCalled=true; clearTimeout(this.timer); clearTimeout(this.fb); try{ this.rec && this.rec.stop(); }catch(e){} this.h.onPartial(""); }
+    restartNow(){ try{ this.rec && this.rec.stop(); }catch(e){} }   // onend 会用新的语言设置自动重启
+  }
+
+  // ----- 引擎注册表（设置里的「识别引擎」）-----
+  const ENGINES={
+    deepgram:{name:"Deepgram", streaming:true, usesMic:true, create:h=>new DeepgramEngine(h)},
+    browser:{name:"浏览器自带", streaming:false, usesMic:false, create:h=>new BrowserEngine(h)}
+  };
+
+  // ---------- 收听控制（与具体引擎无关） ----------
+  let eng=null, cap=null, engState="idle", listenSecs=0, tickT=null, activeEngine="browser";
+  const fmt=s=>String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
+  const engineHandlers={
+    now:()=>nowT()||0,
+    onPartial:t=>showLive(t),
+    onFinal:r=>{ commit(r.text,r.startSec,r.endSec); showLive(""); },
+    onStatus:st=>{
+      engState=st.state;
+      if(ENGINES[activeEngine] && ENGINES[activeEngine].streaming){
+        refreshStatus();
+        if(st.state==="live") hint.textContent="正在收听英文，再点一次停止";
+      }
+    },
+    onHint:t=>{ hint.textContent=t; },
+    onError:msg=>{ stop(); showBanner(msg); },
+    onClosed:()=>{ if(S && S.closing) sessEnd(); }
+  };
+  function refreshStatus(){
+    const info=ENGINES[activeEngine]; if(!info || !info.streaming) return;
+    const t=fmt(listenSecs);
+    const txt = engState==="connecting" ? "连接中… "+t
+      : engState==="live" ? "收听中 "+t
+      : engState==="retry" ? "重连中（"+(eng?eng.retries:0)+"/3）"+t
+      : (S && S.intAt!=null && !S.closing) ? "已中断 "+t
+      : "已暂停 "+t;
+    setStatus(listening, txt);
+  }
+  function releaseCapture(){
+    if(cap){ cap.close(); cap=null; }
+    clearInterval(tickT); tickT=null;
+  }
+  async function startEngine(resume){
+    const info=ENGINES[activeEngine];
+    // 1. 公共采集：AudioContext 必须在点击手势内同步创建，iPhone Safari 才允许出声
+    if(info.usesMic){
+      cap=createCapture();
+      if(!cap){
+        showBanner("这个浏览器不支持所需的音频功能。请用 iPhone Safari（iOS 14.5+）或安卓 Chrome，或在设置里切换到「浏览器自带」。");
+        return false;
+      }
+    }
+    eng=info.create(engineHandlers);
+    engState="connecting"; refreshStatus();
     try{
-      const r=await fetch("https://api.deepgram.com/v1/projects",{headers:{Authorization:"Token "+settings.dgKey}});
-      return r.status;
-    }catch(e){ return 0; }
-  }
-  function dgRetry(){
-    if(dg.retries>=3) return dgFatal("网络已断开，自动重连 3 次仍失败。请检查网络后再点麦克风。");
-    dg.retries++; dg.state="retry"; dgRefresh();
-    hint.textContent="连接中断，正在自动重连…";
-    dg.retryTimer=setTimeout(connectDg, 1000*Math.pow(2,dg.retries-1));
-  }
-  async function dgAuth(){
-    if(!useRelay()) return ["token",settings.dgKey];
-    let r;
-    try{ r=await fetch(relayBase()+"/deepgram-token",{headers:{authorization:"Bearer "+settings.relayToken}}); }
-    catch(e){ const err=new Error("relay-net"); err.net=true; throw err; }
-    if(r.status===401){ const err=new Error("relay-401"); err.fatal="中转访问口令无效，请在设置里检查。"; throw err; }
-    if(!r.ok){ let m=""; try{ m=(await r.json()).error||""; }catch(_){}
-      const err=new Error("relay-"+r.status);
-      if(r.status===402||/balance|credit|insufficient/i.test(m)) err.fatal="Deepgram 余额不足，请充值后重试。";
-      else if(r.status===403) err.fatal="Deepgram 密钥无效或权限不足（需要 Member 权限），请检查 Worker 里的 DEEPGRAM_API_KEY。";
-      throw err; }
-    const j=await r.json();
-    if(!j.access_token){ const err=new Error("relay-bad"); throw err; }
-    return ["bearer",j.access_token];
-  }
-  async function dgDropped(ev,opened){
-    const reason=ev.reason||"";
-    if(/insufficient|credit|balance|402/i.test(reason)) return dgFatal("Deepgram 余额不足，请到 Deepgram Console 充值后重试。");
-    if(/401|unauthor|credential|invalid/i.test(reason)) return dgFatal("Deepgram 密钥无效，请在设置里检查是否复制完整。");
-    if(!opened && !useRelay()){
-      // 浏览器拿不到握手的 HTTP 状态码，用一次 REST 请求判断密钥是否有问题
-      const st=await dgProbe();
-      if(!listening || dg.closing) return;
-      if(st===401) return dgFatal("Deepgram 密钥无效（401），请在设置里检查是否复制完整。");
-      if(st===402) return dgFatal("Deepgram 余额不足（402），请到 Deepgram Console 充值后重试。");
-    }
-    dgRetry();
-  }
-  async function connectDg(){
-    if(!listening || dg.closing) return;
-    let ws, opened=false, proto;
-    try{ proto=await dgAuth(); }
-    catch(err){
-      if(!listening || dg.closing) return;
-      if(err.fatal) return dgFatal(err.fatal);
-      return dgRetry();
-    }
-    if(!listening || dg.closing) return;
-    try{ ws=new WebSocket(dgUrl(),proto); }catch(e){ return dgFatal("无法连接 Deepgram，请检查密钥格式。"); }
-    ws.binaryType="arraybuffer"; dg.ws=ws;
-    ws.onopen=()=>{ if(dg.ws!==ws) return; opened=true; dg.retries=0; dg.state="live"; dg.connOff=nowT()||0; hint.textContent="正在收听英文，再点一次停止"; dgRefresh(); };
-    ws.onmessage=ev=>{ if(dg.ws!==ws || typeof ev.data!=="string") return; try{ dgResult(JSON.parse(ev.data)); }catch(_){} };
-    ws.onerror=()=>{};
-    ws.onclose=ev=>{
-      if(dg.ws!==ws) return;
-      dg.ws=null; flushFinals(); showLive("");
-      if(dg.closing){ finishDg(); return; }
-      if(!listening) return;
-      if(dg.reconnectNow){ dg.reconnectNow=false; connectDg(); return; }
-      dgDropped(ev,opened);
-    };
-  }
-  function releaseMic(){
-    try{ dg.node && (dg.node.port.onmessage=null, dg.node.disconnect()); }catch(e){}
-    try{ dg.stream && dg.stream.getTracks().forEach(t=>t.stop()); }catch(e){}
-    try{ dg.ctx && dg.ctx.state!=="closed" && dg.ctx.close(); }catch(e){}
-    dg.node=null; dg.stream=null; dg.ctx=null;
-    clearInterval(dg.tick); dg.tick=null;
-  }
-  function finishDg(){
-    clearTimeout(dg.closeTimer); dg.closing=false; dg.ws=null; dg.state="idle"; dgRefresh();
-    if(S && S.closing) sessEnd();
-  }
-  async function startDeepgram(resume){
-    // AudioContext 必须在点击手势内同步创建，iPhone Safari 才允许出声
-    const AC=window.AudioContext||window.webkitAudioContext;
-    if(!AC || !window.AudioWorkletNode || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-      showBanner("这个浏览器不支持 Deepgram 所需的音频功能。请用 iPhone Safari（iOS 14.5+）或安卓 Chrome，或在设置里切换到「浏览器自带」。");
-      return false;
-    }
-    if(dg.ws){ const o=dg.ws; dg.ws=null; flushFinals(); try{ o.close(); }catch(e){} }
-    clearTimeout(dg.closeTimer); clearTimeout(dg.retryTimer);
-    dg.closing=false; dg.retries=0; dg.finals=[]; dg.reconnectNow=false;
-    const ctx=new AC(); dg.ctx=ctx;
-    try{ ctx.resume(); }catch(e){}
-    dg.state="connecting"; dgRefresh();
-    try{
-      const stream=await navigator.mediaDevices.getUserMedia({audio:{channelCount:1,echoCancellation:false,noiseSuppression:true,autoGainControl:true}});
-      dg.stream=stream;
-      if(!listening){ releaseMic(); return false; }
-      const url=URL.createObjectURL(new Blob([WORKLET_SRC],{type:"application/javascript"}));
-      try{ await ctx.audioWorklet.addModule(url); } finally{ URL.revokeObjectURL(url); }
-      if(!listening){ releaseMic(); return false; }
-      await ctx.resume();
-      const src=ctx.createMediaStreamSource(stream);
-      const node=new AudioWorkletNode(ctx,"pcm16",{numberOfInputs:1,numberOfOutputs:1,channelCount:1,processorOptions:{inRate:ctx.sampleRate}});
-      const mute=ctx.createGain(); mute.gain.value=0;
-      src.connect(node); node.connect(mute); mute.connect(ctx.destination);
-      node.port.onmessage=e=>{ const ws=dg.ws; if(ws && ws.readyState===1) ws.send(e.data); };
-      dg.node=node;
-      if(resume && S){
-        const ms=performance.now()-S.intAt; S.gapMs+=ms; S.intAt=null; S.closing=false;
-        addBreak(ms/1000);
-      }else sessBegin("deepgram");
-      audioStart(stream);
-      stream.getAudioTracks().forEach(t=>{ t.onended=()=>{ if(!listening) return; if(S) interrupt(); else{ stop(); showBanner("麦克风已中断（可能被其他应用占用），请重新点麦克风。"); } }; });
+      if(cap){
+        await cap.open();
+        if(!listening || cap.closed){ releaseCapture(); return false; }
+      }
     }catch(err){
-      releaseMic(); dg.state="idle";
-      if(!listening){ dgRefresh(); return false; }
+      releaseCapture(); engState="idle";
+      if(!listening){ refreshStatus(); return false; }
       const n=err&&err.name;
       if(n==="NotAllowedError"||n==="SecurityError") showBanner("麦克风权限被拒绝。请在浏览器的网站设置（或系统设置 → 隐私 → 麦克风）里允许此网站使用麦克风，然后刷新页面。");
       else if(n==="NotFoundError"||n==="OverconstrainedError") showBanner("没有检测到麦克风，请检查设备。");
@@ -2248,26 +2374,21 @@ registerProcessor("pcm16",PCM16);`;
       listening=false; setStatus(false,"未开始"); hint.textContent="点麦克风重试";
       return false;
     }
-    dg.tick=setInterval(()=>{ if(dg.ws && dg.ws.readyState===1){ dg.secs++; dgRefresh(); } },1000);
-    connectDg();
+    // 2. 会话与录音存档
+    if(resume && S){
+      const ms=performance.now()-S.intAt; S.gapMs+=ms; S.intAt=null; S.closing=false;
+      addBreak(ms/1000);
+    }else sessBegin(activeEngine);
+    if(cap){
+      audioStart(cap.stream);
+      cap.stream.getAudioTracks().forEach(t=>{ t.onended=()=>{ if(!listening) return; if(S) interrupt(); else{ stop(); showBanner("麦克风已中断（可能被其他应用占用），请重新点麦克风。"); } }; });
+    }
+    if(info.streaming) tickT=setInterval(()=>{ if(eng && eng.isLive()){ listenSecs++; refreshStatus(); } },1000);   // 已收听时长，方便估算费用
+    // 3. 启动引擎
+    try{ eng.start(cap?cap.stream:null,{capture:cap, lang:settings.lang, keyterms:info.keyterms?info.keyterms():extractKeyterms(30,60)}); }
+    catch(e){ stop(); showBanner("语音识别启动失败，请重试。"); return false; }
     return true;
   }
-  function stopDeepgram(){
-    clearTimeout(dg.retryTimer);
-    audioStop(); releaseMic(); dg.state="idle";
-    const ws=dg.ws;
-    if(ws && ws.readyState===1){
-      dg.closing=true;
-      try{ ws.send(JSON.stringify({type:"CloseStream"})); }catch(e){}
-      dg.closeTimer=setTimeout(()=>{ try{ ws.close(); }catch(e){} },3000);
-    }else{
-      if(ws){ dg.ws=null; try{ ws.close(); }catch(e){} }
-      flushFinals(); showLive("");
-      if(S && S.closing) sessEnd();
-    }
-  }
-
-  let activeEngine="browser";
   async function acquireWake(){
     try{
       if("wakeLock" in navigator){
@@ -2281,25 +2402,24 @@ registerProcessor("pcm16",PCM16);`;
     if(settings.engine==="deepgram" && !dgReady()){ openSettings(); toast("请先填写 Deepgram 密钥"); return; }
     hideBanner();
     if(S && S.closing){
-      if(dg.ws){ const o=dg.ws; dg.ws=null; flushFinals(); try{ o.close(); }catch(e){} }
+      if(eng) eng.abort();
       await sessEnd();
     }
-    const resuming = !!(S && S.intAt!=null && !S.closing && S.row.engine==="deepgram");
-    activeEngine = resuming ? "deepgram" : settings.engine;
+    const resuming = !!(S && S.intAt!=null && !S.closing && ENGINES[S.row.engine] && ENGINES[S.row.engine].usesMic);
+    activeEngine = resuming ? S.row.engine : settings.engine;
     listening=true; setStatus(true,"收听中"); hint.textContent="正在收听英文，再点一次停止";
     acquireWake();
-    if(activeEngine==="deepgram"){ await startDeepgram(resuming); return; }
-    try{ startRec(); sessBegin("browser"); }catch(e){ stop(); showBanner("语音识别启动失败，请重试。"); }
+    await startEngine(resuming);
   }
   function stop(){
     const wasListening=listening;
-    listening=false; clearTimeout(restartTimer);
+    listening=false;
     if(S) freezeSession();
-    if(activeEngine==="deepgram"){ if(wasListening || dg.ctx) stopDeepgram(); else if(S) sessEnd(); dgRefresh(); if(!dg.secs) setStatus(false,"已暂停"); }
-    else{
-      try{ rec && rec.stop(); }catch(e){} setStatus(false,"已暂停");
-      if(S) setTimeout(()=>{ if(S && S.closing) sessEnd(); },1500);
-    }
+    const info=ENGINES[activeEngine];
+    if(eng && !eng.stopped){ audioStop(); releaseCapture(); eng.stop(); }      // 引擎 flush 完最后一句后回调 onClosed → 结束会话
+    else if(S){ audioStop(); releaseCapture(); sessEnd(); }                     // 已中断后直接结束
+    if(info && info.streaming){ engState="idle"; refreshStatus(); if(!listenSecs) setStatus(false,"已暂停"); }
+    else setStatus(false,"已暂停");
     hint.textContent="点麦克风继续收听";
     try{ wakeLock && wakeLock.release(); }catch(e){} wakeLock=null;
   }
@@ -2347,9 +2467,7 @@ registerProcessor("pcm16",PCM16);`;
   $("model").onchange=e=>{ settings.model=e.target.value; saveSettings(); };
   $("accent").onchange=e=>{
     settings.lang=e.target.value; saveSettings();
-    if(!listening) return;
-    if(activeEngine==="deepgram"){ if(dg.ws && dg.ws.readyState===1){ dg.reconnectNow=true; try{ dg.ws.send(JSON.stringify({type:"CloseStream"})); }catch(_){} } }
-    else{ try{ rec.stop(); }catch(_){} }
+    if(listening && eng) eng.restartNow();
   };
   $("route").onchange=e=>{ if(listening) stop(); settings.route=e.target.value; saveSettings(); applySettings(); hideBanner(); checkEngine(); };
   $("relayUrl").oninput=e=>{ settings.relayUrl=e.target.value.trim(); saveSettings(); };
