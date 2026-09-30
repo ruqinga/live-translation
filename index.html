@@ -169,6 +169,10 @@ body.zh-only .dseg .e{display:none}
 .md ul,.md ol{margin:4px 0;padding-left:22px}
 .md a.ts{color:var(--accent);text-decoration:none;font-family:var(--font-en);font-size:13px;padding:0 2px}
 .md .muted{color:var(--muted)}
+.exp-list{display:flex;flex-direction:column;gap:8px;margin:10px 0 14px}
+.exp-list button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:12px 14px;font-size:16px;cursor:pointer;text-align:left}
+.exp-list button small{font-size:12px;color:var(--muted)}
+.exp-list button:disabled{opacity:.45;cursor:not-allowed}
 .done.alt{background:var(--bg);color:var(--ink);border:1px solid var(--line)}
 .divider{margin:8px 0;padding:6px 10px;border-radius:8px;background:var(--bg);border:1px dashed var(--line);color:var(--muted);font-size:13px;text-align:center}
 .rec-note{font-size:13px;color:var(--muted);line-height:1.5;margin:6px 0 12px}
@@ -223,6 +227,7 @@ body.zh-only .dseg .e{display:none}
       <div class="det-top">
         <button id="detBack">← 记录</button>
         <div class="det-title" id="detTitle"></div>
+        <button id="detExport">导出</button>
         <button id="detRename">重命名</button>
         <button id="detDelete" class="danger">删除</button>
       </div>
@@ -371,6 +376,15 @@ body.zh-only .dseg .e{display:none}
       <div class="note">收听时底部的「标记」按钮使用第一个预设标签。改名或删除会同步到所有会话和句子。</div>
     </div>
     <div class="row">
+      <label>备份</label>
+      <div class="actions" style="grid-template-columns:1fr 1fr">
+        <button id="backupAll">导出全部备份</button>
+        <button id="backupImport">导入备份</button>
+      </div>
+      <input type="file" id="backupFile" accept="application/json,.json" hidden>
+      <div class="note">备份不含音频。iPhone 上的网站数据可能被系统清理（长期不打开约 7 天），建议添加到主屏幕使用，并定期导出备份。</div>
+    </div>
+    <div class="row">
       <label>本地存储</label>
       <div class="note" id="storeInfo">读取中…</div>
     </div>
@@ -389,6 +403,19 @@ body.zh-only .dseg .e{display:none}
     <div class="rec-note">上次的收听没有正常结束（可能是刷新、崩溃或被系统关闭），下面的内容已经保存在本机，可以恢复或丢弃。</div>
     <div id="recoverList"></div>
     <button class="done" id="recoverClose">稍后处理</button>
+  </div>
+</dialog>
+
+<dialog id="expDlg">
+  <div class="sheet">
+    <h2>导出</h2>
+    <div class="exp-list">
+      <button data-exp="audio">录音文件<small id="expAudioNote"></small></button>
+      <button data-exp="srt">字幕 SRT<small>中英双语</small></button>
+      <button data-exp="md">笔记 Markdown<small>标题、标签、摘要、带时间戳的双语全文</small></button>
+      <button data-exp="json">完整备份 JSON<small>字幕、标签、摘要，不含音频</small></button>
+    </div>
+    <button class="done alt" id="expClose">取消</button>
   </div>
 </dialog>
 
@@ -1293,6 +1320,126 @@ body.zh-only .dseg .e{display:none}
     if(det.row.summary && !(sumState[det.row.id]&&sumState[det.row.id].status==="error") && !confirm("重新生成会覆盖现有摘要，继续吗？")) return;
     queueSummary(det.row.id);
   };
+
+  // ---------- Export & backup ----------
+  const p2=n=>String(n).padStart(2,"0");
+  const safeName=n=>(n||"记录").replace(/[\\/:*?"<>|]/g,"-").trim()||"记录";
+  function download(blob,name){
+    const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),15000);
+  }
+  // iPhone 优先用系统分享面板（可直接存到“文件”/iCloud），不可用或失败则普通下载
+  async function deliver(files){
+    const ios=/iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.maxTouchPoints>1 && /Macintosh/.test(navigator.userAgent));
+    if(ios && navigator.share && navigator.canShare){
+      try{
+        const fs=files.map(f=>new File([f.blob],f.name,{type:f.blob.type||"application/octet-stream"}));
+        if(navigator.canShare({files:fs})){ await navigator.share({files:fs}); return; }
+      }catch(e){ if(e && e.name==="AbortError") return; }
+    }
+    files.forEach(f=>download(f.blob,f.name));
+  }
+  const AUDIO_EXT={"audio/webm":"webm","audio/mp4":"m4a","audio/aac":"aac"};
+  async function exportAudio(row){
+    const chunks=await dbBySid("audioChunks",row.id);
+    const rp=(row.parts||[]).slice().sort((a,b)=>a.n-b.n), ext=AUDIO_EXT[row.audioMime]||"bin", files=[];
+    rp.forEach(pt=>{
+      const list=chunks.filter(c=>c.part===pt.n).sort((a,b)=>a.idx-b.idx);
+      if(list.length) files.push({blob:new Blob(list.map(c=>c.blob),{type:row.audioMime}), name:safeName(row.title)+(rp.length>1?"-第"+pt.n+"段":"")+"."+ext});
+    });
+    if(!files.length) throw new Error("这条记录没有录音");
+    await deliver(files);
+    if(files.length>1) toast("因中断续录，共导出 "+files.length+" 段音频");
+  }
+  const srtTime=t=>{ t=Math.max(0,t); const ms=Math.round(t*1000), h=Math.floor(ms/3600000), m=Math.floor(ms%3600000/60000), s=Math.floor(ms%60000/1000); return p2(h)+":"+p2(m)+":"+p2(s)+","+String(ms%1000).padStart(3,"0"); };
+  function buildSrt(segs){
+    const list=segs.filter(g=>g.kind!=="break");
+    return list.map((g,i)=>{
+      const next=list[i+1]; let end=g.end;
+      if(!(end>g.start+0.2)) end=Math.min(g.start+3, next&&next.start>g.start ? next.start : g.start+3);
+      return (i+1)+"\n"+srtTime(g.start)+" --> "+srtTime(end)+"\n"+(g.en||"")+(g.zh?"\n"+g.zh:"");
+    }).join("\n\n")+"\n";
+  }
+  function buildMd(row,segs){
+    const d=new Date(row.created), out=[];
+    out.push("# "+row.title, "");
+    out.push("- 日期："+d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate())+" "+p2(d.getHours())+":"+p2(d.getMinutes()));
+    out.push("- 时长："+fmtT(row.dur||0));
+    if((row.tags||[]).length) out.push("- 标签："+row.tags.map(t=>"#"+t.replace(/\s+/g,"_")).join(" "));
+    out.push("", "## 摘要", "", row.summary ? row.summary : "（还没有生成摘要）", "", "## 全文（中英对照）", "");
+    segs.forEach(g=>{
+      if(g.kind==="break"){ out.push("*"+g.en+"*", ""); return; }
+      out.push("**["+fmtT(g.start)+"]** "+(g.en||"")+((g.tags||[]).length?"  "+g.tags.map(t=>"#"+t.replace(/\s+/g,"_")).join(" "):""));
+      if(g.zh) out.push("> "+g.zh);
+      out.push("");
+    });
+    return out.join("\n");
+  }
+  async function bundle(id){
+    const row=await dbGet("sessions",id), segs=sortSegs(await dbBySid("segments",id));
+    return Object.assign({},row,{segments:segs});
+  }
+  const backupBlob=list=>new Blob([JSON.stringify({app:"live-translation",version:1,exported:new Date().toISOString(),sessions:list},null,1)],{type:"application/json"});
+  const stamp=()=>{ const d=new Date(); return d.getFullYear()+p2(d.getMonth()+1)+p2(d.getDate())+"-"+p2(d.getHours())+p2(d.getMinutes()); };
+
+  $("detExport").onclick=()=>{
+    if(!det) return; const has=(det.row.parts||[]).length>0;
+    const b=document.querySelector('#expDlg [data-exp="audio"]'); b.disabled=!has;
+    $("expAudioNote").textContent=has?"."+(AUDIO_EXT[det.row.audioMime]||"bin")+"（多段续录会分别导出）":"这条记录没有录音";
+    $("expDlg").showModal();
+  };
+  $("expClose").onclick=()=>$("expDlg").close();
+  $("expDlg").addEventListener("click",e=>{ if(e.target===$("expDlg")) $("expDlg").close(); });
+  document.querySelectorAll("#expDlg [data-exp]").forEach(b=>b.onclick=async()=>{
+    if(!det) return; const kind=b.dataset.exp, row=det.row; $("expDlg").close();
+    try{
+      if(kind==="audio") await exportAudio(row);
+      else if(kind==="srt") await deliver([{blob:new Blob([buildSrt(sortSegs(await dbBySid("segments",row.id)))],{type:"text/plain;charset=utf-8"}), name:safeName(row.title)+".srt"}]);
+      else if(kind==="md") await deliver([{blob:new Blob([buildMd(row,sortSegs(await dbBySid("segments",row.id)))],{type:"text/plain;charset=utf-8"}), name:safeName(row.title)+".md"}]);
+      else await deliver([{blob:backupBlob([await bundle(row.id)]), name:safeName(row.title)+"-备份.json"}]);
+    }catch(e){ toast("导出失败："+((e&&e.message)||"未知错误")); }
+  });
+  $("backupAll").onclick=async()=>{
+    try{
+      const rows=await dbAll("sessions"); if(!rows.length){ toast("还没有记录可以备份"); return; }
+      const list=[]; for(const r of rows.sort((a,b)=>a.created-b.created)) list.push(await bundle(r.id));
+      await deliver([{blob:backupBlob(list), name:"同声字幕备份-"+stamp()+".json"}]);
+    }catch(e){ toast("导出失败："+((e&&e.message)||"未知错误")); }
+  };
+  $("backupImport").onclick=()=>$("backupFile").click();
+  const strs=a=>Array.isArray(a)?a.filter(x=>typeof x==="string"&&x.trim()).map(x=>x.trim().slice(0,20)):[];
+  const num=(v,d)=>Number.isFinite(+v)?+v:d;
+  async function importBackup(file){
+    let data; try{ data=JSON.parse(await file.text()); }catch(e){ toast("这不是有效的备份文件"); return; }
+    if(!data || data.app!=="live-translation" || !Array.isArray(data.sessions)){ toast("这不是有效的备份文件"); return; }
+    const local=new Map((await dbAll("sessions")).map(r=>[r.id,r]));
+    const items=data.sessions.filter(x=>x && Number.isFinite(+x.id));
+    if(!items.length){ toast("备份里没有记录"); return; }
+    const over=items.filter(x=>local.has(+x.id)).length;
+    if(!confirm("导入 "+items.length+" 条记录"+(over?"（其中 "+over+" 条已存在，字幕、标签和摘要会被备份内容覆盖，本机录音保留）":"")+"？")) return;
+    let n=0;
+    for(const x of items){
+      const id=+x.id, old=local.get(id);
+      const row={id, title:String(x.title||"导入的记录").slice(0,100), created:num(x.created,Date.now()), ended:num(x.ended,Date.now()), dur:num(x.dur,0),
+        tags:strs(x.tags), summary:typeof x.summary==="string"?x.summary:"", summaryAt:x.summaryAt==null?null:num(x.summaryAt,null),
+        audioMime:old?old.audioMime:null, parts:old?old.parts:[], engine:x.engine==="browser"?"browser":"deepgram"};
+      const segs=(Array.isArray(x.segments)?x.segments:[]).map((g,i)=>({
+        id:id+"-"+(i+1), sid:id, start:num(g&&g.start,0), end:num(g&&g.end,0), en:String((g&&g.en)||""), zh:String((g&&g.zh)||""),
+        tags:strs(g&&g.tags), kind:(g&&g.kind)==="break"?"break":"seg"}));
+      try{
+        await dbTx(["sessions","segments"],"readwrite",t=>{
+          t.objectStore("sessions").put(row);
+          const os=t.objectStore("segments"), r=os.index("sid").openKeyCursor(IDBKeyRange.only(id));
+          r.onsuccess=()=>{ const c=r.result; if(c){ os.delete(c.primaryKey); c.continue(); } else segs.forEach(g=>os.put(g)); };
+        });
+        n++;
+      }catch(e){ dbFail(e); break; }
+    }
+    afterImport();
+    toast("已导入 "+n+" 条记录");
+  }
+  function afterImport(){ loadKnownTags(); if(view==="records" && $("recDetail").hidden) recRefresh(); }
+  $("backupFile").onchange=e=>{ const f=e.target.files[0]; e.target.value=""; if(f) importBackup(f); };
 
   // ---------- Feed ----------
   feed.addEventListener("scroll",()=>{ stickToBottom = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 60; });
