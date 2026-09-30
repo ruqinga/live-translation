@@ -105,6 +105,14 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .row .note{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.5}
 .row .note a{color:var(--accent)}
 .keyok{color:#2E8B57}
+[hidden]{display:none!important}
+.rec-note{font-size:13px;color:var(--muted);line-height:1.5;margin:6px 0 12px}
+.rc-item{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;background:var(--bg)}
+.rc-item .nm{font-weight:600}
+.rc-item .meta{font-size:13px;color:var(--muted);margin:4px 0 8px}
+.rc-item .btns{display:flex;gap:8px}
+.rc-item button{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:7px 14px;font-size:14px;cursor:pointer}
+.rc-item button.danger{color:var(--rec)}
 </style>
 </head>
 <body>
@@ -222,12 +230,25 @@ input[type=range]{width:100%;accent-color:var(--accent)}
       <label for="glossary">场景与术语（可选）</label>
       <textarea id="glossary" placeholder="例如：医学讲座；MRI 译为核磁共振；Apex 是公司名不翻译"></textarea>
     </div>
+    <div class="row">
+      <label>本地存储</label>
+      <div class="note" id="storeInfo">读取中…</div>
+    </div>
     <div class="actions">
       <button id="copyAll">复制全文</button>
       <button id="exportTxt">导出文本</button>
       <button id="clearAll" class="danger">清空记录</button>
     </div>
     <button class="done" id="closeSettings">完成</button>
+  </div>
+</dialog>
+
+<dialog id="recoverDlg">
+  <div class="sheet">
+    <h2>发现未完成的记录</h2>
+    <div class="rec-note">上次的收听没有正常结束（可能是刷新、崩溃或被系统关闭），下面的内容已经保存在本机，可以恢复或丢弃。</div>
+    <div id="recoverList"></div>
+    <button class="done" id="recoverClose">稍后处理</button>
   </div>
 </dialog>
 
@@ -285,7 +306,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   let toastT; function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),1800); }
 
   const dlg=$("settings");
-  function openSettings(){ applySettings(); dlg.showModal(); }
+  function openSettings(){ applySettings(); dlg.showModal(); refreshStoreInfo(); }
 
   function checkEngine(){
     const bad = settings.engine==="browser" && !SR;
@@ -300,6 +321,137 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   if(location.protocol!=="https:" && location.hostname!=="localhost"){
     showBanner("麦克风需要 https 网址才能使用，请通过 https 链接打开此页面。");
   }
+
+  // ---------- Local database (IndexedDB) ----------
+  // sessions：会话；segments：字幕句（按 sid 建索引）；audioChunks：音频分片（按 sid 建索引）
+  let dbP=null, dbWarned=false;
+  function db(){
+    return dbP||(dbP=new Promise((res,rej)=>{
+      if(!window.indexedDB){ rej(new Error("no indexedDB")); return; }
+      const r=indexedDB.open("lt-db",1);
+      r.onupgradeneeded=()=>{
+        const d=r.result;
+        d.createObjectStore("sessions",{keyPath:"id"});
+        d.createObjectStore("segments",{keyPath:"id"}).createIndex("sid","sid");
+        d.createObjectStore("audioChunks",{keyPath:["sid","idx"]}).createIndex("sid","sid");
+      };
+      r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); r.onblocked=()=>rej(new Error("blocked"));
+    }));
+  }
+  function dbTx(stores,mode,fn){
+    return db().then(d=>new Promise((res,rej)=>{
+      const t=d.transaction(stores,mode); let out;
+      try{ out=fn(t); }catch(e){ rej(e); return; }
+      t.oncomplete=()=>res(out && out.result!==undefined ? out.result : out);
+      t.onerror=()=>rej(t.error); t.onabort=()=>rej(t.error||new Error("aborted"));
+    }));
+  }
+  const dbPut=(store,v)=>dbTx([store],"readwrite",t=>t.objectStore(store).put(v));
+  const dbGet=(store,k)=>dbTx([store],"readonly",t=>t.objectStore(store).get(k));
+  const dbAll=store=>dbTx([store],"readonly",t=>t.objectStore(store).getAll());
+  const dbBySid=(store,sid)=>dbTx([store],"readonly",t=>t.objectStore(store).index("sid").getAll(IDBKeyRange.only(sid)));
+  function dbDelSession(id){
+    return dbTx(["sessions","segments","audioChunks"],"readwrite",t=>{
+      t.objectStore("sessions").delete(id);
+      ["segments","audioChunks"].forEach(n=>{
+        const r=t.objectStore(n).index("sid").openKeyCursor(IDBKeyRange.only(id));
+        r.onsuccess=()=>{ const c=r.result; if(c){ t.objectStore(n).delete(c.primaryKey); c.continue(); } };
+      });
+    });
+  }
+  function dbFail(err){
+    if(dbWarned) return; dbWarned=true;
+    showBanner("本地存储出错（"+((err&&(err.name||err.message))||"未知错误")+"）。字幕仍会显示，但可能没有保存成功，请检查手机存储空间，或是否处于无痕模式。");
+  }
+
+  // ---------- Sessions ----------
+  const fmtT=sec=>{ sec=Math.max(0,Math.floor(sec)); const h=Math.floor(sec/3600), m=Math.floor(sec%3600/60), x=sec%60, p=n=>String(n).padStart(2,"0"); return (h?h+":":"")+p(m)+":"+p(x); };
+  let S=null;          // 当前会话（内存中的状态）
+  let uStartWall=null; // 浏览器引擎：当前句开始的会话时间
+  // 会话时间轴：从开始（录音开始）算起的秒数；中断期间冻结，恢复后接着走
+  const nowT=()=> S ? (S.intAt!=null ? S.intT : Math.max(0,(performance.now()-S.t0-S.gapMs)/1000)) : null;
+  let persistAsked=false;
+  function askPersist(){
+    if(persistAsked) return; persistAsked=true;
+    try{ navigator.storage && navigator.storage.persist && navigator.storage.persist(); }catch(e){}
+  }
+  function sessBegin(engine){
+    const d=new Date(), p=n=>String(n).padStart(2,"0");
+    const row={id:Date.now(), title:p(d.getMonth()+1)+"月"+p(d.getDate())+"日 "+p(d.getHours())+":"+p(d.getMinutes()),
+      created:Date.now(), ended:null, dur:0, tags:[], summary:"", summaryAt:null, audioMime:null, parts:[], engine};
+    S={id:row.id, row, t0:performance.now(), gapMs:0, intAt:null, intT:0, segN:0, closing:false, ending:false};
+    uStartWall=null;
+    dbPut("sessions",row).catch(dbFail);
+    askPersist();
+    return S;
+  }
+  const sessSave=()=>{ if(S) dbPut("sessions",S.row).catch(dbFail); };
+  // 停止或中断时冻结时间轴
+  function freezeSession(){
+    if(!S) return;
+    S.closing=true;
+    if(S.intAt==null){ S.intT=nowT(); S.intAt=performance.now(); }
+  }
+  async function sessEnd(){
+    const s=S; if(!s || s.ending) return;
+    s.ending=true;
+    try{ await audioFlush(s); }catch(e){}
+    const row=s.row;
+    row.ended=Date.now(); row.dur=s.intAt!=null ? s.intT : nowT();
+    S=null; uStartWall=null;
+    let segs=[]; try{ segs=await dbBySid("segments",row.id); }catch(e){}
+    const real=segs.filter(x=>x.kind!=="break");
+    if(!real.length && !row.parts.length && row.dur<2){ dbDelSession(row.id).catch(()=>{}); return; }
+    try{ await dbPut("sessions",row); }catch(e){ dbFail(e); }
+  }
+  function segRecord(e){ return {id:e.segId, sid:e.sid, start:e.start, end:e.end, en:e.en, zh:e.zh||"", tags:e.tags||[], kind:"seg"}; }
+  function segSave(e){ if(e.segId) dbPut("segments",segRecord(e)).catch(dbFail); }
+  async function audioFlush(){ }   // 阶段二实现
+
+  // ----- 存储用量 -----
+  const mb=b=>b>=1073741824 ? (b/1073741824).toFixed(1)+"GB" : (b/1048576).toFixed(b>=10485760?0:1)+"MB";
+  async function refreshStoreInfo(){
+    const el=$("storeInfo");
+    try{
+      const e=await navigator.storage.estimate();
+      let per=""; try{ per=(await navigator.storage.persisted()) ? "已开启持久化存储" : "未开启持久化存储（系统空间紧张时可能被清理）"; }catch(_){}
+      el.textContent="已用 "+mb(e.usage||0)+(e.quota?" / 配额 "+mb(e.quota):"")+(per?"；"+per:"")+"。所有记录只保存在这台手机的浏览器里。";
+    }catch(e){ el.textContent="这个浏览器无法读取存储用量。"; }
+  }
+
+  // ----- 未完成会话恢复 -----
+  async function checkUnfinished(){
+    let rows; try{ rows=await dbAll("sessions"); }catch(e){ return; }
+    const list=[];
+    for(const r of rows.filter(r=>r.ended==null && !(S && S.id===r.id))){
+      const segs=await dbBySid("segments",r.id).catch(()=>[]);
+      const chunks=await dbTx(["audioChunks"],"readonly",t=>t.objectStore("audioChunks").index("sid").count(IDBKeyRange.only(r.id))).catch(()=>0);
+      if(!segs.length && !chunks){ dbDelSession(r.id).catch(()=>{}); continue; }
+      list.push({r,segs});
+    }
+    if(!list.length) return;
+    const box=$("recoverList"); box.textContent="";
+    list.forEach(({r,segs})=>{
+      const it=document.createElement("div"); it.className="rc-item";
+      const nm=document.createElement("div"); nm.className="nm"; nm.textContent=r.title;
+      const meta=document.createElement("div"); meta.className="meta"; meta.textContent="已保存 "+segs.filter(x=>x.kind!=="break").length+" 句字幕";
+      const btns=document.createElement("div"); btns.className="btns";
+      const ok=document.createElement("button"); ok.textContent="恢复";
+      ok.onclick=async()=>{
+        r.ended=Date.now(); r.dur=Math.max(r.dur||0, ...segs.map(x=>x.end||0));
+        try{ await dbPut("sessions",r); toast("已恢复"); }catch(e){ dbFail(e); }
+        it.remove(); if(!box.children.length) $("recoverDlg").close();
+      };
+      const no=document.createElement("button"); no.textContent="丢弃"; no.className="danger";
+      no.onclick=async()=>{
+        if(!confirm("丢弃「"+r.title+"」？字幕和录音会被删除。")) return;
+        await dbDelSession(r.id).catch(()=>{}); it.remove(); if(!box.children.length) $("recoverDlg").close();
+      };
+      btns.append(ok,no); it.append(nm,meta,btns); box.appendChild(it);
+    });
+    $("recoverDlg").showModal();
+  }
+  $("recoverClose").onclick=()=>$("recoverDlg").close();
 
   // ---------- Feed ----------
   feed.addEventListener("scroll",()=>{ stickToBottom = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 60; });
@@ -328,9 +480,14 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     if(!liveEl){ liveEl=document.createElement("div"); liveEl.className="entry live"; liveEl.innerHTML='<div class="en"></div>'; feed.appendChild(liveEl); }
     liveEl.firstChild.textContent=text; scrollDown();
   }
-  function commit(text){
+  function commit(text,start,end){
     text=(text||"").trim(); if(!text) return;
-    const e={id:++seq, en:text, zh:"", status:"waiting"};
+    const e={id:++seq, en:text, zh:"", status:"waiting", tags:[]};
+    if(S){
+      e.sid=S.id; e.segId=S.id+"-"+(++S.segN);
+      e.end=end!=null?end:nowT(); e.start=start!=null?start:e.end; if(e.end<e.start) e.end=e.start;
+      segSave(e);
+    }
     entries.push(e); renderEntry(e); queue.push(e); pump();
   }
 
@@ -339,7 +496,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     if(busy) return;
     const e=queue.shift(); if(!e) return;
     busy=true;
-    try{ await translate(e); } finally{ busy=false; pump(); }
+    try{ await translate(e); } finally{ busy=false; segSave(e); pump(); }
   }
 
   async function translate(e){
@@ -430,8 +587,9 @@ input[type=range]{width:100%;accent-color:var(--accent)}
       let interim="";
       for(let i=ev.resultIndex;i<ev.results.length;i++){
         const r=ev.results[i];
-        if(r.isFinal) commit(r[0].transcript); else interim+=r[0].transcript;
+        if(r.isFinal){ commit(r[0].transcript, uStartWall); uStartWall=null; } else interim+=r[0].transcript;
       }
+      if(interim && uStartWall==null && S) uStartWall=nowT();
       showLive(interim);
     };
     rec.onerror=(ev)=>{
@@ -442,6 +600,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     };
     rec.onend=()=>{
       showLive("");
+      if(!listening && S && S.closing) sessEnd();
       if(listening){ clearTimeout(restartTimer); restartTimer=setTimeout(()=>{ try{ startRec(); }catch(e){} },200); }
     };
     rec.start();
@@ -465,7 +624,7 @@ class PCM16 extends AudioWorkletProcessor{
   }
 }
 registerProcessor("pcm16",PCM16);`;
-  const dg={ctx:null,stream:null,node:null,ws:null,state:"idle",retries:0,finals:[],closing:false,secs:0,tick:null,retryTimer:null,closeTimer:null,reconnectNow:false};
+  const dg={uStart:null,uEnd:null,connOff:0,ctx:null,stream:null,node:null,ws:null,state:"idle",retries:0,finals:[],closing:false,secs:0,tick:null,retryTimer:null,closeTimer:null,reconnectNow:false};
   const fmt=s=>String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
   function dgRefresh(){
     if(activeEngine!=="deepgram") return;
@@ -493,15 +652,20 @@ registerProcessor("pcm16",PCM16);`;
     return "wss://api.deepgram.com/v1/listen?"+q;
   }
   function flushFinals(){
-    const t=dg.finals.join(" ").trim(); dg.finals=[];
-    if(t) commit(t);
+    const t=dg.finals.join(" ").trim(), st=dg.uStart, en=dg.uEnd; dg.finals=[]; dg.uStart=null; dg.uEnd=null;
+    if(t) commit(t, st, en);
   }
   function dgResult(msg){
     if(msg.type==="Results"){
       const alt=msg.channel && msg.channel.alternatives && msg.channel.alternatives[0];
       const text=((alt&&alt.transcript)||"").trim();
       if(msg.is_final){
-        if(text) dg.finals.push(text);
+        if(text){
+          // Deepgram 的时间从每次连接开始重新计，加上连接时刻的偏移才是会话时间轴
+          if(!dg.finals.length && typeof msg.start==="number") dg.uStart=dg.connOff+msg.start;
+          if(typeof msg.start==="number") dg.uEnd=dg.connOff+msg.start+(msg.duration||0);
+          dg.finals.push(text);
+        }
         if(msg.speech_final){ flushFinals(); showLive(""); }
         else showLive(dg.finals.join(" "));
       }else{
@@ -564,7 +728,7 @@ registerProcessor("pcm16",PCM16);`;
     if(!listening || dg.closing) return;
     try{ ws=new WebSocket(dgUrl(),proto); }catch(e){ return dgFatal("无法连接 Deepgram，请检查密钥格式。"); }
     ws.binaryType="arraybuffer"; dg.ws=ws;
-    ws.onopen=()=>{ if(dg.ws!==ws) return; opened=true; dg.retries=0; dg.state="live"; hint.textContent="正在收听英文，再点一次停止"; dgRefresh(); };
+    ws.onopen=()=>{ if(dg.ws!==ws) return; opened=true; dg.retries=0; dg.state="live"; dg.connOff=nowT()||0; hint.textContent="正在收听英文，再点一次停止"; dgRefresh(); };
     ws.onmessage=ev=>{ if(dg.ws!==ws || typeof ev.data!=="string") return; try{ dgResult(JSON.parse(ev.data)); }catch(_){} };
     ws.onerror=()=>{};
     ws.onclose=ev=>{
@@ -585,6 +749,7 @@ registerProcessor("pcm16",PCM16);`;
   }
   function finishDg(){
     clearTimeout(dg.closeTimer); dg.closing=false; dg.ws=null; dg.state="idle"; dgRefresh();
+    if(S && S.closing) sessEnd();
   }
   async function startDeepgram(){
     // AudioContext 必须在点击手势内同步创建，iPhone Safari 才允许出声
@@ -613,6 +778,7 @@ registerProcessor("pcm16",PCM16);`;
       src.connect(node); node.connect(mute); mute.connect(ctx.destination);
       node.port.onmessage=e=>{ const ws=dg.ws; if(ws && ws.readyState===1) ws.send(e.data); };
       dg.node=node;
+      sessBegin("deepgram");
       stream.getAudioTracks().forEach(t=>{ t.onended=()=>{ if(listening){ stop(); showBanner("麦克风已中断（可能被其他应用占用），请重新点麦克风。"); } }; });
     }catch(err){
       releaseMic(); dg.state="idle";
@@ -640,6 +806,7 @@ registerProcessor("pcm16",PCM16);`;
     }else{
       if(ws){ dg.ws=null; try{ ws.close(); }catch(e){} }
       flushFinals(); showLive("");
+      if(S && S.closing) sessEnd();
     }
   }
 
@@ -656,17 +823,25 @@ registerProcessor("pcm16",PCM16);`;
     if(!translateReady()){ openSettings(); toast(useRelay()?"请先填写中转地址和访问口令":"请先填写 Claude API 密钥"); return; }
     if(settings.engine==="deepgram" && !dgReady()){ openSettings(); toast("请先填写 Deepgram 密钥"); return; }
     hideBanner();
+    if(S && S.closing){
+      if(dg.ws){ const o=dg.ws; dg.ws=null; flushFinals(); try{ o.close(); }catch(e){} }
+      await sessEnd();
+    }
     activeEngine=settings.engine;
     listening=true; setStatus(true,"收听中"); hint.textContent="正在收听英文，再点一次停止";
     acquireWake();
     if(activeEngine==="deepgram"){ await startDeepgram(); return; }
-    try{ startRec(); }catch(e){ stop(); showBanner("语音识别启动失败，请重试。"); }
+    try{ startRec(); sessBegin("browser"); }catch(e){ stop(); showBanner("语音识别启动失败，请重试。"); }
   }
   function stop(){
     const wasListening=listening;
     listening=false; clearTimeout(restartTimer);
-    if(activeEngine==="deepgram"){ if(wasListening || dg.ctx) stopDeepgram(); dgRefresh(); if(!dg.secs) setStatus(false,"已暂停"); }
-    else{ try{ rec && rec.stop(); }catch(e){} setStatus(false,"已暂停"); }
+    if(S) freezeSession();
+    if(activeEngine==="deepgram"){ if(wasListening || dg.ctx) stopDeepgram(); else if(S) sessEnd(); dgRefresh(); if(!dg.secs) setStatus(false,"已暂停"); }
+    else{
+      try{ rec && rec.stop(); }catch(e){} setStatus(false,"已暂停");
+      if(S) setTimeout(()=>{ if(S && S.closing) sessEnd(); },1500);
+    }
     hint.textContent="点麦克风继续收听";
     try{ wakeLock && wakeLock.release(); }catch(e){} wakeLock=null;
   }
@@ -725,6 +900,7 @@ registerProcessor("pcm16",PCM16);`;
     settings.engine=e.target.value; saveSettings(); applySettings();
     hideBanner(); hint.textContent="建议在安静环境，靠近说话人"; checkEngine();
   };
+  checkUnfinished();
   $("size").oninput=e=>{ settings.size=+e.target.value; document.documentElement.style.setProperty("--zh-size", settings.size+"px"); saveSettings(); };
   $("glossary").oninput=e=>{ settings.glossary=e.target.value; saveSettings(); };
   document.querySelectorAll("#modeSeg button").forEach(b=>b.onclick=()=>{ settings.mode=b.dataset.mode; saveSettings(); applySettings(); });
