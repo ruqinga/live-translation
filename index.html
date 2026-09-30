@@ -152,6 +152,32 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   <div class="sheet">
     <h2>设置</h2>
     <div class="row">
+      <label for="route">翻译通道</label>
+      <select id="route">
+        <option value="direct">直连 Claude（填自己的密钥）</option>
+        <option value="relay">自建中转（Cloudflare Worker）</option>
+      </select>
+    </div>
+    <div id="relayRows">
+      <div class="row">
+        <label for="relayUrl">中转地址</label>
+        <input type="text" id="relayUrl" placeholder="https://xxx.workers.dev" autocomplete="off" spellcheck="false" autocapitalize="off">
+      </div>
+      <div class="row">
+        <label for="relayToken">访问口令</label>
+        <input type="password" id="relayToken" placeholder="你在 Worker 里设置的 ACCESS_TOKEN" autocomplete="off" spellcheck="false">
+        <div class="note">翻译和 Deepgram 的密钥都存在 Worker 里，手机只保存这个口令。部署方法见 README。</div>
+      </div>
+      <div class="row">
+        <label for="provider">翻译服务商</label>
+        <select id="provider">
+          <option value="anthropic">Claude</option>
+          <option value="deepseek">DeepSeek</option>
+          <option value="openai">OpenAI</option>
+        </select>
+      </div>
+    </div>
+    <div class="row" id="claudeRow">
       <label for="apiKey">Claude API 密钥</label>
       <input type="password" id="apiKey" placeholder="sk-ant-…" autocomplete="off" spellcheck="false">
       <div class="note" id="keyNote">密钥只保存在这台手机的浏览器里，不会上传到网站。在 <a href="https://console.anthropic.com" target="_blank" rel="noopener">Claude Console</a> 申请。</div>
@@ -170,10 +196,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     </div>
     <div class="row">
       <label for="model">翻译模型</label>
-      <select id="model">
-        <option value="claude-haiku-4-5-20251001">Haiku（快、便宜，推荐）</option>
-        <option value="claude-sonnet-5-5">Sonnet（更准，稍慢）</option>
-      </select>
+      <select id="model"></select>
     </div>
     <div class="row">
       <label for="accent">说话人的口音</label>
@@ -220,21 +243,40 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   let rec=null, listening=false, liveEl=null, wakeLock=null, restartTimer=null;
   const entries=[]; const queue=[]; let busy=false; let seq=0; let stickToBottom=true;
 
-  const settings={apiKey:"", dgKey:"", engine:"deepgram", model:"claude-haiku-4-5-20251001", lang:"en-US", mode:"both", size:22, glossary:""};
+  const settings={route:"direct", relayUrl:"", relayToken:"", provider:"anthropic", apiKey:"", dgKey:"", engine:"deepgram", model:"claude-haiku-4-5-20251001", lang:"en-US", mode:"both", size:22, glossary:""};
   try{ Object.assign(settings, JSON.parse(localStorage.getItem("lt-settings")||"{}")); }catch(e){}
   function saveSettings(){ try{ localStorage.setItem("lt-settings", JSON.stringify(settings)); }catch(e){} }
   function applySettings(){
     $("apiKey").value=settings.apiKey||"";
     $("dgKey").value=settings.dgKey||"";
     $("engine").value=settings.engine;
-    $("dgRow").style.display=settings.engine==="deepgram"?"":"none";
-    $("model").value=settings.model;
+    $("dgRow").style.display=(settings.engine==="deepgram" && !useRelay())?"":"none";
+    $("route").value=settings.route; $("relayUrl").value=settings.relayUrl||""; $("relayToken").value=settings.relayToken||""; $("provider").value=settings.provider;
+    $("relayRows").style.display=useRelay()?"":"none";
+    $("claudeRow").style.display=useRelay()?"none":"";
+    fillModels();
     $("accent").value=settings.lang;
     $("size").value=settings.size;
     $("glossary").value=settings.glossary||"";
     document.documentElement.style.setProperty("--zh-size", settings.size+"px");
     document.body.classList.toggle("zh-only", settings.mode==="zh");
     document.querySelectorAll("#modeSeg button").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.mode===settings.mode)));
+  }
+  const MODELS={
+    anthropic:[["claude-haiku-4-5-20251001","Haiku（快、便宜，推荐）"],["claude-sonnet-5-5","Sonnet（更准，稍慢）"]],
+    deepseek:[["deepseek-chat","DeepSeek Chat"]],
+    openai:[["gpt-4o-mini","GPT-4o mini（快、便宜）"],["gpt-4o","GPT-4o（更准）"]]
+  };
+  const useRelay=()=>settings.route==="relay";
+  const relayBase=()=>(settings.relayUrl||"").trim().replace(/\/+$/,"");
+  const translateReady=()=>useRelay() ? !!(relayBase() && settings.relayToken) : !!settings.apiKey;
+  const dgReady=()=>useRelay() ? !!(relayBase() && settings.relayToken) : !!settings.dgKey;
+  function fillModels(){
+    const list=MODELS[useRelay()?settings.provider:"anthropic"]||MODELS.anthropic;
+    const sel=$("model"); sel.innerHTML="";
+    list.forEach(([v,t])=>{ const o=document.createElement("option"); o.value=v; o.textContent=t; sel.appendChild(o); });
+    if(!list.some(x=>x[0]===settings.model)){ settings.model=list[0][0]; saveSettings(); }
+    sel.value=settings.model;
   }
   applySettings();
 
@@ -253,7 +295,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
       hint.textContent="语音识别不可用，可使用打字输入";
     }
   }
-  if(!settings.apiKey || (settings.engine==="deepgram" && !settings.dgKey)) showBanner('第一次使用：请点右上角设置，填入 Claude 和 Deepgram 的 API 密钥。');
+  if(!translateReady() || (settings.engine==="deepgram" && !dgReady())) showBanner(useRelay() ? '第一次使用：请点右上角设置，填入中转地址和访问口令。' : '第一次使用：请点右上角设置，填入 Claude 和 Deepgram 的 API 密钥。');
   checkEngine();
   if(location.protocol!=="https:" && location.hostname!=="localhost"){
     showBanner("麦克风需要 https 网址才能使用，请通过 https 链接打开此页面。");
@@ -301,31 +343,47 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   }
 
   async function translate(e){
-    if(!settings.apiKey){ e.status="failed"; setError(e,"还没填 API 密钥"); showBanner('请点右上角设置，填入 Claude API 密钥。'); return; }
+    if(!translateReady()){ e.status="failed"; setError(e,useRelay()?"还没填中转地址或访问口令":"还没填 API 密钥"); showBanner(useRelay()?'请点右上角设置，填入中转地址和访问口令。':'请点右上角设置，填入 Claude API 密钥。'); return; }
     const prev=entries.filter(x=>x.status==="done" && x.id<e.id).slice(-3).map(x=>"EN: "+x.en+"\nZH: "+x.zh).join("\n");
     const g=(settings.glossary||"").trim();
     const system="你是一名专业的英译中同声传译员。把用户给出的【待翻译】英文翻译成自然、口语化、通顺的简体中文。只输出中文译文本身，不要解释、不要引号、不要保留英文。语音识别结果可能有错字或缺标点，请根据上下文合理理解后翻译。人名、品牌名如无通用中文译名可保留英文。"
       + (g ? "\n\n场景与术语要求：\n"+g : "");
     const user=(prev ? "【前文，仅供参考上下文，不要翻译】\n"+prev+"\n\n" : "") + "【待翻译】\n"+e.en;
 
+    const relay=useRelay();
     let res;
     try{
-      res=await fetch(API_URL,{
-        method:"POST",
-        headers:{
-          "content-type":"application/json",
-          "x-api-key":settings.apiKey,
-          "anthropic-version":"2023-06-01",
-          "anthropic-dangerous-direct-browser-access":"true"
-        },
-        body:JSON.stringify({model:settings.model, max_tokens:1024, stream:true, system, messages:[{role:"user",content:user}]})
-      });
+      if(relay){
+        res=await fetch(relayBase()+"/translate",{
+          method:"POST",
+          headers:{"content-type":"application/json","authorization":"Bearer "+settings.relayToken},
+          body:JSON.stringify({provider:settings.provider, model:settings.model, system, user})
+        });
+      }else{
+        res=await fetch(API_URL,{
+          method:"POST",
+          headers:{
+            "content-type":"application/json",
+            "x-api-key":settings.apiKey,
+            "anthropic-version":"2023-06-01",
+            "anthropic-dangerous-direct-browser-access":"true"
+          },
+          body:JSON.stringify({model:settings.model, max_tokens:1024, stream:true, system, messages:[{role:"user",content:user}]})
+        });
+      }
     }catch(err){ e.status="failed"; setError(e,"网络连接失败"); return; }
 
     if(!res.ok){
       e.status="failed";
       let msg="翻译失败（"+res.status+"）";
-      if(res.status===401) { msg="API 密钥无效"; showBanner("API 密钥无效，请在设置里检查是否复制完整。"); }
+      if(relay){
+        let em=""; try{ const j=await res.json(); em=j.error||""; }catch(_){}
+        if(res.status===401){ msg="中转访问口令无效"; showBanner("中转访问口令无效，请在设置里检查。"); }
+        else if(res.status===402||/credit|balance|insufficient/i.test(em)) msg="翻译服务商账户余额不足";
+        else if(res.status===429) msg="请求太频繁或额度用完";
+        else if(em) msg="翻译失败："+em;
+      }
+      else if(res.status===401) { msg="API 密钥无效"; showBanner("API 密钥无效，请在设置里检查是否复制完整。"); }
       else if(res.status===403) msg="没有访问权限（可能是地区不支持）";
       else if(res.status===429) msg="请求太频繁或额度用完";
       else if(res.status===400){ try{ const j=await res.json(); if(/credit/i.test(j.error&&j.error.message||"")) msg="账户余额不足"; }catch(_){} }
@@ -346,7 +404,11 @@ input[type=range]{width:100%;accent-color:var(--accent)}
           if(!line) continue;
           let ev=null;
           try{ ev=JSON.parse(line.slice(5).trim()); }catch(_){ continue; }
-          if(ev.type==="content_block_delta" && ev.delta && ev.delta.type==="text_delta"){ e.zh+=ev.delta.text; setZh(e); }
+          if(relay){
+            if(typeof ev.t==="string"){ e.zh+=ev.t; setZh(e); }
+            else if(ev.error) throw new Error(ev.error);
+          }
+          else if(ev.type==="content_block_delta" && ev.delta && ev.delta.type==="text_delta"){ e.zh+=ev.delta.text; setZh(e); }
           else if(ev.type==="error"){ throw new Error((ev.error&&ev.error.message)||"stream error"); }
         }
       }
@@ -456,26 +518,51 @@ registerProcessor("pcm16",PCM16);`;
       return r.status;
     }catch(e){ return 0; }
   }
+  function dgRetry(){
+    if(dg.retries>=3) return dgFatal("网络已断开，自动重连 3 次仍失败。请检查网络后再点麦克风。");
+    dg.retries++; dg.state="retry"; dgRefresh();
+    hint.textContent="连接中断，正在自动重连…";
+    dg.retryTimer=setTimeout(connectDg, 1000*Math.pow(2,dg.retries-1));
+  }
+  async function dgAuth(){
+    if(!useRelay()) return ["token",settings.dgKey];
+    let r;
+    try{ r=await fetch(relayBase()+"/deepgram-token",{headers:{authorization:"Bearer "+settings.relayToken}}); }
+    catch(e){ const err=new Error("relay-net"); err.net=true; throw err; }
+    if(r.status===401){ const err=new Error("relay-401"); err.fatal="中转访问口令无效，请在设置里检查。"; throw err; }
+    if(!r.ok){ let m=""; try{ m=(await r.json()).error||""; }catch(_){}
+      const err=new Error("relay-"+r.status);
+      if(r.status===402||/balance|credit|insufficient/i.test(m)) err.fatal="Deepgram 余额不足，请充值后重试。";
+      else if(r.status===403) err.fatal="Deepgram 密钥无效或权限不足（需要 Member 权限），请检查 Worker 里的 DEEPGRAM_API_KEY。";
+      throw err; }
+    const j=await r.json();
+    if(!j.access_token){ const err=new Error("relay-bad"); throw err; }
+    return ["bearer",j.access_token];
+  }
   async function dgDropped(ev,opened){
     const reason=ev.reason||"";
     if(/insufficient|credit|balance|402/i.test(reason)) return dgFatal("Deepgram 余额不足，请到 Deepgram Console 充值后重试。");
     if(/401|unauthor|credential|invalid/i.test(reason)) return dgFatal("Deepgram 密钥无效，请在设置里检查是否复制完整。");
-    if(!opened){
+    if(!opened && !useRelay()){
       // 浏览器拿不到握手的 HTTP 状态码，用一次 REST 请求判断密钥是否有问题
       const st=await dgProbe();
       if(!listening || dg.closing) return;
       if(st===401) return dgFatal("Deepgram 密钥无效（401），请在设置里检查是否复制完整。");
       if(st===402) return dgFatal("Deepgram 余额不足（402），请到 Deepgram Console 充值后重试。");
     }
-    if(dg.retries>=3) return dgFatal("网络已断开，自动重连 3 次仍失败。请检查网络后再点麦克风。");
-    dg.retries++; dg.state="retry"; dgRefresh();
-    hint.textContent="连接中断，正在自动重连…";
-    dg.retryTimer=setTimeout(connectDg, 1000*Math.pow(2,dg.retries-1));
+    dgRetry();
   }
-  function connectDg(){
+  async function connectDg(){
     if(!listening || dg.closing) return;
-    let ws, opened=false;
-    try{ ws=new WebSocket(dgUrl(),["token",settings.dgKey]); }catch(e){ return dgFatal("无法连接 Deepgram，请检查密钥格式。"); }
+    let ws, opened=false, proto;
+    try{ proto=await dgAuth(); }
+    catch(err){
+      if(!listening || dg.closing) return;
+      if(err.fatal) return dgFatal(err.fatal);
+      return dgRetry();
+    }
+    if(!listening || dg.closing) return;
+    try{ ws=new WebSocket(dgUrl(),proto); }catch(e){ return dgFatal("无法连接 Deepgram，请检查密钥格式。"); }
     ws.binaryType="arraybuffer"; dg.ws=ws;
     ws.onopen=()=>{ if(dg.ws!==ws) return; opened=true; dg.retries=0; dg.state="live"; hint.textContent="正在收听英文，再点一次停止"; dgRefresh(); };
     ws.onmessage=ev=>{ if(dg.ws!==ws || typeof ev.data!=="string") return; try{ dgResult(JSON.parse(ev.data)); }catch(_){} };
@@ -566,8 +653,8 @@ registerProcessor("pcm16",PCM16);`;
     }catch(e){}
   }
   async function start(){
-    if(!settings.apiKey){ openSettings(); toast("请先填写 Claude API 密钥"); return; }
-    if(settings.engine==="deepgram" && !settings.dgKey){ openSettings(); toast("请先填写 Deepgram 密钥"); return; }
+    if(!translateReady()){ openSettings(); toast(useRelay()?"请先填写中转地址和访问口令":"请先填写 Claude API 密钥"); return; }
+    if(settings.engine==="deepgram" && !dgReady()){ openSettings(); toast("请先填写 Deepgram 密钥"); return; }
     hideBanner();
     activeEngine=settings.engine;
     listening=true; setStatus(true,"收听中"); hint.textContent="正在收听英文，再点一次停止";
@@ -618,7 +705,7 @@ registerProcessor("pcm16",PCM16);`;
 
   // ---------- Settings ----------
   $("openSettings").onclick=openSettings;
-  $("closeSettings").onclick=()=>{ dlg.close(); if(settings.apiKey) hideBanner(); };
+  $("closeSettings").onclick=()=>{ dlg.close(); if(translateReady()) hideBanner(); };
   dlg.addEventListener("click",e=>{ if(e.target===dlg) dlg.close(); });
   $("apiKey").oninput=e=>{ settings.apiKey=e.target.value.trim(); saveSettings(); };
   $("model").onchange=e=>{ settings.model=e.target.value; saveSettings(); };
@@ -628,6 +715,10 @@ registerProcessor("pcm16",PCM16);`;
     if(activeEngine==="deepgram"){ if(dg.ws && dg.ws.readyState===1){ dg.reconnectNow=true; try{ dg.ws.send(JSON.stringify({type:"CloseStream"})); }catch(_){} } }
     else{ try{ rec.stop(); }catch(_){} }
   };
+  $("route").onchange=e=>{ if(listening) stop(); settings.route=e.target.value; saveSettings(); applySettings(); hideBanner(); checkEngine(); };
+  $("relayUrl").oninput=e=>{ settings.relayUrl=e.target.value.trim(); saveSettings(); };
+  $("relayToken").oninput=e=>{ settings.relayToken=e.target.value.trim(); saveSettings(); };
+  $("provider").onchange=e=>{ settings.provider=e.target.value; saveSettings(); fillModels(); };
   $("dgKey").oninput=e=>{ settings.dgKey=e.target.value.trim(); saveSettings(); };
   $("engine").onchange=e=>{
     if(listening) stop();
