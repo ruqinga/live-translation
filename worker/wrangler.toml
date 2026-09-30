@@ -1,0 +1,9 @@
+name = "live-translation-relay"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+
+# 密钥用 wrangler secret put 设置，不要写在这里：
+#   ACCESS_TOKEN  ANTHROPIC_API_KEY  DEEPSEEK_API_KEY  OPENAI_API_KEY  DEEPGRAM_API_KEY
+# 可选变量：限制只允许你的页面来源调用
+# [vars]
+# ALLOWED_ORIGIN = "https://ruqinga.github.io"

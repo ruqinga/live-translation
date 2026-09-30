@@ -5,7 +5,7 @@
 ## 功能
 
 - **语音识别**：默认使用 Deepgram 流式识别（nova-3），可在设置里切换为「浏览器自带」（Web Speech API，免费，作为备用）。
-- **翻译**：Claude API 流式翻译，带前 3 句上下文。
+- **翻译**：Claude API 流式翻译，带前 3 句上下文；也可通过自建 Worker 中转切换 DeepSeek / OpenAI。
 - 中英对照 / 只看中文、字号调节、复制全文、导出文本、屏幕常亮、打字输入。
 - **场景与术语**：里面的英文单词/短语会自动作为 Deepgram 的 keyterm，提高专业词汇识别率；整段文字同时交给 Claude 作翻译参考。
 - **口音**：美式 / 英式 / 澳式 / 印度英语，同时决定 Deepgram 的识别语言。
@@ -30,6 +30,31 @@
 - **Deepgram nova-3 流式**：按音频时长计费，约 0.0077 美元/分钟（约 0.46 美元/小时）。只有开着麦克风、连接 Deepgram 时才计费，停止后会关闭连接和麦克风。
 - **Claude**：Haiku 每句翻译只有几十到一百多个 token，一小时的演讲通常仅几美分；Sonnet 更准但更贵。
 - 状态栏的时长 × 单价即可估算 Deepgram 费用。
+
+## 自建中转层（可选，Cloudflare Workers）
+
+不想在手机上保存各家密钥，或想随意切换 Claude / DeepSeek / OpenAI 时，可以部署 `worker/worker.js`。密钥全部存在 Worker 里，手机只保存一个访问口令；Deepgram 由 Worker 签发短期令牌。Workers 免费额度每天 10 万次请求，个人使用基本免费。
+
+**部署（网页方式，不用装工具）**
+1. 注册 <https://dash.cloudflare.com>，进入 Workers & Pages → Create → Create Worker，随便起个名字部署。
+2. 点 Edit code，把 `worker/worker.js` 的内容整个粘贴进去覆盖，Deploy。
+3. 在 Worker 的 Settings → Variables and Secrets 里添加 Secret：
+   - `ACCESS_TOKEN`：自己编一串足够长的随机口令（必填）
+   - `ANTHROPIC_API_KEY` / `DEEPSEEK_API_KEY` / `OPENAI_API_KEY`：用到哪家填哪家
+   - `DEEPGRAM_API_KEY`：需要 Member 及以上权限（签发临时令牌用）
+   - 可选变量 `ALLOWED_ORIGIN`，例如 `https://ruqinga.github.io`，限制只有你的页面能调用
+4. 复制 Worker 网址（`https://xxx.workers.dev`）。
+
+也可用命令行：`cd worker && npx wrangler deploy`，再用 `npx wrangler secret put ACCESS_TOKEN` 等命令设置密钥。
+
+**在页面里使用**：设置 → 翻译通道选「自建中转」，填入中转地址和访问口令，再选翻译服务商和模型即可。此时不需要再填 Claude / Deepgram 密钥。
+
+**接口**
+- `POST /translate`：body 为 `{provider, model, system, user}`，返回统一的流式格式 `data: {"t":"文本"}`，结束为 `data: [DONE]`。
+- `GET /deepgram-token`：返回 `{access_token, expires_in}`，页面用 `new WebSocket(url, ["bearer", access_token])` 连接。
+- 所有请求都要带 `Authorization: Bearer <ACCESS_TOKEN>`。服务商和模型有白名单，想加新模型改 `worker.js` 顶部的 `PROVIDERS`，同时在 `index.html` 的 `MODELS` 里加上。
+
+**注意**：访问口令一旦泄露，别人就能消耗你的额度，请定期更换，并建议设置 `ALLOWED_ORIGIN`。
 
 ## 使用注意
 
