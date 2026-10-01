@@ -769,8 +769,9 @@ body.v-records.selecting #selBar{display:flex}
   }
 
   // ---------- 中断与恢复 ----------
-  function addBreak(gap){
-    const t=nowT(), seg={id:S.id+"-"+(++S.segN), sid:S.id, start:t, end:t, en:"[中断 "+fmtT(gap)+"]", zh:"", tags:[], kind:"break"};
+  function addBreak(gap){ addDivider("[中断 "+fmtT(gap)+"]"); }
+  function addDivider(label){
+    const t=nowT(), seg={id:S.id+"-"+(++S.segN), sid:S.id, start:t, end:t, en:label, zh:"", tags:[], kind:"break"};
     dbPut("segments",seg).catch(dbFail);
     hideEmpty();
     const el=document.createElement("div"); el.className="divider"; el.textContent=seg.en;
@@ -2502,7 +2503,7 @@ registerProcessor("pcm16",PCM16);`;
   };
 
   // ---------- 收听控制（与具体引擎无关） ----------
-  let eng=null, cap=null, engState="idle", listenSecs=0, tickT=null, activeEngine="browser";
+  let eng=null, cap=null, engState="idle", listenSecs=0, tickT=null, activeEngine="browser", fellBack=false;
   const fmt=s=>String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
   const engineHandlers={
     now:()=>nowT()||0,
@@ -2516,12 +2517,29 @@ registerProcessor("pcm16",PCM16);`;
       }
     },
     onHint:t=>{ hint.textContent=t; },
-    onError:msg=>{ stop(); showBanner(msg); },
+    onError:msg=>{ if(tryFallback(msg)) return; stop(); showBanner(msg); },
     onClosed:()=>{ if(S && S.closing) sessEnd(); }
   };
+  // 主引擎（Soniox）连不上 / 密钥或余额出错 / 重连 3 次仍失败时，自动改用 Deepgram：
+  // 同一个会话、同一条时间轴，麦克风采集与录音不中断；字幕里插一条分隔线，翻译改由 Claude 完成。
+  function tryFallback(msg){
+    if(activeEngine!=="soniox" || fellBack || !listening || !cap || !dgReady() || !ENGINES.deepgram) return false;
+    fellBack=true;
+    const old=eng; if(old) old.abort();      // 把没确定的那句先送出，再丢弃旧连接
+    activeEngine="deepgram"; engState="connecting";
+    addDivider("[已切换识别引擎]");
+    hint.textContent="Soniox 不可用，已切换到备用引擎 Deepgram（翻译改用 Claude）";
+    toast("已切换到备用引擎");
+    console.warn("[识别引擎] Soniox 失败，切换到 Deepgram：",msg);
+    eng=ENGINES.deepgram.create(engineHandlers);
+    refreshStatus();
+    try{ eng.start(cap.stream,{capture:cap, lang:settings.lang, keyterms:extractKeyterms(30,60)}); }
+    catch(e){ fellBack=false; return false; }
+    return true;
+  }
   function refreshStatus(){
     const info=ENGINES[activeEngine]; if(!info || !info.streaming) return;
-    const t=fmt(listenSecs);
+    const t=fmt(listenSecs)+(fellBack?" · 已切换到备用引擎":"");
     const txt = engState==="connecting" ? "连接中… "+t
       : engState==="live" ? "收听中 "+t
       : engState==="retry" ? "重连中（"+(eng?eng.retries:0)+"/3）"+t
@@ -2595,7 +2613,7 @@ registerProcessor("pcm16",PCM16);`;
       await sessEnd();
     }
     const resuming = !!(S && S.intAt!=null && !S.closing && ENGINES[S.row.engine] && ENGINES[S.row.engine].usesMic);
-    activeEngine = resuming ? S.row.engine : settings.engine;
+    activeEngine = resuming ? S.row.engine : settings.engine; fellBack=false;
     listening=true; setStatus(true,"收听中"); hint.textContent="正在收听英文，再点一次停止";
     acquireWake();
     await startEngine(resuming);
