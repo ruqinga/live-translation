@@ -2,10 +2,11 @@
 //   POST /translate        流式翻译，统一输出  data: {"t":"文本片段"}  ...  data: [DONE]
 //   POST /summary          流式长文本摘要，格式同上，但允许更长的输入和输出
 //   GET  /deepgram-token   签发 Deepgram 短期令牌（手机端不需要保存 Deepgram 长期密钥）
+//   GET  /soniox-token     签发 Soniox 实时转录的临时 API 密钥（真正的密钥只放在这里的 SONIOX_API_KEY）
 // 所有请求都要带  Authorization: Bearer <ACCESS_TOKEN>
 //
 // 需要的 Secret / 变量（见 README）：
-//   ACCESS_TOKEN（必填）  ANTHROPIC_API_KEY / DEEPSEEK_API_KEY / OPENAI_API_KEY / DEEPGRAM_API_KEY（用到哪个填哪个）
+//   ACCESS_TOKEN（必填）  ANTHROPIC_API_KEY / DEEPSEEK_API_KEY / OPENAI_API_KEY / DEEPGRAM_API_KEY / SONIOX_API_KEY（用到哪个填哪个）
 //   ALLOWED_ORIGIN（可选，例如 https://ruqinga.github.io，不填则允许任何来源）
 
 const PROVIDERS = {
@@ -128,6 +129,30 @@ async function deepgramToken(env, h) {
   return json({ access_token: j.access_token, expires_in: j.expires_in }, 200, { ...h, "cache-control": "no-store" });
 }
 
+// Soniox 临时 API key：POST https://api.soniox.com/v1/auth/temporary-api-key（官方的临时密钥服务示例也是这个请求）
+//   usage_type 限定为 transcribe_websocket（只能用于实时 WebSocket 转录），expires_in_seconds 60 秒内要用它建立连接。
+//   真正的 SONIOX_API_KEY 只在这里使用，绝不下发到浏览器；返回给页面的只有短期有效的临时密钥。
+async function sonioxToken(env, h) {
+  if (!env.SONIOX_API_KEY) return json({ error: "Worker 里没有配置 SONIOX_API_KEY" }, 500, h);
+  let res;
+  try {
+    res = await fetch("https://api.soniox.com/v1/auth/temporary-api-key", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + env.SONIOX_API_KEY, "content-type": "application/json" },
+      body: JSON.stringify({ usage_type: "transcribe_websocket", expires_in_seconds: 60 }),
+    });
+  } catch (e) { return json({ error: "连接 Soniox 失败" }, 502, h); }
+  if (!res.ok) {
+    let msg = "";
+    try { const j = await res.json(); msg = j.error_message || j.error || j.message || ""; } catch (_) {}
+    // 上游 401（密钥无效）用 502 转出，避免页面把它误认成“中转访问口令无效”，真实状态放在 upstream 里
+    return json({ error: String(msg) || "Soniox 签发临时密钥失败", upstream: res.status }, res.status === 401 ? 502 : res.status, h);
+  }
+  const j = await res.json();
+  if (!j.api_key) return json({ error: "Soniox 没有返回临时密钥", upstream: res.status }, 502, h);
+  return json({ token: j.api_key, expires_in_seconds: 60 }, 200, { ...h, "cache-control": "no-store" });
+}
+
 export default {
   async fetch(req, env) {
     const h = cors(env, req);
@@ -140,6 +165,7 @@ export default {
     if (path === "/translate" && req.method === "POST") return translate(req, env, h, LIMITS.translate);
     if (path === "/summary" && req.method === "POST") return translate(req, env, h, LIMITS.summary);
     if (path === "/deepgram-token" && req.method === "GET") return deepgramToken(env, h);
+    if (path === "/soniox-token" && req.method === "GET") return sonioxToken(env, h);
     return json({ error: "未找到" }, 404, h);
   },
 };
