@@ -60,7 +60,8 @@ header h1{font-size:17px;font-weight:600;margin:0;flex:1}
 .en{font-family:var(--font-en);font-size:var(--fs);line-height:1.5;color:var(--muted);transition:font-size .3s ease}
 .zh{font-size:var(--fs);line-height:1.6;margin-top:4px;min-height:1.6em;word-break:break-word;transition:font-size .3s ease}
 /* 只有当前句放大约 1.3 倍：正在识别的预览行、正在翻译的那一句 */
-.entry.cur .en,.entry.cur .zh,.live .en{font-size:calc(var(--fs)*1.3)}
+.entry.cur .en,.entry.cur .zh,.live .en,.live .zh{font-size:calc(var(--fs)*1.3)}
+.live .zh{color:var(--muted)}
 .zh.pending{color:var(--muted)}
 .zh.error{color:var(--rec);font-size:15px}
 .retry{margin-left:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:2px 10px;font-size:14px;cursor:pointer}
@@ -379,10 +380,16 @@ body.v-records.selecting #selBar{display:flex}
     <div class="row">
       <label for="engine">识别引擎</label>
       <select id="engine">
-        <option value="deepgram">Deepgram</option>
+        <option value="soniox">Soniox（默认，内置实时翻译）</option>
+        <option value="deepgram">Deepgram（备用）</option>
         <option value="browser">浏览器自带（备用，免费）</option>
-        <option value="soniox" disabled>Soniox（未启用）</option>
       </select>
+      <div class="note">Soniox 出错时会自动切换到 Deepgram（翻译改用 Claude）。</div>
+    </div>
+    <div class="row" id="sxRow">
+      <label for="diarize">说话人分离</label>
+      <select id="diarize"><option value="1">开（区分不同说话人）</option><option value="0">关</option></select>
+      <div class="note">Soniox 的密钥只放在 Cloudflare Worker 里（环境变量 SONIOX_API_KEY），浏览器里不保存，所以使用 Soniox 需要先把下面的「翻译通道」改成「自建中转」，部署方法见 README。</div>
     </div>
     <div class="row" id="dgRow">
       <label for="dgKey">Deepgram API 密钥</label>
@@ -548,9 +555,9 @@ body.v-records.selecting #selBar{display:flex}
   let listening=false, liveEl=null, wakeLock=null;
   const entries=[]; const queue=[]; let busy=false; let seq=0; let stickToBottom=true;
 
-  const settings={route:"direct", relayUrl:"", relayToken:"", provider:"anthropic", lastFolder:null, saveAudio:true, tagPresets:["重点","作业","考试","没听懂"], sumModel:"", apiKey:"", dgKey:"", engine:"deepgram", model:"claude-haiku-4-5-20251001", lang:"en-US", mode:"both", size:22, glossary:""};
+  const settings={route:"direct", relayUrl:"", relayToken:"", provider:"anthropic", lastFolder:null, saveAudio:true, tagPresets:["重点","作业","考试","没听懂"], sumModel:"", apiKey:"", dgKey:"", engine:"soniox", diarize:true, model:"claude-haiku-4-5-20251001", lang:"en-US", mode:"both", size:22, glossary:""};
   try{ Object.assign(settings, JSON.parse(localStorage.getItem("lt-settings")||"{}")); }catch(e){}
-  if(settings.engine==="assemblyai") settings.engine="deepgram";   // AssemblyAI 已移除
+  if(!["soniox","deepgram","browser"].includes(settings.engine)) settings.engine="soniox";   // 旧版保存过已不存在的引擎时，回到默认
   function saveSettings(){ try{ localStorage.setItem("lt-settings", JSON.stringify(settings)); }catch(e){} }
   function applySettings(){
     $("apiKey").value=settings.apiKey||"";
@@ -558,6 +565,8 @@ body.v-records.selecting #selBar{display:flex}
     $("engine").value=settings.engine;
     $("saveAudio").value=settings.saveAudio?"1":"0";
     $("dgRow").style.display=(settings.engine==="deepgram" && !useRelay())?"":"none";
+    $("sxRow").style.display=settings.engine==="soniox"?"":"none";
+    $("diarize").value=settings.diarize===false?"0":"1";
     $("route").value=settings.route; $("relayUrl").value=settings.relayUrl||""; $("relayToken").value=settings.relayToken||""; $("provider").value=settings.provider;
     $("relayRows").style.display=useRelay()?"":"none";
     $("claudeRow").style.display=useRelay()?"none":"";
@@ -583,6 +592,7 @@ body.v-records.selecting #selBar{display:flex}
   const relayBase=()=>(settings.relayUrl||"").trim().replace(/\/+$/,"");
   const translateReady=()=>useRelay() ? !!(relayBase() && settings.relayToken) : !!settings.apiKey;
   const dgReady=()=>useRelay() ? !!(relayBase() && settings.relayToken) : !!settings.dgKey;
+  const sxReady=()=>useRelay() && !!(relayBase() && settings.relayToken);   // Soniox 的密钥只放在 Worker 里，必须走中转
   function fillModels(){
     const list=MODELS[useRelay()?settings.provider:"anthropic"]||MODELS.anthropic;
     const sel=$("model"); sel.innerHTML="";
@@ -610,11 +620,12 @@ body.v-records.selecting #selBar{display:flex}
     const bad = settings.engine==="browser" && !SR;
     mic.disabled = bad;
     if(bad){
-      showBanner("这个浏览器不支持自带语音识别。请在设置里切换到 Deepgram；也可以点左下角「打字」，用键盘上的 🎤 听写英文。");
+      showBanner("这个浏览器不支持自带语音识别。请在设置里切换到 Soniox 或 Deepgram；也可以点左下角「打字」，用键盘上的 🎤 听写英文。");
       hint.textContent="语音识别不可用，可使用打字输入";
     }
   }
-  if(!translateReady() || (settings.engine==="deepgram" && !dgReady())) showBanner(useRelay() ? '第一次使用：请点右上角设置，填入中转地址和访问口令。' : '第一次使用：请点右上角设置，填入 Claude 和 Deepgram 的 API 密钥。');
+  if(settings.engine==="soniox" && !sxReady()) showBanner('默认的识别引擎 Soniox 需要先部署并启用「自建中转」（密钥只放在 Worker 里，见 README）；也可以在设置里把「识别引擎」换成 Deepgram 或浏览器自带。');
+  else if(!translateReady() || (settings.engine==="deepgram" && !dgReady())) showBanner(useRelay() ? '第一次使用：请点右上角设置，填入中转地址和访问口令。' : '第一次使用：请点右上角设置，填入 Claude 和 Deepgram 的 API 密钥。');
   checkEngine();
   if(location.protocol!=="https:" && location.hostname!=="localhost"){
     showBanner("麦克风需要 https 网址才能使用，请通过 https 链接打开此页面。");
@@ -706,7 +717,12 @@ body.v-records.selecting #selBar{display:flex}
     try{ await dbPut("sessions",row); }catch(e){ dbFail(e); }
     if(real.length>10 && !row.summary && sumReady()) queueSummary(row.id);
   }
-  function segRecord(e){ return {id:e.segId, sid:e.sid, start:e.start, end:e.end, en:e.en, zh:e.zh||"", tags:e.tags||[], kind:"seg"}; }
+  function segRecord(e){
+    const r={id:e.segId, sid:e.sid, start:e.start, end:e.end, en:e.en, zh:e.zh||"", tags:e.tags||[], kind:"seg"};
+    if(e.speaker!=null) r.speaker=e.speaker;       // 说话人（旧数据没有这个字段）
+    if(e.rawEn) r.rawEn=e.rawEn;                   // 精修改写英文前的原始识别文本
+    return r;
+  }
   function segSave(e){ if(e.segId) dbPut("segments",segRecord(e)).catch(dbFail); }
 
   // ---------- Audio archive (MediaRecorder，与 Deepgram 的 PCM 流互不影响) ----------
@@ -1925,15 +1941,21 @@ body.v-records.selecting #selBar{display:flex}
     b.onclick=()=>{ z.className="zh pending"; z.textContent="翻译中…"; e.status="waiting"; if(e.row) e.row.classList.add("cur"); queue.push(e); pump(); };
     z.appendChild(b);
   }
-  function showLive(text){
-    if(!text){ if(liveEl){ liveEl.remove(); liveEl=null; } return; }
+  function showLive(text,zh){
+    if(!text && !zh){ if(liveEl){ liveEl.remove(); liveEl=null; } return; }
     hideEmpty();
-    if(!liveEl){ liveEl=document.createElement("div"); liveEl.className="entry live"; liveEl.innerHTML='<div class="en"></div>'; feed.appendChild(liveEl); }
-    liveEl.firstChild.textContent=text; scrollDown();
+    if(!liveEl){ liveEl=document.createElement("div"); liveEl.className="entry live"; liveEl.innerHTML='<div class="en"></div><div class="zh" style="display:none"></div>'; feed.appendChild(liveEl); }
+    liveEl.children[0].textContent=text||"";
+    const z=liveEl.children[1]; z.textContent=zh||""; z.style.display=zh?"":"none";   // 引擎自带翻译时，预览行也显示中文
+    scrollDown();
   }
-  function commit(text,start,end){
+  // extra：{translation, speaker}。引擎自带译文（Soniox）时直接显示，不再排进 Claude 翻译队列
+  function commit(text,start,end,extra){
     text=(text||"").trim(); if(!text) return;
-    const e={id:++seq, en:text, zh:"", status:"waiting", tags:[]};
+    const tr=extra && extra.translation ? String(extra.translation).trim() : "";
+    const e={id:++seq, en:text, zh:tr, status:tr?"done":"waiting", tags:[]};
+    if(tr) e.zhSrc="engine";
+    if(extra && extra.speaker!=null && extra.speaker!=="") e.speaker=String(extra.speaker);
     if(S){
       e.sid=S.id; e.segId=S.id+"-"+(++S.segN);
       e.end=end!=null?end:nowT(); e.start=start!=null?start:e.end; if(e.end<e.start) e.end=e.start;
@@ -1941,7 +1963,12 @@ body.v-records.selecting #selBar{display:flex}
       segSave(e);
       if(++S.nSeg>=15 && !S.titled){ S.titled=true; autoTitleLive(S); }
     }
-    entries.push(e); renderEntry(e); queue.push(e); pump();
+    entries.push(e); renderEntry(e);
+    if(tr){
+      setZh(e);
+      // 译文已在预览里放大显示过：落成字幕后平滑缩回（连续两帧后再去掉 cur，过渡才会生效）
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{ if(e.row) e.row.classList.remove("cur"); }));
+    }else{ queue.push(e); pump(); }
   }
 
   // ---------- Translation (Claude API, streaming) ----------
@@ -2099,6 +2126,30 @@ registerProcessor("pcm16",PCM16);`;
     return out;
   }
 
+  // 「场景与术语」里形如“MRI 译为核磁共振”“Apex 是公司名不翻译”的说明 → Soniox 的 translation_terms
+  function extractTranslationTerms(g){
+    const out=[], seen=new Set(), add=(src,dst)=>{ src=src.trim(); dst=dst.trim(); if(!src||!dst||src.length>50||dst.length>50||seen.has(src.toLowerCase())) return; seen.add(src.toLowerCase()); out.push({source:src,target:dst}); };
+    let m, a=/([A-Za-z][A-Za-z0-9 .'\-]{0,40}?)\s*(?:译为|翻译成|翻译为|=>|->|→|=)\s*([^；;，,。\n]{1,30})/g;
+    while((m=a.exec(g||""))) add(m[1],m[2]);
+    const b=/([A-Za-z][A-Za-z0-9 .'\-]{0,40}?)\s*(?:是[^；;，,。\n]{0,12})?\s*(?:不翻译|保留英文|保持原文)/g;
+    while((m=b.exec(g||""))) add(m[1],m[1]);
+    return out.slice(0,50);
+  }
+  // 传给 Soniox 的上下文：场景与术语、当前会话标签、所在文件夹名称（每次（重）连接时按最新状态生成）
+  function sonioxContext(){
+    const row=S && S.row, general=[];
+    const tags=(row && row.tags)||[];
+    const folder=row && row.folderId!=null && folderById(row.folderId) ? folderById(row.folderId).name : "";
+    if(folder) general.push({key:"category",value:folder});
+    if(tags.length) general.push({key:"topic",value:tags.join("、")});
+    const g=(settings.glossary||"").trim(), ctx={};
+    if(general.length) ctx.general=general;
+    if(g) ctx.text=g.slice(0,1500);
+    const terms=extractKeyterms(100,50); if(terms.length) ctx.terms=terms;
+    const tt=extractTranslationTerms(g); if(tt.length) ctx.translation_terms=tt;
+    return Object.keys(ctx).length ? ctx : null;
+  }
+
   // ---------- 识别引擎适配器 ----------
   // 统一接口（每个引擎一个类）：
   //   engine.start(mediaStream, options)   options: {capture, lang, keyterms}
@@ -2151,6 +2202,7 @@ registerProcessor("pcm16",PCM16);`;
         return this.retry();
       }
       if(this.stopped||this.closing) return;
+      this.authInfo=a;
       let ws, opened=false; this.ready=false; this.began=false;
       try{ ws=a.protocols ? new WebSocket(a.url,a.protocols) : new WebSocket(a.url); }
       catch(e){ return this.h.onError("无法连接"+this.label+"，请检查密钥或地址格式。"); }
@@ -2187,8 +2239,8 @@ registerProcessor("pcm16",PCM16);`;
       const ws=this.ws;
       if(ws && ws.readyState===1){
         this.closing=true; this.ready=false;
-        try{ const m=this.terminateMessage(); if(m) ws.send(m); }catch(e){}
-        this.closeTimer=setTimeout(()=>{ try{ ws.close(); }catch(e){} },3000);   // 最多等 3 秒拿最后一句
+        try{ const m=this.terminateMessage(); if(m!=null) ws.send(m); }catch(e){}
+        this.closeTimer=setTimeout(()=>{ try{ ws.close(); }catch(e){} },this.closeWaitMs||3000);   // 最多等几秒拿最后一句
       }else{
         if(ws){ this.ws=null; try{ ws.close(); }catch(e){} }
         this.flush(); this.h.onPartial(""); this.state="idle"; this.h.onStatus({state:"idle"}); this.h.onClosed();
@@ -2204,7 +2256,7 @@ registerProcessor("pcm16",PCM16);`;
     restartNow(){   // 设置变了（如口音/语言）：让当前连接优雅结束后立刻重连
       const ws=this.ws; if(!ws || ws.readyState!==1 || this.stopped) return;
       this.reconnectNow=true; this.ready=false;
-      try{ const m=this.terminateMessage(); if(m) ws.send(m); }catch(e){}
+      try{ const m=this.terminateMessage(); if(m!=null) ws.send(m); }catch(e){}
       setTimeout(()=>{ try{ if(this.ws===ws) ws.close(); }catch(e){} },3000);
     }
   }
@@ -2273,12 +2325,129 @@ registerProcessor("pcm16",PCM16);`;
     }
   }
 
-  // ----- Soniox 适配器（预留，未启用） -----
-  // 以后接入：Worker 的 /soniox-token 已预留；这里实现连接 wss://stt-rt.soniox.com/transcribe-websocket、
-  // 把 Token/结果转成 onPartial / onFinal({text,startSec,endSec})，再把 enabled 改成 true。步骤见 README「以后接入 Soniox」。
+  // ----- Soniox 适配器（实时转录 + 内置实时翻译 + 说话人分离） -----
+  // 接口（以官方文档/SDK 为准）：wss://stt-rt.soniox.com/transcribe-websocket
+  //   连接后先发一条 JSON 配置：api_key（Worker 签发的临时密钥）、model（stt-rt-v5）、audio_format=pcm_s16le、sample_rate=16000、
+  //   num_channels=1、language_hints=["en"]、enable_endpoint_detection、enable_speaker_diarization、context、translation={type:"one_way",target_language:"zh"}；
+  //   然后发二进制音频帧；结束时发一个空字符串，服务端返回剩余结果和 finished:true。
+  // 返回：{tokens:[{text,start_ms,end_ms,is_final,speaker,translation_status:"original"|"translation"|"none"}], finished}
+  //   - 最终 token 只下发一次；非最终 token 每条消息整体替换。特殊 token：<end>（端点）、<fin>。
+  //   - 译文 token 没有时间戳；顺序严格是「原文块 → 对应译文块 → 下一个原文块 → …」，所以按这个顺序配对。
+  //   - 错误：{error_code, error_message}（401 鉴权、402/429 额度或并发、400 参数、408/500/503 可重试）。
+  const SX_MODELS=["stt-rt-v5","stt-rt-v3"];
+  const SENT_END=/[.!?。！？]["'”’)\]]*$/, ANY_PUNCT=/[.!?,;:。！？，；：]["'”’)\]]*$/;
   class SonioxEngine extends WsEngine{
+    constructor(h){
+      super(h); this.toks=[]; this.nonfinal=[]; this.lastKind=null; this.endSeen=false; this.endAt=0; this.timer=null;
+      this.modelIdx=0; this.pendingErr=null; this.lastFail="socket"; this.closeWaitMs=5000;
+    }
     get label(){ return "Soniox"; }
-    async auth(){ const err=new Error("soniox-disabled"); err.fatal="Soniox 引擎尚未启用。"; throw err; }
+    model(){ return SX_MODELS[Math.min(this.modelIdx,SX_MODELS.length-1)]; }
+    giveUpMessage(){ return this.lastFail==="token" ? "获取 Soniox 临时密钥失败（已重试 3 次）。请检查网络和中转地址，或稍后再试。" : "网络已断开，自动重连 3 次仍失败。请检查网络后再点麦克风。"; }
+    async auth(){
+      let r;
+      try{ r=await fetch(relayBase()+"/soniox-token",{headers:{authorization:"Bearer "+settings.relayToken}}); }
+      catch(e){ this.lastFail="token"; throw new Error("relay-net"); }
+      if(!r.ok){
+        let j={}; try{ j=await r.json(); }catch(_){}
+        const m=String(j.error||""), err=new Error("relay-"+r.status); this.lastFail="token";
+        if(r.status===401) err.fatal="中转访问口令无效，请在设置里检查。";
+        else if(r.status===404) err.fatal="中转层还不支持 Soniox，请更新并重新部署 Worker（见 README）。";
+        else if(r.status===500) err.fatal=m||"Worker 里没有配置 SONIOX_API_KEY。";
+        else if(j.upstream===401) err.fatal="Soniox 密钥无效，请检查 Worker 里的 SONIOX_API_KEY 是否正确。";
+        else if(r.status===402 || /insufficient|credit|balance|funds|余额/i.test(m)) err.fatal="Soniox 账户余额不足，请到 Soniox 控制台充值后重试。";
+        else if(r.status===403) err.fatal="Soniox 拒绝了请求（密钥权限不足），请到 Soniox 控制台检查。";
+        throw err;
+      }
+      const j=await r.json(); if(!j.token){ this.lastFail="token"; throw new Error("relay-bad"); }
+      return {url:"wss://stt-rt.soniox.com/transcribe-websocket", key:j.token};
+    }
+    config(){
+      const c={api_key:this.authInfo.key, model:this.model(), audio_format:"pcm_s16le", sample_rate:PCM_RATE, num_channels:1,
+        language_hints:["en"], enable_endpoint_detection:true, translation:{type:"one_way", target_language:"zh"}};
+      if(settings.diarize!==false) c.enable_speaker_diarization=true;
+      const ctx=this.opts.context && this.opts.context(); if(ctx) c.context=ctx;
+      return c;
+    }
+    onSocketOpen(){ try{ this.ws.send(JSON.stringify(this.config())); }catch(e){ return; } this.markLive(); }   // 先发配置，音频紧跟其后
+    terminateMessage(){ return ""; }       // 空字符串 = 音频结束；服务端返回剩余结果后 finished
+    restartNow(){}                         // 英文识别不区分口音，口音设置对它无影响
+    // ---- 结果处理 ----
+    isOrig(t){ return t.translation_status!=="translation"; }
+    onMessage(m){
+      if(m.error_code){ this.pendingErr={code:m.error_code, msg:String(m.error_message||"")}; if(this.ws){ try{ this.ws.close(); }catch(e){} } return; }
+      const nf=[]; let changed=false;
+      for(const t of (Array.isArray(m.tokens)?m.tokens:[])){
+        const txt=t && t.text; if(txt==="<fin>") continue;
+        if(txt==="<end>"){ this.endSeen=true; this.endAt=performance.now(); changed=true; continue; }
+        if(!txt) continue;
+        if(t.is_final){ this.addFinal(t); changed=true; } else nf.push(t);
+      }
+      this.nonfinal=nf;
+      this.preview();
+      if(changed || nf.length) this.schedule(changed);
+      if(m.finished){ this.flush(); this.h.onPartial("",""); if(this.ws){ try{ this.ws.close(); }catch(e){} } }
+    }
+    origText(){ return this.toks.filter(t=>this.isOrig(t)).map(t=>t.text).join("").trim(); }
+    // 一句话的边界只出现在“原文块+译文块”配对完成之后：下一个原文 token 到来时才可能切，保证原文和译文不错位
+    cutBefore(next){
+      const o=this.toks.filter(t=>this.isOrig(t)); if(!o.length) return false;
+      const text=o.map(t=>t.text).join("").trim();
+      const words=text.split(/\s+/).filter(Boolean).length;
+      const span=(o[o.length-1].end_ms||0)-(o[0].start_ms||0);
+      if(next.speaker!=null && o[0].speaker!=null && next.speaker!==o[0].speaker) return true;   // 换人说话
+      if(this.endSeen){ this.endSeen=false; return true; }                                          // 端点之后的新原文是新的一句
+      if(SENT_END.test(text)) return true;                                                          // 句末标点
+      if((words>25||span>10000) && ANY_PUNCT.test(text)) return true;                              // 太长：在标点处提前切
+      return words>45 || span>18000;                                                                // 实在太长：硬切
+    }
+    addFinal(t){
+      if(this.isOrig(t)){
+        if(this.lastKind==="t" && this.cutBefore(t)) this.commitPending();
+        this.lastKind="o";
+      }else this.lastKind="t";
+      this.toks.push(t);
+    }
+    // 没有新的最终 token 时，等一小会儿让译文收尾，再把这一句提交
+    schedule(changed){
+      if(!changed && this.timer!=null) return;   // 只有新的最终 token 才重新计时；纯非最终更新不重置
+      clearTimeout(this.timer); this.timer=null;
+      if(!this.toks.length) return;
+      let delay=null;
+      if(this.lastKind==="t") delay=this.endSeen ? 600 : (SENT_END.test(this.origText()) ? 1200 : 4000);
+      else if(this.endSeen) delay=2500;                 // 端点已到但译文还没来：多等一会儿
+      if(delay==null) return;
+      if(this.nonfinal.length) delay=Math.max(delay,8000);   // 还有没定稿的内容在变，别急着提交
+      this.timer=setTimeout(()=>{ this.timer=null; this.commitPending(); this.preview(); },delay);
+    }
+    commitPending(){
+      clearTimeout(this.timer); this.timer=null;
+      const toks=this.toks; this.toks=[]; this.lastKind=null; this.endSeen=false;
+      const o=toks.filter(t=>this.isOrig(t)), tr=toks.filter(t=>!this.isOrig(t));
+      const text=o.map(t=>t.text).join("").trim(), zh=tr.map(t=>t.text).join("").trim();
+      if(!text) return;      // 只有译文没有原文：没法配对，丢弃
+      const first=o[0], last=o[o.length-1];
+      const ts=ms=>typeof ms==="number" ? this.tl(ms/1000) : null;
+      this.h.onFinal({text, translation:zh, startSec:ts(first.start_ms), endSec:ts(last.end_ms), speaker:first.speaker!=null?String(first.speaker):null});
+    }
+    preview(){
+      const all=this.toks.concat(this.nonfinal);
+      this.h.onPartial(all.filter(t=>this.isOrig(t)).map(t=>t.text).join("").trim(), all.filter(t=>!this.isOrig(t)).map(t=>t.text).join("").trim());
+    }
+    hasPending(){ return this.toks.length>0 || this.nonfinal.length>0; }
+    flush(){ this.toks=this.toks.concat(this.nonfinal); this.nonfinal=[]; this.commitPending(); }   // 关闭或出错时，没定稿的也送出去，不丢
+    async classifyClose(ev,opened){
+      const e=this.pendingErr; this.pendingErr=null;
+      const code=e?e.code:null, msg=e?e.msg:(ev.reason||"");
+      if(code===401) return {fatal:"Soniox 鉴权失败（临时密钥无效或已过期）。如果反复出现，请检查 Worker 里的 SONIOX_API_KEY。"};
+      if(code===402) return {fatal:"Soniox 账户余额不足，请到 Soniox 控制台充值后重试。"};
+      if(code===429) return {fatal:"Soniox 请求过于频繁或并发连接数超过上限，请稍后重试，或关闭同一账号下其他正在转录的会话。"};
+      if(code===400){
+        if(/model/i.test(msg) && this.modelIdx<SX_MODELS.length-1){ this.modelIdx++; this.h.onHint("Soniox 暂时无法使用 "+SX_MODELS[this.modelIdx-1]+"，已切换到 "+this.model()); return {retryNow:true}; }
+        return {fatal:"Soniox 不接受当前配置"+(msg?"（"+msg+"）":"")+"。"};
+      }
+      return null;       // 408/500/503 或没有明确原因：按普通断线重连
+    }
   }
 
   // ----- 浏览器自带（Web Speech）适配器：不走公共采集，麦克风由浏览器自己管 -----
@@ -2327,7 +2496,7 @@ registerProcessor("pcm16",PCM16);`;
 
   // ----- 引擎注册表（设置里的「识别引擎」）-----
   const ENGINES={
-    soniox:{name:"Soniox", streaming:true, usesMic:true, enabled:false, create:h=>new SonioxEngine(h)},
+    soniox:{name:"Soniox", streaming:true, usesMic:true, translates:true, create:h=>new SonioxEngine(h)},
     deepgram:{name:"Deepgram", streaming:true, usesMic:true, create:h=>new DeepgramEngine(h)},
     browser:{name:"浏览器自带", streaming:false, usesMic:false, create:h=>new BrowserEngine(h)}
   };
@@ -2337,8 +2506,8 @@ registerProcessor("pcm16",PCM16);`;
   const fmt=s=>String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
   const engineHandlers={
     now:()=>nowT()||0,
-    onPartial:t=>showLive(t),
-    onFinal:r=>{ commit(r.text,r.startSec,r.endSec); showLive(""); },
+    onPartial:(t,z)=>showLive(t,z),
+    onFinal:r=>{ commit(r.text,r.startSec,r.endSec,{translation:r.translation,speaker:r.speaker}); showLive(""); },
     onStatus:st=>{
       engState=st.state;
       if(ENGINES[activeEngine] && ENGINES[activeEngine].streaming){
@@ -2403,7 +2572,7 @@ registerProcessor("pcm16",PCM16);`;
     }
     if(info.streaming) tickT=setInterval(()=>{ if(eng && eng.isLive()){ listenSecs++; refreshStatus(); } },1000);   // 已收听时长，方便估算费用
     // 3. 启动引擎
-    try{ eng.start(cap?cap.stream:null,{capture:cap, lang:settings.lang, keyterms:info.keyterms?info.keyterms():extractKeyterms(30,60)}); }
+    try{ eng.start(cap?cap.stream:null,{capture:cap, lang:settings.lang, keyterms:info.keyterms?info.keyterms():extractKeyterms(30,60), context:sonioxContext}); }
     catch(e){ stop(); showBanner("语音识别启动失败，请重试。"); return false; }
     return true;
   }
@@ -2418,6 +2587,7 @@ registerProcessor("pcm16",PCM16);`;
   async function start(){
     if(!translateReady()){ openSettings(); toast(useRelay()?"请先填写中转地址和访问口令":"请先填写 Claude API 密钥"); return; }
     if(settings.engine==="deepgram" && !dgReady()){ openSettings(); toast("请先填写 Deepgram 密钥"); return; }
+    if(settings.engine==="soniox" && !sxReady()){ openSettings(); toast("Soniox 需要先启用自建中转（翻译通道）"); return; }
     if(ENGINES[settings.engine] && ENGINES[settings.engine].enabled===false){ toast(ENGINES[settings.engine].name+" 尚未启用"); return; }
     hideBanner();
     if(S && S.closing){
@@ -2494,6 +2664,7 @@ registerProcessor("pcm16",PCM16);`;
   $("provider").onchange=e=>{ settings.provider=e.target.value; saveSettings(); fillModels(); fillSumModels(); };
   $("sumModel").onchange=e=>{ settings.sumModel=e.target.value; saveSettings(); };
   $("saveAudio").onchange=e=>{ settings.saveAudio=e.target.value==="1"; saveSettings(); };
+  $("diarize").onchange=e=>{ settings.diarize=e.target.value==="1"; saveSettings(); };
   $("dgKey").oninput=e=>{ settings.dgKey=e.target.value.trim(); saveSettings(); };
   $("engine").onchange=e=>{
     if(listening) stop();

@@ -2,7 +2,7 @@
 //   POST /translate        流式翻译，统一输出  data: {"t":"文本片段"}  ...  data: [DONE]
 //   POST /summary          流式长文本摘要，格式同上，但允许更长的输入和输出
 //   GET  /deepgram-token   签发 Deepgram 短期令牌（手机端不需要保存 Deepgram 长期密钥）
-//   GET  /soniox-token     （预留）签发 Soniox 临时 API key，需要 SONIOX_API_KEY，目前前端适配器未启用
+//   GET  /soniox-token     签发 Soniox 实时转录的临时 API 密钥（真正的密钥只放在这里的 SONIOX_API_KEY）
 // 所有请求都要带  Authorization: Bearer <ACCESS_TOKEN>
 //
 // 需要的 Secret / 变量（见 README）：
@@ -129,12 +129,11 @@ async function deepgramToken(env, h) {
   return json({ access_token: j.access_token, expires_in: j.expires_in }, 200, { ...h, "cache-control": "no-store" });
 }
 
-// 【预留】Soniox 临时 API key：POST https://api.soniox.com/v1/auth/temporary-api-key，
-//   body 需要 usage_type 和 expires_in_seconds（1–3600），可选 single_use、max_session_duration_seconds。
-//   前端的 Soniox 适配器目前是占位（设置里显示“未启用”），这里先把结构和错误提示放好；
-//   usage_type 的取值和返回字段请在接入时按 Soniox 官方文档核对（见 README「以后接入 Soniox」）。
+// Soniox 临时 API key：POST https://api.soniox.com/v1/auth/temporary-api-key（官方的临时密钥服务示例也是这个请求）
+//   usage_type 限定为 transcribe_websocket（只能用于实时 WebSocket 转录），expires_in_seconds 60 秒内要用它建立连接。
+//   真正的 SONIOX_API_KEY 只在这里使用，绝不下发到浏览器；返回给页面的只有短期有效的临时密钥。
 async function sonioxToken(env, h) {
-  if (!env.SONIOX_API_KEY) return json({ error: "Worker 里没有配置 SONIOX_API_KEY（Soniox 尚未启用）" }, 501, h);
+  if (!env.SONIOX_API_KEY) return json({ error: "Worker 里没有配置 SONIOX_API_KEY" }, 500, h);
   let res;
   try {
     res = await fetch("https://api.soniox.com/v1/auth/temporary-api-key", {
@@ -146,11 +145,12 @@ async function sonioxToken(env, h) {
   if (!res.ok) {
     let msg = "";
     try { const j = await res.json(); msg = j.error_message || j.error || j.message || ""; } catch (_) {}
+    // 上游 401（密钥无效）用 502 转出，避免页面把它误认成“中转访问口令无效”，真实状态放在 upstream 里
     return json({ error: String(msg) || "Soniox 签发临时密钥失败", upstream: res.status }, res.status === 401 ? 502 : res.status, h);
   }
   const j = await res.json();
-  if (!j.api_key) return json({ error: "Soniox 返回的格式和预期不符，请按官方文档核对", upstream: res.status }, 502, h);
-  return json({ token: j.api_key, expires_at: j.expires_at }, 200, { ...h, "cache-control": "no-store" });
+  if (!j.api_key) return json({ error: "Soniox 没有返回临时密钥", upstream: res.status }, 502, h);
+  return json({ token: j.api_key, expires_in_seconds: 60 }, 200, { ...h, "cache-control": "no-store" });
 }
 
 export default {
