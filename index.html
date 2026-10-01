@@ -2609,7 +2609,7 @@ registerProcessor("pcm16",PCM16);`;
   };
 
   // ---------- 收听控制（与具体引擎无关） ----------
-  let eng=null, cap=null, engState="idle", listenSecs=0, tickT=null, activeEngine="browser", fellBack=false;
+  let eng=null, cap=null, engState="idle", listenSecs=0, tickT=null, activeEngine="browser", fellBack=false, fallbackWhy="";
   const fmt=s=>String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
   const engineHandlers={
     now:()=>nowT()||0,
@@ -2623,18 +2623,22 @@ registerProcessor("pcm16",PCM16);`;
       }
     },
     onHint:t=>{ hint.textContent=t; },
-    onError:msg=>{ if(tryFallback(msg)) return; stop(); showBanner(msg); },
+    onError:msg=>{
+      if(tryFallback(msg)) return;
+      const why=fellBack && activeEngine==="deepgram" && fallbackWhy;
+      stop(); showBanner(why ? "Soniox 出错："+why+(/[。！？.!?]$/.test(why)?"":"。")+"<br>备用引擎 Deepgram 也没连上："+msg : msg);
+    },
     onClosed:()=>{ if(S && S.closing) sessEnd(); }
   };
   // 主引擎（Soniox）连不上 / 密钥或余额出错 / 重连 3 次仍失败时，自动改用 Deepgram：
   // 同一个会话、同一条时间轴，麦克风采集与录音不中断；字幕里插一条分隔线，翻译改由 Claude 完成。
   function tryFallback(msg){
     if(activeEngine!=="soniox" || fellBack || !listening || !cap || !dgReady() || !ENGINES.deepgram) return false;
-    fellBack=true;
+    fellBack=true; fallbackWhy=msg;
     const old=eng; if(old) old.abort();      // 把没确定的那句先送出，再丢弃旧连接
     activeEngine="deepgram"; engState="connecting";
     addDivider("[已切换识别引擎]");
-    hint.textContent="Soniox 不可用，已切换到备用引擎 Deepgram（翻译改用 Claude）";
+    hint.textContent="Soniox 不可用（"+String(msg).replace(/[。\s]+$/,"")+"），已切换到备用引擎 Deepgram，翻译改用 Claude";
     toast("已切换到备用引擎");
     console.warn("[识别引擎] Soniox 失败，切换到 Deepgram：",msg);
     eng=ENGINES.deepgram.create(engineHandlers);
