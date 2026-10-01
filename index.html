@@ -17,7 +17,7 @@
   /* 颜色（浅色）：主色只用于按钮、开关、高亮 */
   --bg:#F2F3F5; --panel:#FFFFFF; --fill:#EDEFF2; --ink:#14181F; --ink2:#3A424F; --muted:#5E6673; --faint:#8A919C; --line:#DCDFE5;
   --accent:#2F66E0; --accent-ink:#FFFFFF; --accent-soft:#E8EFFD;
-  --rec:#D93A3A; --ok:#1B8A4B; --warn-bg:#FFF4D6; --warn-ink:#6B4E00;
+  --rec:#D93A3A; --rec-ink:#B42323; --ok:#1B8A4B; --warn-bg:#FFF4D6; --warn-ink:#6B4E00;
   --shadow:0 1px 2px rgba(16,24,40,.06),0 4px 16px rgba(16,24,40,.06);
   --scrim:rgba(10,14,20,.42);
   --fs:22px;
@@ -34,7 +34,7 @@
   :root:not([data-theme="light"]){
     --bg:#16181C; --panel:#202328; --fill:#2A2E35; --ink:#ECEEF1; --ink2:#C9CED6; --muted:#A0A7B1; --faint:#7C848F; --line:#30343B;
     --accent:#7FA2FF; --accent-ink:#0E1624; --accent-soft:#252E45;
-    --rec:#FF6B61; --ok:#4CC38A; --warn-bg:#3A3016; --warn-ink:#F3D98A;
+    --rec:#FF6B61; --rec-ink:#FF8F86; --ok:#4CC38A; --warn-bg:#3A3016; --warn-ink:#F3D98A;
     --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.25); --scrim:rgba(0,0,0,.55);
     color-scheme:dark;
   }
@@ -42,7 +42,7 @@
 :root[data-theme="dark"]{
   --bg:#16181C; --panel:#202328; --fill:#2A2E35; --ink:#ECEEF1; --ink2:#C9CED6; --muted:#A0A7B1; --faint:#7C848F; --line:#30343B;
   --accent:#7FA2FF; --accent-ink:#0E1624; --accent-soft:#252E45;
-  --rec:#FF6B61; --ok:#4CC38A; --warn-bg:#3A3016; --warn-ink:#F3D98A;
+  --rec:#FF6B61; --rec-ink:#FF8F86; --ok:#4CC38A; --warn-bg:#3A3016; --warn-ink:#F3D98A;
   --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.25); --scrim:rgba(0,0,0,.55);
   color-scheme:dark;
 }
@@ -62,11 +62,11 @@ button:active:not(:disabled){transform:scale(.97)}
 .live-head{display:flex;align-items:center;gap:var(--s1);padding:12px var(--s2) 8px}
 .lh-main{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:4px}
 .sess-title{border:0;background:none;padding:0;min-height:28px;font-size:20px;font-weight:650;letter-spacing:-.01em;color:var(--ink);text-align:left;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
-.sess-title.ph{color:var(--faint)}
+.sess-title.ph{color:var(--muted)}
 .lh-sub{display:flex;align-items:center;gap:var(--s1);flex-wrap:wrap}
 .status{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--muted);background:var(--fill);border-radius:999px;padding:4px 12px 4px 10px;min-height:28px}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--faint)}
-.status.on{color:var(--rec);background:color-mix(in srgb,var(--rec) 12%,var(--panel))}
+.status.on{color:var(--rec-ink);background:color-mix(in srgb,var(--rec) 12%,var(--panel))}
 .status.on .dot{background:var(--rec);animation:breathe 1.6s ease-in-out infinite}
 @keyframes breathe{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.8)}}
 #folderChip{border:0;background:var(--fill);color:var(--muted);font-size:13px;cursor:pointer;padding:0 12px;border-radius:999px;min-height:28px;max-width:60vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -94,7 +94,7 @@ button:active:not(:disabled){transform:scale(.97)}
 .live{animation:fadeIn .25s var(--ease)}
 .live .zh{color:var(--muted)}
 .zh.pending{color:var(--muted)}
-.zh.error{color:var(--rec);font-size:15px}
+.zh.error{color:var(--rec-ink);font-size:15px}
 .retry{margin-left:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:4px 12px;min-height:32px;font-size:14px;cursor:pointer}
 .live .en{color:var(--ink);font-style:italic;opacity:.75}
 /* 只看中文：当前句仍显示英文，翻译完成后英文平滑收起 */
@@ -125,7 +125,7 @@ footer{padding:8px var(--s2) 8px;background:var(--bg);border-top:1px solid var(-
 
 /* ===== 底部标签栏 ===== */
 .tabbar{display:flex;border-top:1px solid var(--line);background:color-mix(in srgb,var(--panel) 92%,transparent);-webkit-backdrop-filter:saturate(1.6) blur(14px);backdrop-filter:saturate(1.6) blur(14px);padding:0 var(--s1) env(safe-area-inset-bottom,0px)}
-.tabbar button{flex:1;min-height:var(--tabh);border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11px;font-weight:500;color:var(--faint);cursor:pointer;border-radius:12px}
+.tabbar button{flex:1;min-height:var(--tabh);border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11px;font-weight:500;color:var(--muted);cursor:pointer;border-radius:12px}
 .tabbar button svg{width:24px;height:24px;stroke-width:1.8}
 .tabbar button[aria-pressed="true"]{color:var(--accent)}
 .tabbar button[aria-pressed="true"] svg{stroke-width:2.2}
@@ -169,7 +169,7 @@ button.li:active,.li.tog:active{background:var(--fill);transform:none}
 .li-note.sub{background:var(--fill)}
 .info{padding:0 var(--s2) 12px;font-size:13px;color:var(--muted);line-height:1.6}
 .info a,.li-note a{color:var(--accent)}
-.ibtn{border:0;background:none;color:var(--faint);font-size:16px;line-height:1;min-width:44px;min-height:44px;margin:-12px -8px -12px -2px;cursor:pointer;border-radius:50%}
+.ibtn{border:0;background:none;color:var(--muted);font-size:16px;line-height:1;min-width:44px;min-height:44px;margin:-12px -8px -12px -2px;cursor:pointer;border-radius:50%}
 .ibtn[aria-expanded="true"]{color:var(--accent)}
 .callout{margin:0;padding:12px var(--s2);background:var(--warn-bg);color:var(--warn-ink);font-size:14px;line-height:1.5;display:flex;flex-direction:column;align-items:flex-start;gap:8px}
 .callout button{border:0;background:var(--warn-ink);color:var(--warn-bg);border-radius:10px;min-height:44px;padding:0 16px;font-size:15px;font-weight:600;cursor:pointer}
@@ -194,7 +194,7 @@ button.li:active,.li.tog:active{background:var(--fill);transform:none}
 .test-row .btn2{flex:none;padding:0 16px}
 #testRes{font-size:14px;color:var(--muted);flex:1;min-width:0;word-break:break-word}
 #testRes.ok{color:var(--ok);font-weight:600}
-#testRes.bad{color:var(--rec)}
+#testRes.bad{color:var(--rec-ink)}
 .spin{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:6px}
 @keyframes spin{to{transform:rotate(360deg)}}
 .flash{animation:flash 1.4s ease}
@@ -349,6 +349,10 @@ body.v-records.selecting #selBar{display:flex}
 .rc-item button.danger{color:var(--rec)}
 
 /* ===== 现代化改版：记录页、详情、列表卡片 ===== */
+/* 紧凑按钮的可点区域不小于 44px：外观保持，用透明伪元素把点击范围撑高 */
+.rh-actions button,.fchip,.pbtn,.rh-tags button,.retry,.tr-item .btns button,.rc-item button,#selBar button,.tm-row button,.fm-row button.act,#folderChip,.sess-title,.tmore,.status{position:relative}
+.rh-actions button::after,.fchip::after,.pbtn::after,.rh-tags button::after,.retry::after,.tr-item .btns button::after,.rc-item button::after,#selBar button::after,.tm-row button::after,.fm-row button.act::after,#folderChip::after,.sess-title::after,.tmore::after{content:"";position:absolute;left:0;right:0;top:50%;height:max(100%,44px);transform:translateY(-50%)}
+.tmore{min-width:44px}
 #records{padding:0 var(--s2) var(--s3)}
 .page-head-sp{height:4px}
 .rh-tools{display:flex;gap:var(--s1);margin-bottom:var(--s1)}
@@ -370,7 +374,10 @@ body.v-records.selecting #selBar{display:flex}
 .card .tline{margin-top:8px}
 .swipe{border-radius:var(--r);margin-bottom:12px}
 .swipe .card:active{transform:scale(.985)}
-.sw-actions{width:152px}
+.sw-actions{width:140px;opacity:0;transition:opacity .15s}
+.swipe:has(.card[style*="translateX(-"]) .sw-actions{opacity:1}
+.sw-actions button{border-radius:0}
+#recSort{flex:none;width:128px}
 .sw-actions button{background:var(--accent);font-weight:600}
 .tg{padding:2px 10px;font-size:12px;line-height:1.6}
 .empty-sm{display:flex;flex-direction:column;align-items:center;text-align:center;color:var(--muted);padding:48px var(--s3);line-height:1.6}
@@ -1261,7 +1268,12 @@ body.v-records.selecting #selBar{display:flex}
     const l=(md||"").split("\n").map(x=>x.trim()).find(x=>x && !/^#/.test(x));
     return l ? l.replace(/^[-*\d.\s]+/,"").replace(/\*\*/g,"") : "";
   }
+  function recSkeleton(){
+    const box=$("recItems"); box.textContent="";
+    for(let i=0;i<3;i++){ const c=document.createElement("div"); c.className="skel-card"; c.setAttribute("aria-hidden","true"); c.innerHTML='<div class="skel" style="width:60%;height:18px"></div><div class="skel" style="width:40%"></div><div class="skel" style="width:90%;margin-bottom:0"></div>'; box.appendChild(c); }
+  }
   function recRefresh(){
+    if($("recHome") && !$("recHome").hidden && !rd.rows.length) recSkeleton();
     loadRecData().then(()=>{ if(!$("recTags").hidden) renderTagView(); else if(!$("recTrash").hidden) renderTrash(); else if(!$("recDetail").hidden) return; else{ pane("recHome"); renderHome(); } })
       .catch(()=>{ $("recItems").textContent="这个浏览器不能使用本地存储，无法查看记录。"; });
   }
@@ -1297,8 +1309,9 @@ body.v-records.selecting #selBar{display:flex}
     $("recCount").textContent="共 "+list.length+" 条"+(list.length!==rd.rows.length?"（已筛选）":"");
     const box=$("recItems"); box.textContent="";
     if(!list.length){
-      const d=document.createElement("div"); d.className="empty";
-      d.innerHTML=rd.rows.length ? "<strong>没有符合条件的记录</strong>换个关键词或去掉标签筛选试试。" : "<strong>还没有记录</strong>每次点麦克风开始、再点停止，就会自动保存为一条记录。";
+      const d=document.createElement("div"); d.className="empty-sm";
+      const ic=rd.rows.length ? '<path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"/>' : '<rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/>';
+      d.innerHTML='<div class="ei"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+ic+'</svg></div>'+(rd.rows.length ? "<strong>没有符合条件的记录</strong>换个关键词或去掉标签筛选试试。" : "<strong>还没有记录</strong>每次点麦克风开始、再点停止，就会自动保存为一条记录。");
       box.appendChild(d); return;
     }
     const p2=n=>String(n).padStart(2,"0");
