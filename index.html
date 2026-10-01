@@ -219,6 +219,9 @@ body.v-records.selecting #selBar{display:flex}
 .fm-row button.act{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:4px 10px;font-size:13px;cursor:pointer}
 .fm-row.drag{position:relative;z-index:3;box-shadow:0 4px 14px rgba(0,0,0,.25)}
 .done.alt{background:var(--bg);color:var(--ink);border:1px solid var(--line)}
+.zh.refresh{animation:refineFade .6s ease}
+@keyframes refineFade{from{opacity:.25}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.zh.refresh{animation:none}}
 .divider{margin:8px 0;padding:6px 10px;border-radius:8px;background:var(--bg);border:1px dashed var(--line);color:var(--muted);font-size:13px;text-align:center}
 .rec-note{font-size:13px;color:var(--muted);line-height:1.5;margin:6px 0 12px}
 .rc-item{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;background:var(--bg)}
@@ -391,6 +394,11 @@ body.v-records.selecting #selBar{display:flex}
       <select id="diarize"><option value="1">开（区分不同说话人）</option><option value="0">关</option></select>
       <div class="note">Soniox 的密钥只放在 Cloudflare Worker 里（环境变量 SONIOX_API_KEY），浏览器里不保存，所以使用 Soniox 需要先把下面的「翻译通道」改成「自建中转」，部署方法见 README。</div>
     </div>
+    <div class="row" id="refineRow">
+      <label for="refine">翻译精修</label>
+      <select id="refine"><option value="1">开（后台用 Claude 校对识别和译文）</option><option value="0">关（只用 Soniox 的译文）</option></select>
+      <div class="note">字幕先按 Soniox 的译文显示，几秒内由 Claude 结合上文和「场景与术语」悄悄校对，有改动时平滑替换；失败或超过 8 秒就保持原样。会多用一点 Claude 额度。</div>
+    </div>
     <div class="row" id="dgRow">
       <label for="dgKey">Deepgram API 密钥</label>
       <input type="password" id="dgKey" placeholder="Deepgram 密钥" autocomplete="off" spellcheck="false">
@@ -555,7 +563,7 @@ body.v-records.selecting #selBar{display:flex}
   let listening=false, liveEl=null, wakeLock=null;
   const entries=[]; const queue=[]; let busy=false; let seq=0; let stickToBottom=true;
 
-  const settings={route:"direct", relayUrl:"", relayToken:"", provider:"anthropic", lastFolder:null, saveAudio:true, tagPresets:["重点","作业","考试","没听懂"], sumModel:"", apiKey:"", dgKey:"", engine:"soniox", diarize:true, model:"claude-haiku-4-5-20251001", lang:"en-US", mode:"both", size:22, glossary:""};
+  const settings={route:"direct", relayUrl:"", relayToken:"", provider:"anthropic", lastFolder:null, saveAudio:true, tagPresets:["重点","作业","考试","没听懂"], sumModel:"", apiKey:"", dgKey:"", engine:"soniox", diarize:true, refine:true, model:"claude-haiku-4-5-20251001", lang:"en-US", mode:"both", size:22, glossary:""};
   try{ Object.assign(settings, JSON.parse(localStorage.getItem("lt-settings")||"{}")); }catch(e){}
   if(!["soniox","deepgram","browser"].includes(settings.engine)) settings.engine="soniox";   // 旧版保存过已不存在的引擎时，回到默认
   function saveSettings(){ try{ localStorage.setItem("lt-settings", JSON.stringify(settings)); }catch(e){} }
@@ -567,6 +575,7 @@ body.v-records.selecting #selBar{display:flex}
     $("dgRow").style.display=(settings.engine==="deepgram" && !useRelay())?"":"none";
     $("sxRow").style.display=settings.engine==="soniox"?"":"none";
     $("diarize").value=settings.diarize===false?"0":"1";
+    $("refine").value=settings.refine===false?"0":"1";
     $("route").value=settings.route; $("relayUrl").value=settings.relayUrl||""; $("relayToken").value=settings.relayToken||""; $("provider").value=settings.provider;
     $("relayRows").style.display=useRelay()?"":"none";
     $("claudeRow").style.display=useRelay()?"none":"";
@@ -1897,7 +1906,7 @@ body.v-records.selecting #selBar{display:flex}
       const id=+x.id, old=local.get(id);
       const row={id, title:String(x.title||"导入的记录").slice(0,100), created:num(x.created,Date.now()), ended:num(x.ended,Date.now()), dur:num(x.dur,0),
         tags:strs(x.tags), summary:typeof x.summary==="string"?x.summary:"", summaryAt:x.summaryAt==null?null:num(x.summaryAt,null),
-        audioMime:old?old.audioMime:null, parts:old?old.parts:[], engine:x.engine==="browser"?"browser":"deepgram",
+        audioMime:old?old.audioMime:null, parts:old?old.parts:[], engine:["browser","soniox"].includes(x.engine)?x.engine:"deepgram",
         titleEdited:!!x.titleEdited, titleAuto:!!x.titleAuto,
         folderId:(x.folderId!=null && folderById(+x.folderId)) ? +x.folderId : null, deletedAt:x.deletedAt==null?null:num(x.deletedAt,null)};
       const segs=(Array.isArray(x.segments)?x.segments:[]).map((g,i)=>({
@@ -1969,7 +1978,45 @@ body.v-records.selecting #selBar{display:flex}
       setZh(e);
       // 译文已在预览里放大显示过：落成字幕后平滑缩回（连续两帧后再去掉 cur，过渡才会生效）
       requestAnimationFrame(()=>requestAnimationFrame(()=>{ if(e.row) e.row.classList.remove("cur"); }));
+      if(settings.refine!==false && useRelay() && translateReady() && S) refineEntry(e);
     }else{ queue.push(e); pump(); }
+  }
+
+  // ---------- 翻译精修（后台，不阻塞字幕） ----------
+  // 每句先按 Soniox 的原文+译文显示；同时把「原文 + Soniox 译文 + 前 3 句 + 场景术语」交给 Claude 快速校对。
+  // 请求并行发出，但结果按句子顺序依次应用（前面的还没回来就先等，避免后一句先改、读起来乱序）；
+  // 失败、解析不了、超过 8 秒一律静默放弃，保持原样。
+  const REFINE_SYS="你是一名英文课程、讲座、会议的字幕校对员。用户给出语音识别的英文【原文】和机器翻译的【Soniox 译文】，以及【前文】和【场景与术语】。请校对：1）修正原文里明显的识别错误（同音词、专有名词、术语，参考前文和术语表），没有把握就不要改；2）让中文译文准确、通顺、口语化，术语译法与术语表一致。不要增删原文没有的内容。严格按下面两行格式输出，不要解释：\n英文：（校对后的英文，没有修改就原样照抄）\n中文：（校对后的中文）";
+  const REFINE_MS=8000;
+  let refineTail=Promise.resolve();
+  function refineEntry(e){
+    const prev=entries.filter(x=>x.status==="done" && x.id<e.id).slice(-3).map(x=>"EN: "+x.en+"\nZH: "+x.zh).join("\n");
+    const g=(settings.glossary||"").trim();
+    const user=(prev?"【前文】\n"+prev+"\n\n":"")+(g?"【场景与术语】\n"+g+"\n\n":"")+"【原文】\n"+e.en+"\n\n【Soniox 译文】\n"+e.zh;
+    const req=Promise.race([
+      llmStream(REFINE_SYS,user,600,null,{model:settings.model,path:"/translate"}),
+      new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")),REFINE_MS))
+    ]).then(parseRefine,()=>null);
+    const mine=refineTail.then(()=>req).then(r=>{ if(r) applyRefine(e,r); }).catch(()=>{});
+    refineTail=mine;
+  }
+  function parseRefine(t){
+    const m=/英文[:：]\s*([\s\S]*?)\n\s*中文[:：]\s*([\s\S]+)/.exec(t||"");
+    if(!m) return null;
+    const en=m[1].trim(), zh=m[2].trim();
+    return zh ? {en,zh} : null;
+  }
+  function applyRefine(e,r){
+    let changed=false;
+    // 英文改动幅度太大（长度差一倍以上）说明模型在改写而不是校对，只接受中文
+    if(r.en && r.en!==e.en && r.en.length>=e.en.length*0.6 && r.en.length<=e.en.length*1.6){ e.rawEn=e.rawEn||e.en; e.en=r.en; changed=true; }
+    if(r.zh!==e.zh){ e.zh=r.zh; changed=true; }
+    if(!changed) return;
+    e.refined=true; segSave(e);
+    if(e.row && e.row.isConnected){
+      const enEl=e.row.querySelector(".en"); if(enEl) enEl.textContent=e.en;
+      e.el.textContent=e.zh; e.el.classList.add("refresh"); setTimeout(()=>e.el&&e.el.classList.remove("refresh"),700);
+    }
   }
 
   // ---------- Translation (Claude API, streaming) ----------
@@ -2682,6 +2729,7 @@ registerProcessor("pcm16",PCM16);`;
   $("provider").onchange=e=>{ settings.provider=e.target.value; saveSettings(); fillModels(); fillSumModels(); };
   $("sumModel").onchange=e=>{ settings.sumModel=e.target.value; saveSettings(); };
   $("saveAudio").onchange=e=>{ settings.saveAudio=e.target.value==="1"; saveSettings(); };
+  $("refine").onchange=e=>{ settings.refine=e.target.value==="1"; saveSettings(); };
   $("diarize").onchange=e=>{ settings.diarize=e.target.value==="1"; saveSettings(); };
   $("dgKey").oninput=e=>{ settings.dgKey=e.target.value.trim(); saveSettings(); };
   $("engine").onchange=e=>{
