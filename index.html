@@ -62,7 +62,6 @@ button:active:not(:disabled){transform:scale(.97)}
 .live-head{display:flex;align-items:center;gap:var(--s1);padding:12px var(--s2) 8px}
 .lh-main{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:4px}
 .sess-title{border:0;background:none;padding:0;min-height:28px;font-size:20px;font-weight:650;letter-spacing:-.01em;color:var(--ink);text-align:left;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
-.sess-title.ph{color:var(--muted)}
 .lh-sub{display:flex;align-items:center;gap:var(--s1);flex-wrap:wrap}
 .status{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--muted);background:var(--fill);border-radius:999px;padding:4px 12px 4px 10px;min-height:28px}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--faint)}
@@ -104,7 +103,8 @@ body.zh-only .entry.live .en{max-height:none;opacity:.75}
 
 /* ===== 底部控制区 ===== */
 footer{padding:8px var(--s2) 8px;background:var(--bg);border-top:1px solid var(--line)}
-.wave{height:32px;display:flex;align-items:center;justify-content:center;gap:4px;margin-bottom:4px}
+.wave{height:0;overflow:hidden;display:flex;align-items:center;justify-content:center;gap:4px;margin-bottom:0;transition:height .2s var(--ease),margin .2s var(--ease)}
+.wave.on{height:32px;margin-bottom:4px}
 .wave i{display:block;width:4px;height:4px;border-radius:2px;background:var(--faint);opacity:.5;transition:height .08s linear,background-color .2s,opacity .2s}
 .wave.on i{background:var(--rec);opacity:1}
 .controls{display:grid;grid-template-columns:1fr auto 1fr;align-items:center}
@@ -116,12 +116,34 @@ footer{padding:8px var(--s2) 8px;background:var(--bg);border-top:1px solid var(-
 #mic.on::after{content:"";position:absolute;inset:-7px;border-radius:50%;border:2px solid var(--rec);opacity:.5;animation:ring 1.6s ease-out infinite}
 @keyframes ring{from{transform:scale(.9);opacity:.6}to{transform:scale(1.18);opacity:0}}
 #mic:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
-.hint{text-align:center;font-size:13px;color:var(--muted);margin-top:6px;min-height:1.2em}
+.hint{text-align:center;font-size:13px;color:var(--muted);margin-top:6px;line-height:1.4}
+.hint:empty{display:none}
 
-.typebar{display:none;gap:8px;margin-bottom:12px}
+.typebar{display:none;gap:8px;margin-bottom:8px}
 .typebar.show{display:flex}
-.typebar textarea{flex:1;resize:none;height:48px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel);color:var(--ink);padding:12px;font:15px/1.4 var(--font-en)}
-.typebar button{border:0;border-radius:var(--r-sm);background:var(--accent);color:var(--accent-ink);padding:0 20px;min-height:48px;font-size:15px;font-weight:600;cursor:pointer}
+.typebar textarea{flex:1;resize:none;height:44px;border:1.5px solid var(--line);border-radius:var(--r-sm);background:var(--panel);color:var(--ink);padding:12px;font:15px/1.4 var(--font-en)}
+.typebar button{border:0;border-radius:var(--r-sm);background:var(--accent);color:var(--accent-ink);padding:0 20px;min-height:44px;font-size:15px;font-weight:600;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+/* 打字输入打开时：底部控制区压缩，把高度留给字幕 */
+footer.typing{padding-top:6px;padding-bottom:4px}
+footer.typing #mic{width:52px;height:52px;box-shadow:none}
+footer.typing #mic svg{width:24px;height:24px}
+footer.typing .side{min-height:44px;min-width:44px;padding:0}
+footer.typing .side .lbl{display:none}
+footer.typing .hint{display:none}
+footer.typing #mic.on::after{inset:-4px}
+footer.typing .wave.on{height:18px;margin-bottom:2px}
+/* 输入框焦点：1.5px 主色边框 + 柔和外发光，不叠加浏览器默认的粗轮廓 */
+input:not([type=range]),textarea{outline:none}
+input:not([type=range]):focus,textarea:focus{outline:none;border-color:var(--accent)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 20%,transparent)}
+.linkbtn{border:0;background:none;color:var(--accent);font-size:15px;font-weight:600;padding:0 6px;min-height:44px;cursor:pointer;position:relative}
+.linkbtn.inline{display:inline;min-height:0;padding:0 2px;font-size:inherit;vertical-align:baseline}
+.linkbtn.inline::after{content:"";position:absolute;left:-6px;right:-6px;top:50%;height:44px;transform:translateY(-50%)}
+.entry{position:relative;-webkit-touch-callout:none}
+.entry .en,.entry .zh{padding-right:30px}
+.emore{position:absolute;top:6px;right:-10px;width:44px;height:44px;border:0;background:none;color:var(--muted);opacity:.45;display:grid;place-items:center;cursor:pointer;border-radius:50%}
+.emore:hover,.emore:focus-visible{opacity:.9}
+.entry.live .emore{display:none}
+.tline[hidden]{display:none}
 
 /* ===== 底部标签栏 ===== */
 .tabbar{display:flex;border-top:1px solid var(--line);background:color-mix(in srgb,var(--panel) 92%,transparent);-webkit-backdrop-filter:saturate(1.6) blur(14px);backdrop-filter:saturate(1.6) blur(14px);padding:0 var(--s1) env(safe-area-inset-bottom,0px)}
@@ -163,7 +185,7 @@ button.li:active,.li.tog:active{background:var(--fill);transform:none}
 .chev{width:16px;height:16px;color:var(--faint);flex:none}
 .li.col{flex-direction:column;align-items:stretch;gap:8px;cursor:default;padding-top:12px;padding-bottom:12px}
 .li.col>label,.li.col>.li-h{font-size:14px;color:var(--muted);display:flex;align-items:center;gap:2px}
-.li input[type=text],.li input[type=password],.li textarea{width:100%;border:0;background:var(--fill);color:var(--ink);border-radius:10px;padding:12px;font-size:16px;font-family:var(--font-en);min-height:44px}
+.li input[type=text],.li input[type=password],.li textarea{width:100%;border:1.5px solid transparent;background:var(--fill);color:var(--ink);border-radius:10px;padding:12px;font-size:16px;font-family:var(--font-en);min-height:44px}
 .li textarea{font-family:inherit;height:96px;resize:vertical;line-height:1.5}
 .li-note{padding:10px var(--s2);font-size:13px;color:var(--muted);line-height:1.5;display:flex;align-items:center;gap:4px}
 .li-note.sub{background:var(--fill)}
@@ -171,8 +193,8 @@ button.li:active,.li.tog:active{background:var(--fill);transform:none}
 .info a,.li-note a{color:var(--accent)}
 .ibtn{border:0;background:none;color:var(--muted);font-size:16px;line-height:1;min-width:44px;min-height:44px;margin:-12px -8px -12px -2px;cursor:pointer;border-radius:50%}
 .ibtn[aria-expanded="true"]{color:var(--accent)}
-.callout{margin:0;padding:12px var(--s2);background:var(--warn-bg);color:var(--warn-ink);font-size:14px;line-height:1.5;display:flex;flex-direction:column;align-items:flex-start;gap:8px}
-.callout button{border:0;background:var(--warn-ink);color:var(--warn-bg);border-radius:10px;min-height:44px;padding:0 16px;font-size:15px;font-weight:600;cursor:pointer}
+.callout{margin:0;padding:12px var(--s2);background:var(--warn-bg);color:var(--warn-ink);font-size:14px;line-height:1.6}
+.callout .linkbtn{color:var(--accent)}
 /* 开关 */
 .sw{flex:none;width:51px;height:31px;border-radius:999px;border:0;background:#C9CDD4;position:relative;padding:0;cursor:pointer;transition:background-color .2s}
 .sw::before{content:"";position:absolute;inset:-7px -2px}
@@ -348,13 +370,24 @@ body.v-records.selecting #selBar{display:flex}
 .rc-item button{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:7px 14px;font-size:14px;cursor:pointer}
 .rc-item button.danger{color:var(--rec)}
 
+/* ===== 精简：记录页顶部两行 ===== */
+.rec-head{min-height:60px;display:flex;align-items:center}
+.rec-titlerow{display:flex;align-items:center;width:100%}
+.rec-titlerow .page-title{flex:1;margin:var(--s1) 4px}
+.rec-titlerow .icon-btn{color:var(--ink2)}
+.rec-searchrow{display:flex;align-items:center;gap:var(--s1);width:100%}
+.rec-searchrow input{flex:1;min-width:0;border:1.5px solid transparent;border-radius:var(--r-sm);background:var(--panel);color:var(--ink);padding:0 14px;min-height:44px;font-size:16px;font-family:inherit;box-shadow:var(--shadow)}
+.store-prot{display:flex;align-items:center;gap:var(--s1);font-size:13px;color:var(--muted);min-height:20px}
+.store-prot .linkbtn{font-size:13px;min-height:44px;margin:-12px 0}
+#selBar .linkbtn{background:none;color:var(--accent);padding:0 6px}
+.empty-sm .linkbtn{margin-top:var(--s1)}
 /* ===== 现代化改版：记录页、详情、列表卡片 ===== */
 /* 紧凑按钮的可点区域不小于 44px：外观保持，用透明伪元素把点击范围撑高 */
 .rh-actions button,.fchip,.pbtn,.rh-tags button,.retry,.tr-item .btns button,.rc-item button,#selBar button,.tm-row button,.fm-row button.act,#folderChip,.sess-title,.tmore,.status{position:relative}
-.rh-actions button::after,.fchip::after,.pbtn::after,.rh-tags button::after,.retry::after,.tr-item .btns button::after,.rc-item button::after,#selBar button::after,.tm-row button::after,.fm-row button.act::after,#folderChip::after,.sess-title::after,.tmore::after{content:"";position:absolute;left:0;right:0;top:50%;height:max(100%,44px);transform:translateY(-50%)}
+.rh-actions button::after,.fchip::after,.pbtn::after,.rh-tags button::after,.retry::after,.tr-item .btns button::after,.rc-item button::after,#selBar button::after,.emore::after,.tm-row button::after,.fm-row button.act::after,#folderChip::after,.sess-title::after,.tmore::after{content:"";position:absolute;left:0;right:0;top:50%;height:max(100%,44px);transform:translateY(-50%)}
 .tmore{min-width:44px}
 .det-top .det-title .retitle{min-height:36px;margin-left:8px;padding:0 12px;font-size:12px;vertical-align:middle}
-.det-tags input{min-height:44px;border:0;background:var(--panel);box-shadow:var(--shadow);padding:0 16px;font-size:15px}
+.det-tags input{min-height:44px;border:1.5px solid transparent;background:var(--panel);box-shadow:var(--shadow);padding:0 16px;font-size:15px}
 #records{padding:0 var(--s2) var(--s3)}
 .page-head-sp{height:4px}
 .rh-tools{display:flex;gap:var(--s1);margin-bottom:var(--s1)}
@@ -379,7 +412,7 @@ body.v-records.selecting #selBar{display:flex}
 .sw-actions{width:140px;opacity:0;transition:opacity .15s}
 .swipe:has(.card[style*="translateX(-"]) .sw-actions{opacity:1}
 .sw-actions button{border-radius:0}
-#recSort{flex:none;width:128px}
+.icon-btn.txt{width:auto;padding:0 12px;font-size:15px;font-weight:600;color:var(--accent)}
 .sw-actions button{background:var(--accent);font-weight:600}
 .tg{padding:2px 10px;font-size:12px;line-height:1.6}
 .empty-sm{display:flex;flex-direction:column;align-items:center;text-align:center;color:var(--muted);padding:48px var(--s3);line-height:1.6}
@@ -396,7 +429,7 @@ body.v-records.selecting #selBar{display:flex}
 .tr-item .btns button,.rc-item button,#selBar button,.tm-row button,.fm-row button.act{border:0;background:var(--fill);border-radius:10px;min-height:36px}
 .done.alt{background:var(--fill);color:var(--ink);border:0}
 .tagpick button{border-width:0;background:var(--fill);min-height:44px}
-.tagadd input{border:0;background:var(--fill);min-height:44px;border-radius:var(--r-sm)}
+.tagadd input{border:1.5px solid transparent;background:var(--fill);min-height:44px;border-radius:var(--r-sm)}
 .tagadd button{border-radius:var(--r-sm);min-height:44px}
 .divider{border-radius:var(--r-sm);background:var(--fill);border:0}
 #selBar{background:var(--panel);border-top:1px solid var(--line);padding-bottom:var(--s1)}
@@ -411,14 +444,14 @@ body.v-records.selecting #selBar{display:flex}
 
   <header class="live-head" id="liveHead">
     <div class="lh-main">
-      <button class="sess-title ph" id="sessTitle" aria-label="记录标题，点击编辑">新记录</button>
+      <button class="sess-title" id="sessTitle" aria-label="记录标题，点击编辑">新记录</button>
       <div class="lh-sub">
         <div class="status" id="status" role="status"><span class="dot"></span><span id="statusText">未开始</span></div>
         <button id="folderChip" aria-label="选择存入的文件夹">📁 未分类</button>
       </div>
     </div>
-    <button class="icon-btn" id="copyAllQuick" aria-label="复制全文">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>
+    <button class="icon-btn" id="liveMore" aria-label="更多" aria-haspopup="dialog">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
     </button>
   </header>
 
@@ -432,15 +465,20 @@ body.v-records.selecting #selBar{display:flex}
 
   <section id="records" aria-live="polite">
     <div id="recHome">
-      <div class="page-title">记录</div>
-      <div class="folderbar" id="folderBar"></div>
-      <div class="rh-tools">
-        <input type="search" id="recSearch" placeholder="搜索标题、英文、中文" autocomplete="off" aria-label="搜索">
-        <select id="recSort" aria-label="排序"><option value="new">最新优先</option><option value="old">最早优先</option><option value="long">时长最长</option></select>
+      <div class="rec-head">
+        <div class="rec-titlerow" id="recTitleRow">
+          <div class="page-title" id="recTitle">记录</div>
+          <button class="icon-btn" id="recSearchBtn" aria-label="搜索"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg></button>
+          <button class="icon-btn" id="selToggle" aria-label="选择"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 12.3l2.4 2.4 4.6-5"/></svg></button>
+          <button class="icon-btn" id="recMore" aria-label="排序方式" aria-haspopup="dialog"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
+        </div>
+        <div class="rec-searchrow" id="recSearchRow" hidden>
+          <input type="search" id="recSearch" placeholder="搜索标题、英文、中文" autocomplete="off" aria-label="搜索">
+          <button id="recSearchCancel" class="linkbtn">取消</button>
+        </div>
       </div>
-      <div class="rh-tags" id="recTagFilter"></div>
-      <div class="rh-actions"><button id="openTagView">按标签查看句子</button><button id="openTrash">最近删除</button><button id="openFolderMgr">管理文件夹</button></div>
-      <div class="rh-actions"><span id="recCount" style="flex:1"></span><button id="selToggle">选择</button></div>
+      <div class="folderbar" id="folderBar"></div>
+      <div class="rh-tags" id="recTagFilter" hidden></div>
       <div id="recItems"></div>
     </div>
     <div id="recTrash" hidden>
@@ -491,8 +529,7 @@ body.v-records.selecting #selBar{display:flex}
     <div class="group">
       <button class="li" id="engineRow" aria-haspopup="dialog"><span class="li-t">识别引擎</span><span class="li-v" id="engineVal"></span><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></button>
       <div class="callout" id="sxWarn" hidden>
-        <span>Soniox 的密钥只放在 Cloudflare Worker 里，需要先把连接方式设为「自建中转」。</span>
-        <button id="goConn">去设置连接方式</button>
+        <span>Soniox 的密钥只放在 Cloudflare Worker 里，需要先把连接方式设为「自建中转」。<button class="linkbtn inline" id="goConn">去设置 →</button></span>
       </div>
       <div class="li tog" id="diarizeRow"><span class="li-t">说话人分离<button class="ibtn" data-info="diarizeInfo" aria-expanded="false" aria-controls="diarizeInfo" aria-label="说明">ⓘ</button></span><button class="sw" id="diarize" role="switch" aria-checked="true" aria-label="说话人分离"></button></div>
       <div class="info" id="diarizeInfo" hidden>区分不同的说话人，字幕前显示彩色圆点和名称；同一场出现两位及以上说话人时才显示，可在记录详情里改名。</div>
@@ -502,7 +539,7 @@ body.v-records.selecting #selBar{display:flex}
         <input type="password" id="dgKey" placeholder="Deepgram 密钥" autocomplete="off" spellcheck="false">
         <div class="note" style="font-size:13px;color:var(--muted)">只保存在这台手机的浏览器里。在 <a href="https://console.deepgram.com" target="_blank" rel="noopener" style="color:var(--accent)">Deepgram Console</a> 申请。</div>
       </div>
-      <div class="li-note" id="fbNote"><span>Soniox 出错时自动切换到 Deepgram</span><button class="ibtn" data-info="fbInfo" aria-expanded="false" aria-controls="fbInfo" aria-label="说明">ⓘ</button></div>
+      <div class="li tog" id="fallbackRow"><span class="li-t">自动切换到备用引擎<button class="ibtn" data-info="fbInfo" aria-expanded="false" aria-controls="fbInfo" aria-label="说明">ⓘ</button></span><button class="sw" id="autoFallback" role="switch" aria-checked="true" aria-label="自动切换到备用引擎"></button></div>
       <div class="info" id="fbInfo" hidden></div>
     </div>
 
@@ -576,7 +613,8 @@ body.v-records.selecting #selBar{display:flex}
       <div class="li col">
         <div class="li-h">存储空间</div>
         <div class="store-bar" role="progressbar" aria-label="存储空间用量" id="storeBarWrap"><i id="storeBar"></i></div>
-        <div class="store-meta"><span id="storeInfo" class="num"><span class="skel" style="display:inline-block;width:120px;height:12px"></span></span><span id="storeNote"></span></div>
+        <div class="store-meta"><span id="storeInfo" class="num"><span class="skel" style="display:inline-block;width:120px;height:12px"></span></span></div>
+        <div class="store-prot" id="storeProt" hidden><span id="storeNote"></span><button class="linkbtn" id="persistBtn" hidden>开启保护</button></div>
       </div>
       <div class="pair-btns"><button id="backupAll">导出备份</button><button id="backupImport">导入备份</button></div>
       <input type="file" id="backupFile" accept="application/json,.json" hidden>
@@ -586,16 +624,11 @@ body.v-records.selecting #selBar{display:flex}
     </div>
 
     <h2 class="gt">高级</h2>
-    <details class="adv" id="adv">
-      <summary><span>更多选项</span><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></summary>
-      <div class="adv-body">
-        <div class="li tog" id="debugRow"><span class="li-t">调试模式<button class="ibtn" data-info="debugInfo" aria-expanded="false" aria-controls="debugInfo" aria-label="说明">ⓘ</button></span><button class="sw" id="debug" role="switch" aria-checked="false" aria-label="调试模式"></button></div>
-        <div class="info" id="debugInfo" hidden>记录引擎状态、备用切换和精修耗时，方便排查问题。日志只在这台手机的内存里，刷新后清空。</div>
-        <div id="dbgWrap" hidden><pre id="dbgLog" tabindex="0"></pre><div class="pair-btns"><button id="dbgCopy">复制日志</button><button id="dbgClear">清空日志</button></div></div>
-        <div class="pair-btns"><button id="copyAll">复制全文</button><button id="exportTxt">导出文本</button></div>
-        <button class="li" id="clearAll" style="color:var(--rec)"><span class="li-t">清空当前屏幕字幕</span></button>
-      </div>
-    </details>
+    <div class="group">
+      <div class="li tog" id="debugRow"><span class="li-t">调试模式<button class="ibtn" data-info="debugInfo" aria-expanded="false" aria-controls="debugInfo" aria-label="说明">ⓘ</button></span><button class="sw" id="debug" role="switch" aria-checked="false" aria-label="调试模式"></button></div>
+      <div class="info" id="debugInfo" hidden>记录引擎状态、备用切换和精修耗时，方便排查问题。日志只在这台手机的内存里，刷新后清空。</div>
+      <div id="dbgWrap" hidden><pre id="dbgLog" tabindex="0"></pre><div class="pair-btns"><button id="dbgCopy">复制日志</button><button id="dbgClear">清空日志</button></div></div>
+    </div>
     <div style="height:var(--s2)"></div>
   </section>
 
@@ -603,6 +636,7 @@ body.v-records.selecting #selBar{display:flex}
     <button id="selAll">全选</button>
     <span id="selCount">已选 0 条</span>
     <span style="flex:1"></span>
+    <button id="selTrash" class="linkbtn">最近删除</button>
     <button id="selMove">移动到…</button>
     <button id="selDel" class="danger">删除</button>
   </div>
@@ -616,17 +650,17 @@ body.v-records.selecting #selBar{display:flex}
     <div class="controls">
       <button class="side" id="markBtn" aria-label="标记重点">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg>
-        标记
+        <span class="lbl">标记</span>
       </button>
       <button id="mic" aria-label="开始收听">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
       </button>
       <button class="side" id="toggleType" aria-label="打字输入">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h.01M11 10h.01M15 10h.01M8 14h8"/></svg>
-        打字
+        <span class="lbl">打字</span>
       </button>
     </div>
-    <div class="hint" id="hint">建议在安静环境，靠近说话人</div>
+    <div class="hint" id="hint" role="status"></div>
   </footer>
 
   <nav class="tabbar" id="tabs" aria-label="主导航">
@@ -744,6 +778,10 @@ body.v-records.selecting #selBar{display:flex}
 (function(){
   const $ = id => document.getElementById(id);
   const feed=$("feed"), empty=$("empty"), mic=$("mic"), banner=$("banner"), hint=$("hint");
+  // 底部提示行：首次使用（还没有任何记录）显示一句建议；之后只用来显示状态信息，没有内容时不占空间
+  let noRecords=false;
+  const defaultHint=()=>noRecords ? "建议在安静环境，靠近说话人" : "";
+  const setHint=t=>{ hint.textContent=t||""; };
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   const API_URL="https://api.anthropic.com/v1/messages";
 
@@ -751,7 +789,7 @@ body.v-records.selecting #selBar{display:flex}
   const entries=[]; const queue=[]; let busy=false; let seq=0; let stickToBottom=true;
 
   // 设置项。v3 起三个设置改名（值不变）：provider→llm（大语言模型服务商）、route→connection（连接方式）、model→refineModel（精修/翻译模型）
-  const settings={connection:"direct", relayUrl:"", relayToken:"", llm:"anthropic", lastFolder:null, saveAudio:true, tagPresets:["重点","作业","考试","没听懂"], sumModel:"", apiKey:"", dgKey:"", engine:"soniox", diarize:true, refine:true, refineModel:"claude-haiku-4-5-20251001", lang:"en-US", mode:"both", size:22, glossary:"", theme:"auto", debug:false};
+  const settings={connection:"direct", relayUrl:"", relayToken:"", llm:"anthropic", lastFolder:null, saveAudio:true, tagPresets:["重点","作业","考试","没听懂"], sumModel:"", apiKey:"", dgKey:"", engine:"soniox", diarize:true, refine:true, autoFallback:true, refineModel:"claude-haiku-4-5-20251001", lang:"en-US", mode:"both", size:22, glossary:"", theme:"auto", debug:false};
   const LEGACY_KEYS={provider:"llm", route:"connection", model:"refineModel"};
   // 旧键名 → 新键名：新键已存在时以新键为准；迁移后立即写回，旧键删除
   function migrateSettings(saved){
@@ -801,14 +839,15 @@ body.v-records.selecting #selBar{display:flex}
     $("apiKey").value=settings.apiKey||"";
     $("dgKey").value=settings.dgKey||"";
     $("engineVal").textContent=ENGINE_NAMES[engId];
-    setSwitch("saveAudio",settings.saveAudio); setSwitch("diarize",settings.diarize!==false); setSwitch("refine",settings.refine!==false); setSwitch("debug",!!settings.debug);
+    setSwitch("saveAudio",settings.saveAudio); setSwitch("diarize",settings.diarize!==false); setSwitch("refine",settings.refine!==false); setSwitch("debug",!!settings.debug); setSwitch("autoFallback",settings.autoFallback!==false);
     // 条件显示：说话人分离只对 Soniox 有意义；口音只影响 Deepgram 和浏览器自带；Soniox 必须走自建中转
     $("diarizeRow").hidden=!soniox; if(!soniox) $("diarizeInfo").hidden=true;
     $("accentRow").hidden=soniox;
     $("accentVal").textContent=(ACCENTS.find(a=>a[0]===settings.lang)||ACCENTS[0])[1];
     $("dgRow").hidden=!(engId==="deepgram" && !relay);
     $("sxWarn").hidden=!(soniox && !relay);
-    $("fbInfo").textContent="Soniox 连不上、密钥或余额出错、或重连 3 次失败时，会在同一个会话里自动换成 Deepgram，字幕里插入「[已切换识别引擎]」，之后的翻译改由 "+llm+" 完成。";
+    $("fallbackRow").hidden=!soniox; if(!soniox) $("fbInfo").hidden=true;
+    $("fbInfo").textContent="开启后，Soniox 连不上、密钥或余额出错、或重连 3 次失败时，会在同一个会话里自动换成 Deepgram，字幕里插入「[已切换识别引擎]」，之后的翻译改由 "+llm+" 完成。关闭后，Soniox 出错只会提示，不会自动切换。";
     // 大语言模型
     setSeg("connSeg","v",settings.connection);
     $("providerRow").hidden=!relay; $("providerVal").textContent=LLM_NAMES[settings.llm]||"Claude";
@@ -866,7 +905,7 @@ body.v-records.selecting #selBar{display:flex}
     mic.disabled = bad;
     if(bad){
       showBanner("这个浏览器不支持自带语音识别。请在设置里切换到 Soniox 或 Deepgram；也可以点左下角「打字」，用键盘上的 🎤 听写英文。");
-      hint.textContent="语音识别不可用，可使用打字输入";
+      setHint("语音识别不可用，可使用打字输入");
     }
   }
   if(settings.engine==="soniox" && !sxReady()) showBanner('默认的识别引擎 Soniox 需要先部署并启用「自建中转」（密钥只放在 Worker 里，见 README）；也可以在「设置 → 语音识别」里把识别引擎换成 Deepgram 或浏览器自带。');
@@ -937,7 +976,7 @@ body.v-records.selecting #selBar{display:flex}
       created:Date.now(), ended:null, dur:0, tags:[], summary:"", summaryAt:null, audioMime:null, parts:[], engine, titleEdited:false, titleAuto:false,
       folderId:validFolderId(settings.lastFolder), deletedAt:null};
     S={id:row.id, row, t0:performance.now(), gapMs:0, intAt:null, intT:0, segN:0, nSeg:0, titled:false, closing:false, ending:false, chunkIdx:0, writes:[], mrDones:[], mr:null, needPrompt:false};
-    pendingMark=false;
+    pendingMark=false; noRecords=false; if(!listening) setHint("");
     dbPut("sessions",row).catch(dbFail);
     askPersist();
     return S;
@@ -1029,7 +1068,7 @@ body.v-records.selecting #selBar{display:flex}
     listening=false;
     audioStop(); releaseCapture(); if(eng) eng.stop();
     try{ wakeLock && wakeLock.release(); }catch(e){} wakeLock=null;
-    engState="idle"; setStatus(false,"已中断 "+fmt(listenSecs)); hint.textContent="录音已中断，点麦克风继续";
+    engState="idle"; setStatus(false,"已中断 "+fmt(listenSecs)); setHint("录音已中断，点麦克风继续");
     if(document.visibilityState==="visible") showIntDlg(); else S.needPrompt=true;
   }
   function showIntDlg(){ if(S){ S.needPrompt=false; if(!$("intDlg").open) $("intDlg").showModal(); } }
@@ -1037,7 +1076,7 @@ body.v-records.selecting #selBar{display:flex}
   $("intEnd").onclick=()=>{
     $("intDlg").close();
     if(S){ S.closing=true; sessEnd(); }
-    setStatus(false,"已暂停"); hint.textContent="点麦克风开始新的记录";
+    setStatus(false,"已暂停"); setHint(defaultHint());
   };
   async function checkPipeline(){
     if(!listening || !cap || !S) return;
@@ -1052,17 +1091,30 @@ body.v-records.selecting #selBar{display:flex}
 
   // ----- 存储用量 -----
   const mb=b=>b>=1073741824 ? (b/1073741824).toFixed(1)+"GB" : (b/1048576).toFixed(b>=10485760?0:1)+"MB";
+  const isIOS=()=>/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
   async function refreshStoreInfo(){
-    const el=$("storeInfo"), bar=$("storeBar"), note=$("storeNote");
+    const el=$("storeInfo"), bar=$("storeBar");
     try{
       const e=await navigator.storage.estimate(), used=e.usage||0, quota=e.quota||0;
       el.textContent="已用 "+mb(used)+(quota?" · 可用 "+mb(Math.max(0,quota-used)):"");
       const pct=quota?Math.max(used/quota*100,used?1:0):0; bar.style.width=Math.min(100,pct)+"%";
-      $("storeBarWrap").setAttribute("aria-valuenow",String(Math.round(pct))); $("storeBarWrap").setAttribute("aria-valuemin","0"); $("storeBarWrap").setAttribute("aria-valuemax","100");
-      let per=""; try{ per=(await navigator.storage.persisted()) ? "已开启持久化" : "未开启持久化"; }catch(_){}
-      note.textContent=per;
+      const w=$("storeBarWrap"); w.setAttribute("aria-valuenow",String(Math.round(pct))); w.setAttribute("aria-valuemin","0"); w.setAttribute("aria-valuemax","100");
     }catch(err){ el.textContent="这个浏览器无法读取存储用量"; bar.style.width="0"; }
+    // 持久化保护：没开启时，系统空间紧张或长期不打开，数据可能被清理
+    const box=$("storeProt"), note=$("storeNote"), btn=$("persistBtn");
+    try{
+      if(!(navigator.storage && navigator.storage.persisted)){ box.hidden=true; return; }
+      const on=await navigator.storage.persisted(); box.hidden=false;
+      if(on){ note.textContent="已开启保护 ✓"; btn.hidden=true; }
+      else{ note.textContent="数据可能被系统清理"; btn.hidden=false; btn.textContent="开启保护"; }
+    }catch(err){ box.hidden=true; }
   }
+  $("persistBtn").onclick=async()=>{
+    let ok=false; try{ ok=!!(await navigator.storage.persist()); }catch(e){}
+    if(ok){ $("storeNote").textContent="已开启保护 ✓"; $("persistBtn").hidden=true; toast("已开启保护"); return; }
+    $("storeNote").textContent=isIOS() ? "添加到主屏幕后使用更安全" : "数据可能被系统清理";
+    toast(isIOS() ? "添加到主屏幕后使用更安全" : "浏览器暂时没有批准，常用并添加书签后更容易通过");
+  };
 
   // ----- 未完成会话恢复 -----
   async function checkUnfinished(){
@@ -1162,12 +1214,51 @@ body.v-records.selecting #selBar{display:flex}
   }
   function vibrate(){ try{ navigator.vibrate && navigator.vibrate(30); }catch(e){} }
 
+  // 通用操作菜单（底部面板）：items=[{label,note,danger,fn}]
+  function openMenu(title,items){
+    $("menuTitle").textContent=title; const box=$("menuList"); box.textContent="";
+    items.forEach(it=>{
+      const b=document.createElement("button"); b.textContent=it.label;
+      if(it.note){ const sm=document.createElement("small"); sm.textContent=it.note; b.appendChild(sm); }
+      if(it.danger) b.style.color="var(--rec)";
+      b.onclick=()=>{ $("menuDlg").close(); it.fn(); };
+      box.appendChild(b);
+    });
+    $("menuDlg").showModal();
+  }
+  async function copyText(text,okMsg){
+    try{ await navigator.clipboard.writeText(text); toast(okMsg); }
+    catch(e){ const ta=document.createElement("textarea"); ta.value=text; document.body.appendChild(ta); ta.select(); try{ document.execCommand("copy"); toast(okMsg); }catch(_){ toast("复制失败"); } ta.remove(); }
+  }
+  // 实时字幕里一句话的操作菜单：长按字幕或点右上角的「…」
+  function entryMenu(e){
+    const items=[{label:"打标签",fn:()=>editEntryTags(e)},
+      {label:"复制",note:"英文和中文",fn:()=>copyText((e.en+(e.zh?"\n"+e.zh:"")).trim(),"已复制这一句")}];
+    if(S && S.id===e.sid && spIds(entries.filter(x=>x.sid===S.id)).length) items.push({label:"修改说话人",note:e.speaker!=null?spName(S.row,e.speaker):"未识别",fn:()=>pickSpeaker(e)});
+    openMenu("这一句",items);
+  }
+  // 改这一句的说话人：选已有的、新建一位，或给当前说话人改名（改名对整场记录生效）
+  function pickSpeaker(e){
+    const ids=spIds(entries.filter(x=>x.sid===S.id)), nx=String(Math.max(0,...ids.map(x=>parseInt(x,10)||0))+1);
+    const opts=ids.map(id=>({v:id,t:spName(S.row,id)})); opts.push({v:"__new",t:"＋ 新说话人",sub:"记为「说话人 "+nx+"」"});
+    if(e.speaker!=null) opts.push({v:"__rename",t:"重命名「"+spName(S.row,e.speaker)+"」",sub:"这位说话人的所有句子"});
+    openChoice("这一句是谁说的",opts,e.speaker!=null?String(e.speaker):null,v=>{
+      if(v==="__rename"){
+        const cur=spName(S.row,e.speaker), n=prompt("说话人名称（留空恢复默认）",cur===("说话人 "+e.speaker)?"":cur); if(n===null) return;
+        const names=Object.assign({},S.row.speakerNames||{}), t=n.trim().slice(0,20);
+        if(t) names[e.speaker]=t; else delete names[e.speaker];
+        S.row.speakerNames=Object.keys(names).length?names:undefined; if(!S.row.speakerNames) delete S.row.speakerNames;
+        sessSave(); refreshLiveSpeakers(); return;
+      }
+      e.speaker=v==="__new"?nx:String(v); segSave(e); refreshLiveSpeakers();
+    });
+  }
+
   // 实时字幕里的句子标签
   function drawTags(e){
     const box=e.tagsEl; box.textContent="";
     (e.tags||[]).forEach(t=>box.appendChild(tagChip(t)));
-    const more=document.createElement("button"); more.className="tmore"; more.textContent="…"; more.setAttribute("aria-label","标签");
-    more.onclick=()=>editEntryTags(e); box.appendChild(more);
+    box.hidden=!(e.tags||[]).length;       // 没有标签时不占一行
   }
   function editEntryTags(e){
     openTagMenu("给这句加标签",e.tags||[],tags=>{ e.tags=tags; drawTags(e); segSave(e); tagsChanged(); });
@@ -1251,7 +1342,7 @@ body.v-records.selecting #selBar{display:flex}
     const prev=view; view=v;
     document.body.classList.toggle("v-records",v==="records"); document.body.classList.toggle("v-settings",v==="settings");
     document.querySelectorAll("#tabs button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.view===v)));
-    if(v==="records"){ if(o&&o.trash) $("openTrash").onclick(); else if($("recDetail").hidden) recRefresh(); }
+    if(v==="records"){ if(o&&o.trash) gotoTrash(); else if($("recDetail").hidden) recRefresh(); }
     else{ pausePlayer(); if(v==="live") scrollDown(); }
     if(v==="settings"){ applySettings(); refreshStoreInfo(); }
     if(prev!==v){ const el=v==="live"?$("feed"):v==="records"?$("records"):$("settingsView"); if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches)) el.animate([{opacity:0,transform:"translateY(6px)"},{opacity:1,transform:"none"}],{duration:200,easing:"cubic-bezier(.2,.8,.2,1)"}); }
@@ -1292,6 +1383,7 @@ body.v-records.selecting #selBar{display:flex}
     const counts={}; rd.rows.forEach(r=>tagsOf(r).forEach(t=>{ counts[t]=(counts[t]||0)+1; }));
     rf.tags.forEach(t=>{ if(!counts[t]) rf.tags.delete(t); });
     const names=Object.keys(counts).sort((a,b)=>counts[b]-counts[a]);
+    $("recTagFilter").hidden=!(searching||rf.tags.size)||!names.length;   // 标签筛选：搜索时或已有筛选条件时才显示
     filterChips($("recTagFilter"),names,rf.tags,true,t=>{ if(rf.tags.has(t)) rf.tags.delete(t); else rf.tags.add(t); renderHome(); },counts);
     const q=rf.q.trim().toLowerCase(); const hits=new Map();
     let list=rd.rows.filter(r=>{
@@ -1307,13 +1399,13 @@ body.v-records.selecting #selBar{display:flex}
     });
     list.sort(rf.sort==="old" ? (a,b)=>a.created-b.created : rf.sort==="long" ? (a,b)=>(b.dur||0)-(a.dur||0) : (a,b)=>b.created-a.created);
     visibleIds=list.map(r=>r.id); sel.ids.forEach(id=>{ if(!visibleIds.includes(id)) sel.ids.delete(id); }); updateSelBar();
-    $("openTrash").textContent="最近删除"+(rd.trash.length?" ("+rd.trash.length+")":"");
-    $("recCount").textContent="共 "+list.length+" 条"+(list.length!==rd.rows.length?"（已筛选）":"");
+    $("selTrash").textContent=trashLabel();
     const box=$("recItems"); box.textContent="";
     if(!list.length){
       const d=document.createElement("div"); d.className="empty-sm";
       const ic=rd.rows.length ? '<path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"/>' : '<rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/>';
       d.innerHTML='<div class="ei"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+ic+'</svg></div>'+(rd.rows.length ? "<strong>没有符合条件的记录</strong>换个关键词或去掉标签筛选试试。" : "<strong>还没有记录</strong>每次点麦克风开始、再点停止，就会自动保存为一条记录。");
+      const tl=document.createElement("button"); tl.className="linkbtn"; tl.textContent=trashLabel()+" →"; tl.onclick=gotoTrash; d.appendChild(tl);
       box.appendChild(d); return;
     }
     const p2=n=>String(n).padStart(2,"0");
@@ -1349,10 +1441,24 @@ body.v-records.selecting #selBar{display:flex}
   }
   let srchT=null;
   $("recSearch").oninput=e=>{ clearTimeout(srchT); srchT=setTimeout(()=>{ rf.q=e.target.value; renderHome(); },200); };
-  $("recSort").onchange=e=>{ rf.sort=e.target.value; renderHome(); };
+  // 搜索：点放大镜，标题栏变成搜索框；取消后恢复
+  let searching=false;
+  function setSearch(on){
+    searching=on; $("recTitleRow").hidden=on; $("recSearchRow").hidden=!on;
+    if(on) $("recSearch").focus(); else{ $("recSearch").value=""; rf.q=""; }
+    renderHome();
+  }
+  $("recSearchBtn").onclick=()=>setSearch(true);
+  $("recSearchCancel").onclick=()=>setSearch(false);
+  // 排序：标题栏「…」，或长按「全部」胶囊；默认最新优先
+  const SORTS=[{v:"new",t:"最新优先"},{v:"old",t:"最早优先"},{v:"long",t:"时长最长"}];
+  const openSortMenu=()=>openChoice("排序方式",SORTS,rf.sort,v=>{ rf.sort=v; renderHome(); });
+  $("recMore").onclick=openSortMenu;
+  const trashLabel=()=>"最近删除"+(rd.trash.length?"（"+rd.trash.length+"）":"");
+  async function gotoTrash(){ await purgeExpired(); try{ await loadRecData(); }catch(e){} pane("recTrash"); renderTrash(); }
+  $("selTrash").onclick=gotoTrash;
 
   // ----- 按标签查看句子（跨会话） -----
-  $("openTagView").onclick=()=>{ pane("recTags"); renderTagView(); };
   $("tvBack").onclick=()=>{ pane("recHome"); renderHome(); };
   function renderTagView(){
     const counts={}; rd.rows.forEach(r=>(rd.segs.get(r.id)||[]).forEach(g=>(g.tags||[]).forEach(t=>{ counts[t]=(counts[t]||0)+1; })));
@@ -1469,7 +1575,6 @@ body.v-records.selecting #selBar{display:flex}
     dragSort(box,async ids=>{ try{ await reorderFolders(ids); }catch(e){ dbFail(e); } recFolderChanged(); });
   }
   function recFolderChanged(){ if(view==="records" && $("recHome").hidden===false) { drawFolderBar(); renderHome(); } }
-  $("openFolderMgr").onclick=()=>{ drawFolderMgr(); $("fmDlg").showModal(); };
   $("fmClose").onclick=()=>$("fmDlg").close();
   $("fmAdd").onclick=async()=>{ const v=$("fmNew").value; $("fmNew").value=""; if(!v.trim()) return; try{ await createFolder(v); }catch(e){ dbFail(e); } drawFolderMgr(); recFolderChanged(); };
   $("fmNew").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); $("fmAdd").click(); } });
@@ -1529,20 +1634,25 @@ body.v-records.selecting #selBar{display:flex}
       b.onclick=()=>{ rf.folder=key; closeSwipe(); drawFolderBar(); renderHome(); };
       box.appendChild(b); return b;
     };
-    chip("全部","all",rd.rows.length);
+    attachLongPress(chip("全部","all",rd.rows.length),openSortMenu);       // 长按「全部」也可以选排序
     chip("未分类","none",rd.rows.filter(r=>r.folderId==null).length);
     folders.forEach(f=>{
       const b=chip(f.name,f.id,rd.rows.filter(r=>r.folderId===f.id).length);
       attachLongPress(b,()=>{ drawFolderMgr(); $("fmDlg").showModal(); });   // 长按文件夹进入管理
     });
+    const tagc=document.createElement("button"); tagc.className="fchip"; tagc.id="openTagView"; tagc.textContent="🏷 标签";
+    tagc.onclick=()=>{ pane("recTags"); renderTagView(); };
+    box.appendChild(tagc);
     const plus=document.createElement("button"); plus.className="fchip plus"; plus.textContent="＋"; plus.setAttribute("aria-label","新建文件夹");
     plus.onclick=async()=>{ const n=prompt("新建文件夹"); if(!n||!n.trim()) return; try{ const f=await createFolder(n); if(f){ rf.folder=f.id; } }catch(e){ dbFail(e); } drawFolderBar(); renderHome(); };
     box.appendChild(plus);
   }
+  const SEL_ICON=$("selToggle").innerHTML;
   function setSelMode(on){
     sel.on=on; sel.ids.clear(); closeSwipe();
     document.body.classList.toggle("selecting",on);
-    $("selToggle").textContent=on?"完成":"选择";
+    const t=$("selToggle"); t.setAttribute("aria-label",on?"完成选择":"选择");
+    if(on){ t.textContent="完成"; t.classList.add("txt"); } else { t.innerHTML=SEL_ICON; t.classList.remove("txt"); }
     updateSelBar(); renderHome();
   }
   function updateSelBar(){
@@ -1612,7 +1722,6 @@ body.v-records.selecting #selBar{display:flex}
       btns.append(rs,pg); it.append(t,m,btns); box.appendChild(it);
     });
   }
-  $("openTrash").onclick=async()=>{ await purgeExpired(); try{ await loadRecData(); }catch(e){} pane("recTrash"); renderTrash(); };
   $("trBack").onclick=()=>{ pane("recHome"); recRefresh(); };
   $("trClear").onclick=async()=>{
     if(!rd.trash.length) return;
@@ -2244,7 +2353,11 @@ body.v-records.selecting #selBar{display:flex}
     const tl=document.createElement("div"); tl.className="tline";
     div.append(en,zh,tl); e.tagsEl=tl; drawTags(e);
     if(e.speaker!=null && S && S.id===e.sid && spShow(S.row,entries.filter(x=>x.sid===S.id).concat([e]))) div.insertBefore(spEl(S.row,e.speaker),div.firstChild);
-    attachLongPress(div,()=>editEntryTags(e));
+    attachLongPress(div,()=>entryMenu(e));
+    const more=document.createElement("button"); more.className="emore"; more.setAttribute("aria-label","这一句的更多操作");
+    more.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>';
+    more.onclick=ev=>{ ev.stopPropagation(); entryMenu(e); };
+    div.appendChild(more);
     if(liveEl && liveEl.parentNode===feed) feed.insertBefore(div, liveEl); else feed.appendChild(div);
     e.el=zh; scrollDown();
   }
@@ -2867,10 +2980,10 @@ registerProcessor("pcm16",PCM16);`;
       engState=st.state; dbg("引擎状态："+st.state+(st.retries?"（重连 "+st.retries+"/3）":""));
       if(ENGINES[activeEngine] && ENGINES[activeEngine].streaming){
         refreshStatus();
-        if(st.state==="live") hint.textContent="正在收听英文，再点一次停止";
+        if(st.state==="live") setHint("");
       }
     },
-    onHint:t=>{ hint.textContent=t; },
+    onHint:t=>{ setHint(t); },
     onError:msg=>{
       dbg("引擎错误："+String(msg).replace(/<[^>]+>/g," "));
       if(tryFallback(msg)) return;
@@ -2882,12 +2995,12 @@ registerProcessor("pcm16",PCM16);`;
   // 主引擎（Soniox）连不上 / 密钥或余额出错 / 重连 3 次仍失败时，自动改用 Deepgram：
   // 同一个会话、同一条时间轴，麦克风采集与录音不中断；字幕里插一条分隔线，翻译改由 Claude 完成。
   function tryFallback(msg){
-    if(activeEngine!=="soniox" || fellBack || !listening || !cap || !dgReady() || !ENGINES.deepgram) return false;
+    if(activeEngine!=="soniox" || fellBack || !listening || !cap || settings.autoFallback===false || !dgReady() || !ENGINES.deepgram) return false;
     fellBack=true; fallbackWhy=msg; dbg("切换备用引擎 Deepgram");
     const old=eng; if(old) old.abort();      // 把没确定的那句先送出，再丢弃旧连接
     activeEngine="deepgram"; engState="connecting";
     addDivider("[已切换识别引擎]");
-    hint.textContent="Soniox 不可用（"+String(msg).replace(/[。\s]+$/,"")+"），已切换到备用引擎 Deepgram，翻译改用 "+llmName();
+    setHint("Soniox 不可用（"+String(msg).replace(/[。\s]+$/,"")+"），已切换到备用引擎 Deepgram，翻译改用 "+llmName());
     toast("已切换到备用引擎");
     console.warn("[识别引擎] Soniox 失败，切换到 Deepgram：",msg);
     eng=ENGINES.deepgram.create(engineHandlers);
@@ -2960,7 +3073,7 @@ registerProcessor("pcm16",PCM16);`;
       else if(n==="NotFoundError"||n==="OverconstrainedError") showBanner("没有检测到麦克风，请检查设备。");
       else if(n==="NotReadableError") showBanner("麦克风被其他应用占用，请关闭后重试。");
       else showBanner("音频启动失败："+((err&&err.message)||n||"未知错误"));
-      listening=false; setStatus(false,"未开始"); hint.textContent="点麦克风重试";
+      listening=false; setStatus(false,"未开始"); setHint("点麦克风重试");
       return false;
     }
     // 1b. 不用 PCM 采集的引擎（浏览器自带）：录音存档单独开一路麦克风，识别引擎照常自己管麦克风
@@ -3008,7 +3121,7 @@ registerProcessor("pcm16",PCM16);`;
     }
     const resuming = !!(S && S.intAt!=null && !S.closing && ENGINES[S.row.engine] && ENGINES[S.row.engine].usesMic);
     activeEngine = resuming ? S.row.engine : settings.engine; fellBack=false;
-    listening=true; setStatus(true,"收听中"); hint.textContent="正在收听英文，再点一次停止";
+    listening=true; setStatus(true,"收听中"); setHint("");
     acquireWake();
     await startEngine(resuming);
   }
@@ -3021,7 +3134,7 @@ registerProcessor("pcm16",PCM16);`;
     else if(S){ audioStop(); releaseCapture(); sessEnd(); }                     // 已中断后直接结束
     if(info && info.streaming){ engState="idle"; refreshStatus(); if(!listenSecs) setStatus(false,"已暂停"); }
     else setStatus(false,"已暂停");
-    hint.textContent="点麦克风继续收听";
+    setHint(defaultHint());
     try{ wakeLock && wakeLock.release(); }catch(e){} wakeLock=null;
   }
   mic.onclick=()=>{ listening?stop():start(); };
@@ -3033,32 +3146,31 @@ registerProcessor("pcm16",PCM16);`;
   });
 
   // ---------- Typing / keyboard dictation ----------
-  $("toggleType").onclick=()=>{ const t=$("typebar"); t.classList.toggle("show"); if(t.classList.contains("show")) $("typeInput").focus(); };
+  $("toggleType").onclick=()=>{ const t=$("typebar"); t.classList.toggle("show"); $("liveFoot").classList.toggle("typing",t.classList.contains("show")); if(t.classList.contains("show")) $("typeInput").focus(); };
   function sendTyped(){ const v=$("typeInput").value; if(v.trim()){ commit(v); $("typeInput").value=""; } }
   $("typeSend").onclick=sendTyped;
   $("typeInput").addEventListener("keydown",e=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); sendTyped(); } });
 
   // ---------- Export ----------
   function fullText(){ return entries.map(e=> settings.mode==="zh" ? (e.zh||"") : (e.en+"\n"+(e.zh||""))).join("\n\n"); }
-  async function copyAll(){
-    if(!entries.length){ toast("还没有内容"); return; }
-    try{ await navigator.clipboard.writeText(fullText()); toast("已复制全文"); }
-    catch(e){ const ta=document.createElement("textarea"); ta.value=fullText(); document.body.appendChild(ta); ta.select(); try{ document.execCommand("copy"); toast("已复制全文"); }catch(_){ toast("复制失败"); } ta.remove(); }
-  }
-  $("copyAll").onclick=copyAll; $("copyAllQuick").onclick=copyAll;
-  $("exportTxt").onclick=()=>{
+  const copyAll=()=>{ if(!entries.length){ toast("还没有内容"); return; } copyText(fullText(),"已复制全文"); };
+  function exportTxt(){
     if(!entries.length){ toast("还没有内容"); return; }
     const d=new Date(), p=n=>String(n).padStart(2,"0");
     const a=document.createElement("a");
     a.href=URL.createObjectURL(new Blob([fullText()],{type:"text/plain;charset=utf-8"}));
     a.download="翻译记录-"+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+"-"+p(d.getHours())+p(d.getMinutes())+".txt";
     document.body.appendChild(a); a.click(); a.remove();
-  };
-  $("clearAll").onclick=()=>{
+  }
+  function clearScreen(){
     if(!entries.length) return;
     if(!confirm("确定清空当前屏幕上的字幕？「记录」里已保存的内容不会被删除。")) return;
     entries.length=0; queue.length=0; feed.innerHTML=""; feed.appendChild(empty); liveEl=null; toast("已清空");
-  };
+  }
+  $("liveMore").onclick=()=>openMenu("更多",[
+    {label:"复制全文",fn:copyAll},
+    {label:"导出文本",note:".txt",fn:exportTxt},
+    {label:"清空当前屏幕字幕",note:"已保存的记录不受影响",danger:true,fn:clearScreen}]);
 
   // ---------- Settings ----------
   // ⓘ 说明：点一下展开/收起对应的小字
@@ -3076,6 +3188,7 @@ registerProcessor("pcm16",PCM16);`;
   bindSwitch("saveAudio","saveAudio");
   bindSwitch("diarize","diarize");
   bindSwitch("refine","refine");
+  bindSwitch("autoFallback","autoFallback");
   bindSwitch("debug","debug",on=>{ if(on) dbg("调试模式已开启"); drawDbg(); });
   // 底部选择面板：选项较多的设置
   function openChoice(title,opts,cur,cb){
@@ -3100,7 +3213,7 @@ registerProcessor("pcm16",PCM16);`;
     {v:"browser",t:"浏览器自带",sub:"免费，准确度较低"}],settings.engine,v=>{
       if(listening) stop();
       settings.engine=v; saveSettings(); applySettings();
-      hideBanner(); hint.textContent="建议在安静环境，靠近说话人"; checkEngine(); dbg("识别引擎 → "+v);
+      hideBanner(); setHint(defaultHint()); checkEngine(); dbg("识别引擎 → "+v);
     });
   $("accentRow").onclick=()=>openChoice("说话人的口音",ACCENTS.map(([v,t])=>({v,t})),settings.lang,v=>{
     settings.lang=v; saveSettings(); applySettings(); if(listening && eng) eng.restartNow();
@@ -3170,6 +3283,7 @@ registerProcessor("pcm16",PCM16);`;
   purgeExpired();          // 每次打开应用时清理超过 30 天的“最近删除”
   checkUnfinished();
   applySettings();
+  dbAll("sessions").then(r=>{ noRecords=r.length===0; if(!listening && !hint.textContent) setHint(defaultHint()); }).catch(()=>{});
 })();
 </script>
 </body>
