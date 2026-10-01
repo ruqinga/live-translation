@@ -222,6 +222,8 @@ body.v-records.selecting #selBar{display:flex}
 .zh.refresh{animation:refineFade .6s ease}
 @keyframes refineFade{from{opacity:.25}to{opacity:1}}
 @media (prefers-reduced-motion:reduce){.zh.refresh{animation:none}}
+.sp{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);margin-bottom:2px;font-family:var(--font-en)}
+.sp i{width:9px;height:9px;border-radius:50%;display:inline-block;background:var(--c,#888)}
 .divider{margin:8px 0;padding:6px 10px;border-radius:8px;background:var(--bg);border:1px dashed var(--line);color:var(--muted);font-size:13px;text-align:center}
 .rec-note{font-size:13px;color:var(--muted);line-height:1.5;margin:6px 0 12px}
 .rc-item{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;background:var(--bg)}
@@ -1421,10 +1423,32 @@ body.v-records.selecting #selBar{display:flex}
     if(S && S.id===det.row.id){ S.row.title=det.row.title; S.row.titleEdited=true; }
     dbPut("sessions",det.row).catch(dbFail);
   }
+  // 按会话给说话人改名：先选一位，再输入名字（留空恢复默认「说话人 N」）
+  function renameSpeakers(){
+    if(!det) return; const row=det.row; const ids=spIds(det.segs);
+    $("menuTitle").textContent="重命名说话人"; const box=$("menuList"); box.textContent="";
+    ids.forEach(id=>{
+      const b=document.createElement("button"); b.appendChild(spEl(row,id));
+      b.onclick=()=>{
+        $("menuDlg").close();
+        const cur=spName(row,id), n=prompt("说话人名称（留空恢复默认）",cur===("说话人 "+id)?"":cur); if(n===null) return;
+        const names=Object.assign({},row.speakerNames||{}); const v=n.trim().slice(0,20);
+        if(v) names[id]=v; else delete names[id];
+        row.speakerNames=names; if(!Object.keys(names).length) delete row.speakerNames;
+        if(S && S.id===row.id){ S.row.speakerNames=row.speakerNames; refreshLiveSpeakers(); }
+        dbPut("sessions",row).catch(dbFail);
+        renderDetList(); toast("已更新说话人名称");
+      };
+      box.appendChild(b);
+    });
+    $("menuDlg").showModal();
+  }
   $("detMore").onclick=()=>{
     if(!det) return; $("menuTitle").textContent="更多"; const box=$("menuList"); box.textContent="";
     const add=(label,fn,danger,note)=>{ const b=document.createElement("button"); b.textContent=label; if(note){ const sm=document.createElement("small"); sm.textContent=note; b.appendChild(sm); } if(danger) b.style.color="var(--rec)"; b.onclick=()=>{ $("menuDlg").close(); fn(); }; box.appendChild(b); };
     add("重命名",renameDetail);
+    const ids=spIds(det.segs);
+    if(ids.length) add("重命名说话人",renameSpeakers,false,ids.length+" 位说话人");
     add("移动到文件夹",()=>pickFolder("移动到文件夹",det.row.folderId==null?null:det.row.folderId,async fid=>{
       try{ await moveSessions([det.row.id],fid); det.row.folderId=fid; drawDetSub(); toast("已移动到「"+folderName(fid)+"」"); }catch(e){ dbFail(e); }
     }),false,"当前："+folderName(det.row.folderId==null?null:det.row.folderId));
@@ -1462,6 +1486,7 @@ body.v-records.selecting #selBar{display:flex}
       const z=document.createElement("div"); z.className="z"; z.textContent=g.zh||"";
       const e=document.createElement("div"); e.className="e"; e.textContent=g.en||"";
       const tl=document.createElement("div"); tl.className="tline";
+      if(g.speaker!=null && g.speaker!=="" && spShow(det.row,det.segs)) tx.appendChild(spEl(det.row,g.speaker));
       tx.append(z,e,tl); row.append(tm,tx);
       const draw=()=>{
         tl.textContent=""; (g.tags||[]).forEach(t=>tl.appendChild(tagChip(t)));
@@ -1687,12 +1712,13 @@ body.v-records.selecting #selBar{display:flex}
     return out;
   }
   async function summarize(row,segs,st){
-    const line=g=>"["+fmtT(g.start)+"] "+(g.en||"");
+    const sp=spShow(row,segs);
+    const line=g=>"["+fmtT(g.start)+"] "+(sp&&g.speaker!=null&&g.speaker!==""?spName(row,g.speaker)+"：":"")+(g.en||"");
     const lines=segs.map(line);
     const head=[];
     if((row.tags||[]).length) head.push("【会话标签（主题提示）】\n"+row.tags.join("、"));
     const gl=(settings.glossary||"").trim(); if(gl) head.push("【场景与术语】\n"+gl);
-    const tagged=segs.filter(g=>(g.tags||[]).length).slice(0,300).map(g=>"["+fmtT(g.start)+"] ["+g.tags.join("、")+"] "+(g.en||""));
+    const tagged=segs.filter(g=>(g.tags||[]).length).slice(0,300).map(g=>"["+fmtT(g.start)+"] ["+g.tags.join("、")+"] "+(sp&&g.speaker!=null&&g.speaker!==""?spName(row,g.speaker)+"：":"")+(g.en||""));
     head.push("【带标记的句子】\n"+(tagged.length?tagged.join("\n"):"（无）"));
     const ctx=head.join("\n\n");
     const total=lines.join("\n").length;
@@ -1828,12 +1854,12 @@ body.v-records.selecting #selBar{display:flex}
     if(files.length>1) toast("因中断续录，共导出 "+files.length+" 段音频");
   }
   const srtTime=t=>{ t=Math.max(0,t); const ms=Math.round(t*1000), h=Math.floor(ms/3600000), m=Math.floor(ms%3600000/60000), s=Math.floor(ms%60000/1000); return p2(h)+":"+p2(m)+":"+p2(s)+","+String(ms%1000).padStart(3,"0"); };
-  function buildSrt(segs){
-    const list=segs.filter(g=>g.kind!=="break");
+  function buildSrt(segs,row){
+    const list=segs.filter(g=>g.kind!=="break"), sp=spShow(row,list), lab=g=>sp&&g.speaker!=null&&g.speaker!==""?"["+spName(row,g.speaker)+"] ":"";
     return list.map((g,i)=>{
       const next=list[i+1]; let end=g.end;
       if(!(end>g.start+0.2)) end=Math.min(g.start+3, next&&next.start>g.start ? next.start : g.start+3);
-      return (i+1)+"\n"+srtTime(g.start)+" --> "+srtTime(end)+"\n"+(g.en||"")+(g.zh?"\n"+g.zh:"");
+      return (i+1)+"\n"+srtTime(g.start)+" --> "+srtTime(end)+"\n"+lab(g)+(g.en||"")+(g.zh?"\n"+g.zh:"");
     }).join("\n\n")+"\n";
   }
   function buildMd(row,segs){
@@ -1843,9 +1869,10 @@ body.v-records.selecting #selBar{display:flex}
     out.push("- 时长："+fmtT(row.dur||0));
     if((row.tags||[]).length) out.push("- 标签："+row.tags.map(t=>"#"+t.replace(/\s+/g,"_")).join(" "));
     out.push("", "## 摘要", "", row.summary ? row.summary : "（还没有生成摘要）", "", "## 全文（中英对照）", "");
+    const sp=spShow(row,segs);
     segs.forEach(g=>{
       if(g.kind==="break"){ out.push("*"+g.en+"*", ""); return; }
-      out.push("**["+fmtT(g.start)+"]** "+(g.en||"")+((g.tags||[]).length?"  "+g.tags.map(t=>"#"+t.replace(/\s+/g,"_")).join(" "):""));
+      out.push("**["+fmtT(g.start)+"]** "+(sp&&g.speaker!=null&&g.speaker!==""?"**"+spName(row,g.speaker)+"**：":"")+(g.en||"")+((g.tags||[]).length?"  "+g.tags.map(t=>"#"+t.replace(/\s+/g,"_")).join(" "):""));
       if(g.zh) out.push("> "+g.zh);
       out.push("");
     });
@@ -1872,7 +1899,7 @@ body.v-records.selecting #selBar{display:flex}
     if(!det) return; const kind=b.dataset.exp, row=det.row; $("expDlg").close();
     try{
       if(kind==="audio") await exportAudio(row);
-      else if(kind==="srt") await deliver([{blob:new Blob([buildSrt(sortSegs(await dbBySid("segments",row.id)))],{type:"text/plain;charset=utf-8"}), name:safeName(row.title)+".srt"}]);
+      else if(kind==="srt") await deliver([{blob:new Blob([buildSrt(sortSegs(await dbBySid("segments",row.id)),row)],{type:"text/plain;charset=utf-8"}), name:safeName(row.title)+".srt"}]);
       else if(kind==="md") await deliver([{blob:new Blob([buildMd(row,sortSegs(await dbBySid("segments",row.id)))],{type:"text/plain;charset=utf-8"}), name:safeName(row.title)+".md"}]);
       else await deliver([{blob:backupBlob([await bundle(row.id)]), name:safeName(row.title)+"-备份.json"}]);
     }catch(e){ toast("导出失败："+((e&&e.message)||"未知错误")); }
@@ -1908,10 +1935,13 @@ body.v-records.selecting #selBar{display:flex}
         tags:strs(x.tags), summary:typeof x.summary==="string"?x.summary:"", summaryAt:x.summaryAt==null?null:num(x.summaryAt,null),
         audioMime:old?old.audioMime:null, parts:old?old.parts:[], engine:["browser","soniox"].includes(x.engine)?x.engine:"deepgram",
         titleEdited:!!x.titleEdited, titleAuto:!!x.titleAuto,
+        speakerNames:(x.speakerNames && typeof x.speakerNames==="object" && !Array.isArray(x.speakerNames)) ? Object.fromEntries(Object.entries(x.speakerNames).filter(([k,v])=>typeof v==="string"&&v.trim()).map(([k,v])=>[String(k).slice(0,20),v.trim().slice(0,20)])) : undefined,
         folderId:(x.folderId!=null && folderById(+x.folderId)) ? +x.folderId : null, deletedAt:x.deletedAt==null?null:num(x.deletedAt,null)};
       const segs=(Array.isArray(x.segments)?x.segments:[]).map((g,i)=>({
         id:id+"-"+(i+1), sid:id, start:num(g&&g.start,0), end:num(g&&g.end,0), en:String((g&&g.en)||""), zh:String((g&&g.zh)||""),
         tags:strs(g&&g.tags), kind:(g&&g.kind)==="break"?"break":"seg"}));
+      segs.forEach((g,i)=>{ const o=x.segments[i]; if(o && o.speaker!=null && o.speaker!=="") g.speaker=String(o.speaker).slice(0,20); if(typeof (o&&o.rawEn)==="string") g.rawEn=o.rawEn; });
+      if(!row.speakerNames) delete row.speakerNames;
       try{
         await dbTx(["sessions","segments"],"readwrite",t=>{
           t.objectStore("sessions").put(row);
@@ -1933,6 +1963,32 @@ body.v-records.selecting #selBar{display:flex}
   function scrollDown(){ if(stickToBottom) feed.scrollTop=Math.max(0,feed.scrollHeight-feed.clientHeight-tailH()); }
   function hideEmpty(){ if(empty.parentNode) empty.remove(); }
 
+  // ---------- 说话人 ----------
+  // Soniox 返回的说话人编号（字符串 "1","2"…）；显示名默认「说话人 N」，可在记录详情里按会话改名（row.speakerNames）。
+  // 只有同一场里出现 2 个及以上说话人，或者用户改过名时才显示标签，单人讲课不会每句都带“说话人 1”。
+  const SP_COLORS=["#e0527a","#2f7de1","#2fa56b","#d98a1c","#8a5cd6","#17a2b8","#c2561b","#6c7a89"];
+  const spColor=id=>{ const n=parseInt(id,10), k=Number.isFinite(n)?Math.abs(n):[...String(id)].reduce((a,c)=>a+c.charCodeAt(0),0); return SP_COLORS[k%SP_COLORS.length]; };
+  const spName=(row,id)=>((row&&row.speakerNames&&row.speakerNames[id])||("说话人 "+id));
+  const spIds=list=>[...new Set(list.map(g=>g.speaker).filter(x=>x!=null&&x!==""))];
+  const spShow=(row,list)=>spIds(list).length>=2 || !!(row&&row.speakerNames&&Object.keys(row.speakerNames).length);
+  function spEl(row,id){
+    const d=document.createElement("div"); d.className="sp";
+    const i=document.createElement("i"); i.style.setProperty("--c",spColor(id));
+    const t=document.createElement("span"); t.textContent=spName(row,id);
+    d.append(i,t); return d;
+  }
+  // 实时字幕：补上/刷新当前会话每一句的说话人标签（第二个说话人出现、或改名后调用）
+  function refreshLiveSpeakers(){
+    if(!S) return;
+    const mine=entries.filter(e=>e.sid===S.id);
+    const show=spShow(S.row,mine);
+    mine.forEach(e=>{
+      if(!e.row || !e.row.isConnected) return;
+      const old=e.row.querySelector(".sp"); if(old) old.remove();
+      if(show && e.speaker!=null) e.row.insertBefore(spEl(S.row,e.speaker),e.row.firstChild);
+    });
+  }
+
   function renderEntry(e){
     hideEmpty();
     const div=document.createElement("div"); div.className="entry cur"; e.row=div;   // 翻译中的一句放大，完成后缩回
@@ -1940,6 +1996,7 @@ body.v-records.selecting #selBar{display:flex}
     const zh=document.createElement("div"); zh.className="zh pending"; zh.textContent="翻译中…";
     const tl=document.createElement("div"); tl.className="tline";
     div.append(en,zh,tl); e.tagsEl=tl; drawTags(e);
+    if(e.speaker!=null && S && S.id===e.sid && spShow(S.row,entries.filter(x=>x.sid===S.id).concat([e]))) div.insertBefore(spEl(S.row,e.speaker),div.firstChild);
     attachLongPress(div,()=>editEntryTags(e));
     if(liveEl && liveEl.parentNode===feed) feed.insertBefore(div, liveEl); else feed.appendChild(div);
     e.el=zh; scrollDown();
@@ -1973,7 +2030,9 @@ body.v-records.selecting #selBar{display:flex}
       segSave(e);
       if(++S.nSeg>=15 && !S.titled){ S.titled=true; autoTitleLive(S); }
     }
+    const prevSp=S?spIds(entries.filter(x=>x.sid===S.id)).length:0;
     entries.push(e); renderEntry(e);
+    if(S && e.speaker!=null && prevSp<2 && spIds(entries.filter(x=>x.sid===S.id)).length>=2) refreshLiveSpeakers();
     if(tr){
       setZh(e);
       // 译文已在预览里放大显示过：落成字幕后平滑缩回（连续两帧后再去掉 cur，过渡才会生效）
