@@ -379,22 +379,10 @@ body.v-records.selecting #selBar{display:flex}
     <div class="row">
       <label for="engine">识别引擎</label>
       <select id="engine">
-        <option value="assemblyai">AssemblyAI（默认，准确度最高）</option>
         <option value="deepgram">Deepgram</option>
         <option value="browser">浏览器自带（备用，免费）</option>
         <option value="soniox" disabled>Soniox（未启用）</option>
       </select>
-      <div class="note">Soniox 已预留接口，暂未启用，见 README「以后接入 Soniox」。</div>
-    </div>
-    <div class="row" id="aaiRow">
-      <label for="aaiModel">AssemblyAI 模型</label>
-      <select id="aaiModel">
-        <option value="auto">自动（推荐：优先 Universal-3.6 Pro，不可用时自动回退）</option>
-        <option value="universal-3-6-pro">Universal-3.6 Pro</option>
-        <option value="universal-3-5-pro">Universal-3.5 Pro</option>
-        <option value="universal-streaming-english">Universal Streaming English（旧版）</option>
-      </select>
-      <div class="note">AssemblyAI 的密钥只放在 Cloudflare Worker 里（环境变量 ASSEMBLYAI_API_KEY），浏览器里不保存。使用它需要先把下面的「翻译通道」改成「自建中转」，部署方法见 README。</div>
     </div>
     <div class="row" id="dgRow">
       <label for="dgKey">Deepgram API 密钥</label>
@@ -560,8 +548,9 @@ body.v-records.selecting #selBar{display:flex}
   let listening=false, liveEl=null, wakeLock=null;
   const entries=[]; const queue=[]; let busy=false; let seq=0; let stickToBottom=true;
 
-  const settings={route:"direct", relayUrl:"", relayToken:"", provider:"anthropic", lastFolder:null, saveAudio:true, tagPresets:["重点","作业","考试","没听懂"], sumModel:"", apiKey:"", dgKey:"", engine:"assemblyai", aaiModel:"auto", model:"claude-haiku-4-5-20251001", lang:"en-US", mode:"both", size:22, glossary:""};
+  const settings={route:"direct", relayUrl:"", relayToken:"", provider:"anthropic", lastFolder:null, saveAudio:true, tagPresets:["重点","作业","考试","没听懂"], sumModel:"", apiKey:"", dgKey:"", engine:"deepgram", model:"claude-haiku-4-5-20251001", lang:"en-US", mode:"both", size:22, glossary:""};
   try{ Object.assign(settings, JSON.parse(localStorage.getItem("lt-settings")||"{}")); }catch(e){}
+  if(settings.engine==="assemblyai") settings.engine="deepgram";   // AssemblyAI 已移除
   function saveSettings(){ try{ localStorage.setItem("lt-settings", JSON.stringify(settings)); }catch(e){} }
   function applySettings(){
     $("apiKey").value=settings.apiKey||"";
@@ -569,8 +558,6 @@ body.v-records.selecting #selBar{display:flex}
     $("engine").value=settings.engine;
     $("saveAudio").value=settings.saveAudio?"1":"0";
     $("dgRow").style.display=(settings.engine==="deepgram" && !useRelay())?"":"none";
-    $("aaiRow").style.display=settings.engine==="assemblyai"?"":"none";
-    $("aaiModel").value=settings.aaiModel||"auto";
     $("route").value=settings.route; $("relayUrl").value=settings.relayUrl||""; $("relayToken").value=settings.relayToken||""; $("provider").value=settings.provider;
     $("relayRows").style.display=useRelay()?"":"none";
     $("claudeRow").style.display=useRelay()?"none":"";
@@ -596,7 +583,6 @@ body.v-records.selecting #selBar{display:flex}
   const relayBase=()=>(settings.relayUrl||"").trim().replace(/\/+$/,"");
   const translateReady=()=>useRelay() ? !!(relayBase() && settings.relayToken) : !!settings.apiKey;
   const dgReady=()=>useRelay() ? !!(relayBase() && settings.relayToken) : !!settings.dgKey;
-  const aaiReady=()=>useRelay() && !!(relayBase() && settings.relayToken);   // AssemblyAI 的密钥只放在 Worker 里，必须走中转
   function fillModels(){
     const list=MODELS[useRelay()?settings.provider:"anthropic"]||MODELS.anthropic;
     const sel=$("model"); sel.innerHTML="";
@@ -624,12 +610,11 @@ body.v-records.selecting #selBar{display:flex}
     const bad = settings.engine==="browser" && !SR;
     mic.disabled = bad;
     if(bad){
-      showBanner("这个浏览器不支持自带语音识别。请在设置里切换到 AssemblyAI 或 Deepgram；也可以点左下角「打字」，用键盘上的 🎤 听写英文。");
+      showBanner("这个浏览器不支持自带语音识别。请在设置里切换到 Deepgram；也可以点左下角「打字」，用键盘上的 🎤 听写英文。");
       hint.textContent="语音识别不可用，可使用打字输入";
     }
   }
-  if(settings.engine==="assemblyai" && !aaiReady()) showBanner('默认的识别引擎 AssemblyAI 需要先部署并启用「自建中转」（密钥只放在 Worker 里，见 README）；也可以在设置里把「识别引擎」换成 Deepgram 或浏览器自带。');
-  else if(!translateReady() || (settings.engine==="deepgram" && !dgReady())) showBanner(useRelay() ? '第一次使用：请点右上角设置，填入中转地址和访问口令。' : '第一次使用：请点右上角设置，填入 Claude 和 Deepgram 的 API 密钥。');
+  if(!translateReady() || (settings.engine==="deepgram" && !dgReady())) showBanner(useRelay() ? '第一次使用：请点右上角设置，填入中转地址和访问口令。' : '第一次使用：请点右上角设置，填入 Claude 和 Deepgram 的 API 密钥。');
   checkEngine();
   if(location.protocol!=="https:" && location.hostname!=="localhost"){
     showBanner("麦克风需要 https 网址才能使用，请通过 https 链接打开此页面。");
@@ -2050,7 +2035,7 @@ body.v-records.selecting #selBar{display:flex}
   }
 
   // ---------- 公共模块：麦克风采集 → 16kHz 单声道 Int16 PCM（AudioWorklet，每块约 100ms） ----------
-  // 各流式引擎（Deepgram、AssemblyAI、以后的 Soniox）都从这里取音频，录音存档（MediaRecorder）用同一个 MediaStream。
+  // 各流式引擎（Soniox、Deepgram）都从这里取音频，录音存档（MediaRecorder）用同一个 MediaStream。
   const PCM_RATE=16000;
   const PCM_WORKLET_SRC = `
 class PCM16 extends AudioWorkletProcessor{
@@ -2288,120 +2273,6 @@ registerProcessor("pcm16",PCM16);`;
     }
   }
 
-  // ----- AssemblyAI 适配器（Universal-Streaming v3） -----
-  // 接口：wss://streaming.assemblyai.com/v3/ws?sample_rate=16000&encoding=pcm_s16le&speech_model=…&format_turns=true&keyterms_prompt=[…]&token=<临时 token>
-  // 临时 token 由 Worker 的 /assemblyai-token 用 ASSEMBLYAI_API_KEY 换取（浏览器里不放密钥）。音频为二进制帧（每块 100ms，服务端要求 50–1000ms）。
-  // 消息：Begin → Turn（end_of_turn 为 false 的是预览；为 true 的是一句；带 turn_is_formatted 的才有标点）→ Termination。
-  // 模型：官方 SDK / 文档里目前最新的英文实时模型是 Universal-3.6 Pro（universal-3-6-pro），其次 3.5 Pro；自动模式依次回退。
-  const AAI_MODELS=["universal-3-6-pro","universal-3-5-pro","u3-rt-pro"];
-  const SENT_END=/[.!?。！？]["'”’)\]]*$/;
-  class AssemblyAIEngine extends WsEngine{
-    constructor(h){ super(h); this.modelIdx=0; this.turn=null; this.doneOrder=-1; this.pendingErr=null; this.preFails=0; this.quick=0; this.liveAt=0; this.lastFail="socket"; }
-    get label(){ return "AssemblyAI"; }
-    models(){ return (settings.aaiModel && settings.aaiModel!=="auto") ? [settings.aaiModel] : AAI_MODELS; }
-    model(){ const m=this.models(); return m[Math.min(this.modelIdx,m.length-1)]; }
-    giveUpMessage(){ return this.lastFail==="token" ? "获取 AssemblyAI 临时 token 失败（已重试 3 次）。请检查网络和中转地址，或稍后再试。" : "网络已断开，自动重连 3 次仍失败。请检查网络后再点麦克风。"; }
-    async auth(){
-      let r;
-      try{ r=await fetch(relayBase()+"/assemblyai-token",{headers:{authorization:"Bearer "+settings.relayToken}}); }
-      catch(e){ this.lastFail="token"; throw new Error("relay-net"); }
-      if(!r.ok){
-        let j={}; try{ j=await r.json(); }catch(_){}
-        const m=String(j.error||""), err=new Error("relay-"+r.status); this.lastFail="token";
-        if(r.status===401) err.fatal="中转访问口令无效，请在设置里检查。";
-        else if(r.status===404) err.fatal="中转层还不支持 AssemblyAI，请更新并重新部署 Worker（见 README）。";
-        else if(r.status===500) err.fatal=m||"Worker 里没有配置 ASSEMBLYAI_API_KEY。";
-        else if(j.upstream===401) err.fatal="AssemblyAI 密钥无效，请检查 Worker 里的 ASSEMBLYAI_API_KEY 是否正确。";
-        else if(r.status===402 || /insufficient|credit|balance|funds/i.test(m)) err.fatal="AssemblyAI 额度用完或账户余额不足，请到 AssemblyAI 后台充值后重试。";
-        else if(r.status===403) err.fatal="AssemblyAI 拒绝了请求（账户可能还没绑定信用卡，或密钥权限不足），请到 AssemblyAI 后台检查。";
-        throw err;
-      }
-      const j=await r.json(); if(!j.token){ this.lastFail="token"; throw new Error("relay-bad"); }
-      const q=new URLSearchParams({sample_rate:String(PCM_RATE), encoding:"pcm_s16le", speech_model:this.model(), format_turns:"true", token:j.token});
-      const kt=(this.opts.keyterms||[]).filter(t=>t.length<=50).slice(0,100);   // 官方限制：最多 100 个，每个不超过 50 个字符
-      if(kt.length) q.set("keyterms_prompt",JSON.stringify(kt));
-      return {url:"wss://streaming.assemblyai.com/v3/ws?"+q.toString()};
-    }
-    onSocketOpen(){}      // 等服务端发来 Begin 再开始送音频
-    terminateMessage(){ return JSON.stringify({type:"Terminate"}); }
-    restartNow(){}        // AssemblyAI 的英文模型不区分口音，口音设置对它无影响
-    onMessage(m){
-      if(m.type==="Begin"){ this.preFails=0; this.doneOrder=-1; this.liveAt=performance.now(); this.markLive(); }   // 每个新连接的 turn_order 从头计
-      else if(m.type==="Turn") this.onTurn(m);
-      else if(m.type==="Termination"){ this.flush(); this.h.onPartial(""); if(this.ws){ try{ this.ws.close(); }catch(e){} } }
-      else if(m.type==="Error" || m.error){ this.pendingErr={code:m.error_code, msg:String(m.error||"")}; if(this.ws){ try{ this.ws.close(); }catch(e){} } }
-    }
-    // ---- Turn 处理 ----
-    // 这一轮里还没送出去的词（按词的时间戳切，避免格式化前后词数不同造成错位）
-    restWords(t){ return t.cutMs>=0 ? t.words.filter(w=>w.start>=t.cutMs-1) : t.words; }
-    restText(t){
-      if(t.cutMs<0) return t.transcript.trim();
-      return t.words.length ? this.restWords(t).map(w=>w.text).join(" ").trim() : t.tokens.slice(t.consumed).join(" ").trim();
-    }
-    onTurn(m){
-      if(m.turn_order===this.doneOrder) return;     // 这一轮已经送出去了（例如未格式化版本超时后，带标点的版本才迟到）
-      const words=Array.isArray(m.words)?m.words.filter(w=>w && typeof w.text==="string"):[];
-      let t=this.turn;
-      if(t && t.order!==m.turn_order){ this.flush(); t=null; }     // 上一轮没等到 end_of_turn 就来了新轮次：先把剩下的送出去
-      if(!t) t=this.turn={order:m.turn_order, consumed:0, cutMs:-1, tokens:[], words:[], transcript:"", timer:null};
-      t.words=words; t.transcript=String(m.transcript||"");
-      t.tokens=words.length ? words.map(w=>w.text) : t.transcript.trim().split(/\s+/).filter(Boolean);
-      if(!m.end_of_turn){ this.maybeSplit(t); this.h.onPartial(this.restText(t)); return; }
-      clearTimeout(t.timer);
-      if(m.turn_is_formatted!==false){ this.turn=null; this.finishTurn(t); return; }
-      // 一轮结束了但还没拿到带标点的版本：最多等 1.5 秒（预览继续显示），超时就用现有文本
-      this.h.onPartial(this.restText(t));
-      t.timer=setTimeout(()=>{ if(this.turn===t){ this.turn=null; this.finishTurn(t); } },1500);
-    }
-    // 一轮很长（超过 25 个词或 10 秒）时，在句末标点处提前切分送去翻译，避免很久不出译文
-    maybeSplit(t){
-      const rest=this.restWords(t); if(rest.length<4) return;
-      const span=rest[rest.length-1].end-rest[0].start;
-      if(!(rest.length>25 || span>10000)) return;
-      const stable=i=>rest[i].word_is_final!==false;
-      let cut=-1;
-      for(let i=rest.length-2;i>=2;i--){ if(stable(i) && SENT_END.test(rest[i].text)){ cut=i; break; } }
-      // 没有标点（旧模型的中间结果不带标点）且实在太长：在最后一个稳定的词处硬切
-      if(cut<0 && (rest.length>45 || span>18000)){ for(let i=rest.length-4;i>=2;i--){ if(stable(i)){ cut=i; break; } } }
-      if(cut<0) return;
-      const seg=rest.slice(0,cut+1);
-      t.cutMs=seg[cut].end; t.consumed+=seg.length;
-      this.h.onFinal({text:seg.map(w=>w.text).join(" "), startSec:this.tl(seg[0].start/1000), endSec:this.tl(seg[cut].end/1000)});
-    }
-    finishTurn(t){
-      this.doneOrder=t.order;
-      const text=this.restText(t); if(!text) return;
-      const r=this.restWords(t);
-      this.h.onFinal({text, startSec:r.length?this.tl(r[0].start/1000):null, endSec:r.length?this.tl(r[r.length-1].end/1000):null});
-    }
-    hasPending(){ return !!(this.turn && this.restText(this.turn)); }
-    flush(){ const t=this.turn; if(!t) return; clearTimeout(t.timer); this.turn=null; this.finishTurn(t); }
-    async classifyClose(ev,opened){
-      const e=this.pendingErr; this.pendingErr=null;
-      const code=e && e.code!=null ? e.code : ev.code, text=(e&&e.msg)||ev.reason||"";
-      const quick=()=>{ if(performance.now()-this.liveAt>10000) this.quick=0; return ++this.quick<=3 ? {retryNow:true} : null; };
-      switch(code){
-        case 4001: return {fatal:"AssemblyAI 认证失败（令牌无效或已过期）。如果反复出现，请检查 Worker 里的 ASSEMBLYAI_API_KEY。"};
-        case 4002: return {fatal:"AssemblyAI 额度用完或账户余额不足，请到 AssemblyAI 后台充值后重试。"};
-        case 4003: return {fatal:"AssemblyAI 的流式识别需要先在账户里绑定信用卡（免费账户不能用），请到 AssemblyAI 后台绑定后重试。"};
-        case 4029: case 4102: case 3009: return {fatal:"AssemblyAI 并发连接数超过上限，请关闭同一账号下其他正在识别的会话后重试。"};
-        case 4000: case 4101: case 3006:
-          if(this.nextModel()) return {retryNow:true};
-          return {fatal:"AssemblyAI 不接受当前的模型或参数（"+(text||code)+"）。可以在设置里换一个 AssemblyAI 模型，或改用 Deepgram。"};
-        case 3008: case 4008: case 4031: case 4103: return quick();   // 会话到期/超时/被新连接取代：直接续连
-      }
-      // 没收到 Begin 就断了：连续两次后怀疑是这个模型不可用，回退到下一个模型（浏览器拿不到握手的 HTTP 错误码）
-      if(!this.began){ if(++this.preFails>=2 && this.nextModel()) return {retryNow:true}; }
-      return null;
-    }
-    nextModel(){
-      const m=this.models(); if(this.modelIdx>=m.length-1) return false;
-      this.modelIdx++; this.preFails=0;
-      this.h.onHint("AssemblyAI 暂时无法使用 "+m[this.modelIdx-1]+"，已自动切换到 "+m[this.modelIdx]);
-      return true;
-    }
-  }
-
   // ----- Soniox 适配器（预留，未启用） -----
   // 以后接入：Worker 的 /soniox-token 已预留；这里实现连接 wss://stt-rt.soniox.com/transcribe-websocket、
   // 把 Token/结果转成 onPartial / onFinal({text,startSec,endSec})，再把 enabled 改成 true。步骤见 README「以后接入 Soniox」。
@@ -2456,7 +2327,6 @@ registerProcessor("pcm16",PCM16);`;
 
   // ----- 引擎注册表（设置里的「识别引擎」）-----
   const ENGINES={
-    assemblyai:{name:"AssemblyAI", streaming:true, usesMic:true, create:h=>new AssemblyAIEngine(h), keyterms:()=>extractKeyterms(100,50)},
     soniox:{name:"Soniox", streaming:true, usesMic:true, enabled:false, create:h=>new SonioxEngine(h)},
     deepgram:{name:"Deepgram", streaming:true, usesMic:true, create:h=>new DeepgramEngine(h)},
     browser:{name:"浏览器自带", streaming:false, usesMic:false, create:h=>new BrowserEngine(h)}
@@ -2548,7 +2418,6 @@ registerProcessor("pcm16",PCM16);`;
   async function start(){
     if(!translateReady()){ openSettings(); toast(useRelay()?"请先填写中转地址和访问口令":"请先填写 Claude API 密钥"); return; }
     if(settings.engine==="deepgram" && !dgReady()){ openSettings(); toast("请先填写 Deepgram 密钥"); return; }
-    if(settings.engine==="assemblyai" && !aaiReady()){ openSettings(); toast("AssemblyAI 需要先启用自建中转（翻译通道）"); return; }
     if(ENGINES[settings.engine] && ENGINES[settings.engine].enabled===false){ toast(ENGINES[settings.engine].name+" 尚未启用"); return; }
     hideBanner();
     if(S && S.closing){
@@ -2625,7 +2494,6 @@ registerProcessor("pcm16",PCM16);`;
   $("provider").onchange=e=>{ settings.provider=e.target.value; saveSettings(); fillModels(); fillSumModels(); };
   $("sumModel").onchange=e=>{ settings.sumModel=e.target.value; saveSettings(); };
   $("saveAudio").onchange=e=>{ settings.saveAudio=e.target.value==="1"; saveSettings(); };
-  $("aaiModel").onchange=e=>{ settings.aaiModel=e.target.value; saveSettings(); };
   $("dgKey").oninput=e=>{ settings.dgKey=e.target.value.trim(); saveSettings(); };
   $("engine").onchange=e=>{
     if(listening) stop();

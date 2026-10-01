@@ -2,12 +2,11 @@
 //   POST /translate        流式翻译，统一输出  data: {"t":"文本片段"}  ...  data: [DONE]
 //   POST /summary          流式长文本摘要，格式同上，但允许更长的输入和输出
 //   GET  /deepgram-token   签发 Deepgram 短期令牌（手机端不需要保存 Deepgram 长期密钥）
-//   GET  /assemblyai-token 签发 AssemblyAI 流式识别的临时 token（密钥只放在这里的 ASSEMBLYAI_API_KEY）
 //   GET  /soniox-token     （预留）签发 Soniox 临时 API key，需要 SONIOX_API_KEY，目前前端适配器未启用
 // 所有请求都要带  Authorization: Bearer <ACCESS_TOKEN>
 //
 // 需要的 Secret / 变量（见 README）：
-//   ACCESS_TOKEN（必填）  ANTHROPIC_API_KEY / DEEPSEEK_API_KEY / OPENAI_API_KEY / DEEPGRAM_API_KEY / ASSEMBLYAI_API_KEY / SONIOX_API_KEY（用到哪个填哪个）
+//   ACCESS_TOKEN（必填）  ANTHROPIC_API_KEY / DEEPSEEK_API_KEY / OPENAI_API_KEY / DEEPGRAM_API_KEY / SONIOX_API_KEY（用到哪个填哪个）
 //   ALLOWED_ORIGIN（可选，例如 https://ruqinga.github.io，不填则允许任何来源）
 
 const PROVIDERS = {
@@ -130,28 +129,6 @@ async function deepgramToken(env, h) {
   return json({ access_token: j.access_token, expires_in: j.expires_in }, 200, { ...h, "cache-control": "no-store" });
 }
 
-// AssemblyAI Universal-Streaming v3：GET https://streaming.assemblyai.com/v3/token
-//   请求头 Authorization 直接放密钥（不加 Bearer）；expires_in_seconds 取值 1–600（这是“兑换窗口”：多久内要用它建立 WebSocket）；
-//   max_session_duration_seconds 取值 60–10800（限制单个会话最长时长，默认并最长 3 小时）。
-async function assemblyaiToken(env, h) {
-  if (!env.ASSEMBLYAI_API_KEY) return json({ error: "Worker 里没有配置 ASSEMBLYAI_API_KEY" }, 500, h);
-  let res;
-  try {
-    res = await fetch("https://streaming.assemblyai.com/v3/token?expires_in_seconds=60&max_session_duration_seconds=10800", {
-      headers: { Authorization: env.ASSEMBLYAI_API_KEY },
-    });
-  } catch (e) { return json({ error: "连接 AssemblyAI 失败" }, 502, h); }
-  if (!res.ok) {
-    let msg = "";
-    try { const j = await res.json(); msg = j.error || j.message || ""; } catch (_) {}
-    // 上游 401（密钥无效）用 502 转出，避免页面把它误认成“中转访问口令无效”，真实状态放在 upstream 里
-    return json({ error: String(msg) || "AssemblyAI 签发令牌失败", upstream: res.status }, res.status === 401 ? 502 : res.status, h);
-  }
-  const j = await res.json();
-  if (!j.token) return json({ error: "AssemblyAI 没有返回令牌", upstream: res.status }, 502, h);
-  return json({ token: j.token, expires_in_seconds: 60, max_session_duration_seconds: 10800 }, 200, { ...h, "cache-control": "no-store" });
-}
-
 // 【预留】Soniox 临时 API key：POST https://api.soniox.com/v1/auth/temporary-api-key，
 //   body 需要 usage_type 和 expires_in_seconds（1–3600），可选 single_use、max_session_duration_seconds。
 //   前端的 Soniox 适配器目前是占位（设置里显示“未启用”），这里先把结构和错误提示放好；
@@ -188,7 +165,6 @@ export default {
     if (path === "/translate" && req.method === "POST") return translate(req, env, h, LIMITS.translate);
     if (path === "/summary" && req.method === "POST") return translate(req, env, h, LIMITS.summary);
     if (path === "/deepgram-token" && req.method === "GET") return deepgramToken(env, h);
-    if (path === "/assemblyai-token" && req.method === "GET") return assemblyaiToken(env, h);
     if (path === "/soniox-token" && req.method === "GET") return sonioxToken(env, h);
     return json({ error: "未找到" }, 404, h);
   },
