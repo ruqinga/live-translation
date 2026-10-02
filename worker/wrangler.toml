@@ -7,7 +7,14 @@ compatibility_date = "2025-01-01"
 keep_vars = true
 
 # 密钥用 wrangler secret put 设置，不要写在这里：
-#   ACCESS_TOKEN  ANTHROPIC_API_KEY  DEEPSEEK_API_KEY  OPENAI_API_KEY  DEEPGRAM_API_KEY  SONIOX_API_KEY
+#   ACCESS_TOKEN  ANTHROPIC_API_KEY  DEEPSEEK_API_KEY  OPENAI_API_KEY  DEEPGRAM_API_KEY  SONIOX_API_KEY  MS_CLIENT_ID  MS_CLIENT_SECRET
 # 可选变量：限制只允许你的页面来源调用
 # [vars]
 # ALLOWED_ORIGIN = "https://ruqinga.github.io"
+
+# OneDrive 同步：存放微软刷新令牌和登录账号信息的 KV 命名空间。
+# 这里没有写 id，Cloudflare 部署时会自动创建并绑定（wrangler 4.45+ 的自动配置资源；Git 集成的构建默认就是较新版本）。
+# 如果部署日志里提示 KV 的 id 缺失，到 Cloudflare 后台 Storage & Databases → KV 手动创建一个命名空间，
+# 然后把它的 id 填到下面：  id = "你的命名空间 id"
+[[kv_namespaces]]
+binding = "ONEDRIVE_KV"
