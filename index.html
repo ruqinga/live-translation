@@ -1758,6 +1758,7 @@ body.has-page{background:var(--bg)}
   async function renameFolder(id,name){
     const f=folderById(id); name=(name||"").trim().slice(0,20); if(!f||!name||name===f.name) return;
     f.name=name; await dbPut("folders",f); drawFolderChip();
+    (await dbAll("sessions")).filter(r=>r.folderId===id).forEach(r=>syncTouch(r.id));      // readable 路径里有文件夹名：文件夹改名后，里面的会话要重新上传一次
   }
   async function reorderFolders(ids){
     ids.forEach((id,i)=>{ const f=folderById(id); if(f) f.order=i+1; });
@@ -3954,7 +3955,7 @@ registerProcessor("pcm16",PCM16);`;
       dbg("OneDrive 同步失败："+OD.err);
     }finally{
       OD.running=false; await odCountPending(); odUi(); odDrawRowIcons();
-      if(OD.again && OD.state==="ok") odSyncSoon(500);
+      if(OD.again && !OD.needLogin && OD.state!=="login") odSyncSoon(500);        // 同步进行中又被要求同步（或改了东西）：结束后马上再来一轮，不等退避
     }
   }
   // ----- 登录 / 状态 -----
