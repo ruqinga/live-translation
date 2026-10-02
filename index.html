@@ -496,6 +496,8 @@ body.has-page{background:var(--bg)}
 .toast{bottom:calc(120px + env(safe-area-inset-bottom,0px))}
 .ai-body{max-height:55vh;overflow-y:auto;margin:6px 0 12px}
 .od-group{margin-top:var(--s2)}
+.od-title{display:flex;align-items:center;gap:8px;padding:12px var(--s2) 4px;font-size:15px;font-weight:650;color:var(--ink)}
+.od-title svg{color:var(--accent)}
 .card .ct{padding-right:48px}
 #odOn>*+*{border-top:1px solid var(--line)}
 #odEnableRow .btn2{align-self:flex-start;padding:0 16px}
@@ -760,6 +762,7 @@ body.has-page{background:var(--bg)}
     </div>
 
     <div class="group od-group" id="odBlock">
+      <div class="od-title"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4.5 4.5 0 0 1-.5-9A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 9.5z"/></svg>OneDrive 同步</div>
       <div class="li-note" id="odNeedRelay" hidden>OneDrive 同步需要先把上面「大语言模型 → 连接方式」设为「自建中转」（登录由你的 Cloudflare Worker 代管）。</div>
       <div class="li-note od-bad" id="odErr" hidden></div>
       <button class="li od-login" id="odLogin"><span class="li-t">登录 OneDrive</span><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></button>
@@ -3612,7 +3615,7 @@ registerProcessor("pcm16",PCM16);`;
     const tok=await odToken();
     let r; try{ r=await fetch(url,Object.assign({},opt,{headers:Object.assign({Authorization:"Bearer "+tok},opt.headers||{})})); }catch(e){ throw new OdError("网络不通",{net:true}); }
     if(r.status===401 && !opt._r){ OD.tokExp=0; return gx(url,Object.assign({},opt,{_r:1}),tries); }
-    if((r.status===429||r.status===503||r.status===504) && tries<3){ await odSleep(Math.min(+r.headers.get("Retry-After")||2*(tries+1),30)*1000); return gx(url,opt,tries+1); }
+    if((r.status===429||r.status===503||r.status===504) && tries<3){ const ra=r.headers.get("Retry-After"); await odSleep(Math.min(ra!=null&&ra!==""&&!isNaN(+ra) ? +ra : 2*(tries+1),30)*1000); return gx(url,opt,tries+1); }
     return r;
   }
   // 小文件（≤4MB）直接 PUT；更大的用上传会话分块上传，记录会话地址，中断后从服务器已收到的位置续传
@@ -3880,10 +3883,10 @@ registerProcessor("pcm16",PCM16);`;
     }
     const seen=new Set(), recs=[];
     for(const f of list){ const rc=(f.children||[]).find(c=>c.name==="record.json"); if(!rc) continue; seen.add(f.name); if(ls.etags[f.name]!==rc.eTag){ recs.push({kind:"rec",id:rc.id,sid:f.name}); ls.etags[f.name]=rc.eTag; } }
-    const gone=Object.keys(ls.etags).filter(k=>!seen.has(k)).map(k=>{ delete ls.etags[k]; return {kind:"gone",id:"scan:"+k,sid:k}; });
+    const gone=Object.keys(ls.etags).filter(k=>/^\d+$/.test(k) && !seen.has(k)).map(k=>{ delete ls.etags[k]; return {kind:"gone",id:"scan:"+k,sid:k}; });
     gone.forEach(g=>{ (ls.items=ls.items||{})[g.id]={k:"rec",sid:g.sid}; });
     const metas=[]; const mr=await gx(itemUrl("_meta")+":/children?$select=id,name,eTag");
-    if(mr.ok){ for(const c of ((await mr.json()).value||[])){ if(/^(folders|tags|settings)\.json$/.test(c.name) && ls.etags["_meta/"+c.name]!==c.eTag){ metas.push({kind:"meta",id:c.id,name:c.name}); ls.etags["_meta/"+c.name]=c.eTag; } } }
+    if(mr.ok){ for(const c of ((await mr.json()).value||[])){ if(/^(folders|tags|settings)\.json$/.test(c.name) && (ls.metaEtags||(ls.metaEtags={}))[c.name]!==c.eTag){ metas.push({kind:"meta",id:c.id,name:c.name}); ls.metaEtags[c.name]=c.eTag; } } }
     await odApply(metas.concat(recs,gone));
   }
 
@@ -3971,7 +3974,7 @@ registerProcessor("pcm16",PCM16);`;
     }catch(e){ OD.err="连不上中转（网络问题）"; OD.netErr=true; }
   }
   function odEnable(){ const ls=odLS(); ls.enabled=true; if(!ls.first) ls.meta={folders:true,tags:true,settings:true}; odSave(); OD.enabled=true; OD.state="idle"; OD.needLogin=false; }
-  function odDisable(reset){ const ls=odLS(); ls.enabled=false; if(reset){ ["deltaLink","items","fmap","etags","lastAt","first","upl"].forEach(k=>delete ls[k]); } odSave(); OD.enabled=false; OD.state="off"; OD.tok=null; clearTimeout(OD.timer); }
+  function odDisable(reset){ const ls=odLS(); ls.enabled=false; if(reset){ ["deltaLink","items","fmap","etags","metaEtags","lastAt","first","upl"].forEach(k=>delete ls[k]); } odSave(); OD.enabled=false; OD.state="off"; OD.tok=null; clearTimeout(OD.timer); }
   async function odLogin(){
     if(!odReady()){ toast("请先把连接方式设为自建中转，并填好中转地址和访问口令"); return; }
     if(S && !S.closing){ toast("录音中不能登录，请先结束录音"); return; }
