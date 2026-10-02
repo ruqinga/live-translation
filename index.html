@@ -495,6 +495,20 @@ body.has-page{background:var(--bg)}
 .dhead{display:flex;align-items:center;gap:8px;margin-bottom:2px}
 .toast{bottom:calc(120px + env(safe-area-inset-bottom,0px))}
 .ai-body{max-height:55vh;overflow-y:auto;margin:6px 0 12px}
+.od-group{margin-top:var(--s2)}
+.od-title{display:flex;align-items:center;gap:8px;padding:12px var(--s2) 4px;font-size:15px;font-weight:650;color:var(--ink)}
+.od-title svg{color:var(--accent)}
+.card .ct{padding-right:48px}
+#odOn>*+*{border-top:1px solid var(--line)}
+#odEnableRow .btn2{align-self:flex-start;padding:0 16px}
+.od-state.bad,.od-bad{color:var(--rec-ink)}
+.od-state{white-space:normal;text-align:right}
+.od-login .li-t{color:var(--accent);font-weight:600}
+.sync-ic{position:absolute;top:12px;right:12px;display:inline-flex;gap:6px;color:var(--faint)}
+.sync-ic .si{display:inline-grid;place-items:center;width:18px;height:18px}
+.sync-ic svg{width:18px;height:18px}
+.si-synced{color:var(--ok)} .si-pending{color:var(--accent)} .si-conflict{color:var(--rec-ink)}
+.card{position:relative}
 </style>
 </head>
 <body>
@@ -723,7 +737,7 @@ body.has-page{background:var(--bg)}
       </div>
     </div>
 
-    <h2 class="gt">录音与存储</h2>
+    <h2 class="gt">存储与同步</h2>
     <div class="group">
       <div class="li col">
         <div class="li-h">结束录音后</div>
@@ -745,6 +759,27 @@ body.has-page{background:var(--bg)}
       <button class="li" id="goTrash"><span class="li-t">最近删除</span><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></button>
       <button class="li" id="goTagMgr"><span class="li-t">标签管理</span><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></button>
       <button class="li" id="goFolderMgr"><span class="li-t">文件夹管理</span><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></button>
+    </div>
+
+    <div class="group od-group" id="odBlock">
+      <div class="od-title"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4.5 4.5 0 0 1-.5-9A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 9.5z"/></svg>OneDrive 同步</div>
+      <div class="li-note" id="odNeedRelay" hidden>OneDrive 同步需要先把上面「大语言模型 → 连接方式」设为「自建中转」（登录由你的 Cloudflare Worker 代管）。</div>
+      <div class="li-note od-bad" id="odErr" hidden></div>
+      <button class="li od-login" id="odLogin"><span class="li-t">登录 OneDrive</span><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></button>
+      <div id="odEnableRow" hidden>
+        <div class="li col"><div class="li-h">这个 OneDrive 账号已在 Worker 里登录：<b id="odEnableAcct"></b></div><button class="btn2" id="odEnable">在这台设备启用同步</button></div>
+      </div>
+      <div id="odOn" hidden>
+        <div class="li"><span class="li-t">账号</span><span class="li-v" id="odAcct"></span></div>
+        <div class="li"><span class="li-t">状态</span><span class="li-v od-state" id="odState"></span></div>
+        <div class="li"><span class="li-t">上次同步</span><span class="li-v" id="odLast"></span></div>
+        <div class="li"><span class="li-t">待上传</span><span class="li-v num" id="odPend">0</span></div>
+        <div class="pair-btns"><button id="odSyncNow">立即同步</button><button id="odClear">清理本机录音缓存</button></div>
+        <div class="li tog" id="odAutoAudioRow"><span class="li-t">自动下载录音<button class="ibtn" data-info="odAudioInfo" aria-expanded="false" aria-controls="odAudioInfo" aria-label="说明">ⓘ</button></span><button class="sw" id="odAutoAudio" role="switch" aria-checked="false" aria-label="自动下载录音"></button></div>
+        <div class="info" id="odAudioInfo" hidden>默认关：在没有本地录音的设备上，点击播放时才从 OneDrive 下载并缓存。打开后会在同步时把其他设备的录音自动下载到本机（占用空间和流量）。</div>
+        <button class="li" id="odLogout" style="color:var(--rec-ink)"><span class="li-t">退出登录</span></button>
+      </div>
+      <div class="li-note">文件保存在 OneDrive 的「应用/同声字幕」文件夹，电脑上安装 OneDrive 客户端即可在本地看到。</div>
     </div>
 
     <h2 class="gt">高级</h2>
@@ -918,7 +953,7 @@ body.has-page{background:var(--bg)}
     drawDbg();
   }
   function drawDbg(){ const el=document.getElementById("dbgLog"); if(el){ el.textContent=dbgBuf.join("\n"); el.scrollTop=el.scrollHeight; } }
-  function saveSettings(){ try{ localStorage.setItem("lt-settings", JSON.stringify(settings)); }catch(e){} }
+  function saveSettings(){ try{ localStorage.setItem("lt-settings", JSON.stringify(settings)); }catch(e){} try{ odSettingsChanged(); }catch(e){} }
   if(migrated) saveSettings();
   const ENGINE_NAMES={soniox:"Soniox", deepgram:"Deepgram", browser:"浏览器自带"};
   const LLM_NAMES={anthropic:"Claude", deepseek:"DeepSeek", openai:"OpenAI"};
@@ -1018,11 +1053,40 @@ body.has-page{background:var(--bg)}
 
   // ---------- Local database (IndexedDB) ----------
   // sessions：会话；segments：字幕句（按 sid 建索引）；audioChunks：音频分片（按 sid 建索引）
+  // 同步字段（OneDrive）：sessions / folders 每次写入自动带上 updatedAt 和 syncState（pending=有本地改动待上传，synced=已同步）；
+  // 来自云端的写入（opts.remote）不改这两个字段。删除用墓碑（deletedAt）而不是物理删除，才能同步到其他设备。
+  const OD={enabled:false, state:"off", logged:false, name:"", email:"", lastAt:0, pending:0, err:"", running:false, again:false, retry:0, timer:null, stats:null, tok:null, tokExp:0, needLogin:false, mine:false};
+  function odKick(ms){ try{ if(OD.enabled) odSyncSoon(ms==null?3000:ms); }catch(e){} }
+  const touchSet=new Set(); let touchT=null;
+  function syncTouch(sid){ if(sid==null) return; touchSet.add(sid); clearTimeout(touchT); touchT=setTimeout(flushTouch,1500); }
+  async function flushTouch(){
+    const ids=[...touchSet]; touchSet.clear();
+    for(const id of ids){
+      try{
+        if(S && S.id===id){ sessSave(); continue; }       // 正在录的会话：用内存里的行写，避免和录音写入互相覆盖
+        const r=await dbGet("sessions",id); if(!r) continue;
+        await dbTx(["sessions"],"readwrite",t=>t.objectStore("sessions").put(Object.assign(r,{updatedAt:Date.now(), syncState:"pending"})),{remote:true});
+      }catch(e){}
+    }
+    odKick();
+  }
+  function stampRow(store,v){
+    if(store==="sessions"){ v.updatedAt=Date.now(); v.syncState="pending"; odKick(); }
+    else if(store==="folders"){ v.updatedAt=Date.now(); try{ odMetaDirty("folders"); }catch(e){} odKick(); }
+    else if(store==="segments") syncTouch(v.sid);
+  }
+  function syncWrap(t){
+    return { objectStore:name=>{
+      const os=t.objectStore(name);
+      if(name!=="sessions" && name!=="folders" && name!=="segments") return os;
+      return new Proxy(os,{ get(tg,k){ if(k==="put") return v=>{ stampRow(name,v); return tg.put(v); }; const x=tg[k]; return typeof x==="function" ? x.bind(tg) : x; } });
+    }};
+  }
   let dbP=null, dbWarned=false;
   function db(){
     return dbP||(dbP=new Promise((res,rej)=>{
       if(!window.indexedDB){ rej(new Error("no indexedDB")); return; }
-      const r=indexedDB.open("lt-db",2);
+      const r=indexedDB.open("lt-db",3);
       r.onupgradeneeded=ev=>{
         const d=r.result;
         if(ev.oldVersion<1){
@@ -1031,19 +1095,20 @@ body.has-page{background:var(--bg)}
           d.createObjectStore("audioChunks",{keyPath:["sid","idx"]}).createIndex("sid","sid");
         }
         if(ev.oldVersion<2) d.createObjectStore("folders",{keyPath:"id"});   // v2：文件夹（一层）
+        if(ev.oldVersion<3) d.createObjectStore("syncq",{keyPath:"key"});    // v3：OneDrive 同步的待处理队列（如彻底删除后要清理的云端文件）
       };
       r.onsuccess=()=>{ const d=r.result; d.onversionchange=()=>{ d.close(); dbP=null; }; res(d); }; r.onerror=()=>rej(r.error); r.onblocked=()=>rej(new Error("blocked"));
     }));
   }
-  function dbTx(stores,mode,fn){
+  function dbTx(stores,mode,fn,opts){
     return db().then(d=>new Promise((res,rej)=>{
       const t=d.transaction(stores,mode); let out;
-      try{ out=fn(t); }catch(e){ rej(e); return; }
-      t.oncomplete=()=>res(out && out.result!==undefined ? out.result : out);
+      try{ out=fn(mode==="readonly"||(opts&&opts.remote) ? t : syncWrap(t)); }catch(e){ rej(e); return; }
+      t.oncomplete=()=>res(typeof IDBRequest!=="undefined" && out instanceof IDBRequest ? out.result : out);   // 查不到记录时返回 undefined，而不是请求对象本身
       t.onerror=()=>rej(t.error); t.onabort=()=>rej(t.error||new Error("aborted"));
     }));
   }
-  const dbPut=(store,v)=>dbTx([store],"readwrite",t=>t.objectStore(store).put(v));
+  const dbPut=(store,v,opts)=>dbTx([store],"readwrite",t=>t.objectStore(store).put(v),opts);
   const dbGet=(store,k)=>dbTx([store],"readonly",t=>t.objectStore(store).get(k));
   const dbAll=store=>dbTx([store],"readonly",t=>t.objectStore(store).getAll());
   const dbBySid=(store,sid)=>dbTx([store],"readonly",t=>t.objectStore(store).index("sid").getAll(IDBKeyRange.only(sid)));
@@ -1458,7 +1523,7 @@ body.has-page{background:var(--bg)}
 
   // ---------- Records: list / filter / search ----------
   const isRecords=()=>pageStack.includes("records");
-  const rd={rows:[],trash:[],segs:new Map()};   // rows：正常记录；trash：最近删除
+  const rd={rows:[],trash:[],segs:new Map(),localAudio:new Set()};   // rows：正常记录；trash：最近删除
   const rf={q:"",tags:new Set(),sort:"new",folder:"all"};
   const tv={tag:null};
   // ---------- 页面栈：记录 / 设置从主页推入，左上角「‹ 返回」、系统返回键、iPhone 左边缘右滑都能返回 ----------
@@ -1470,7 +1535,7 @@ body.has-page{background:var(--bg)}
     if(idx>=0 && idx<pageStack.length-1) closePagesTo(idx+1);
     if(idx<0){ pageStack.push(name); history.pushState({d:pageStack.length},""); const el=pageEl(name); $("records").parentNode.scrollLeft=0; el.scrollTop=0; el.style.zIndex=30+pageStack.length; el.classList.add("open"); }   // 后打开的页面盖在上面
     if(name==="records"){ if(o.trash) gotoTrash(); else if($("recDetail").hidden) recRefresh(); }
-    if(name==="settings"){ applySettings(); refreshStoreInfo(); }
+    if(name==="settings"){ applySettings(); refreshStoreInfo(); odOpenSettings(); }
     closeMoreMenu(); applyUi();
   }
   function closeTopPage(){
@@ -1539,6 +1604,8 @@ body.has-page{background:var(--bg)}
     const rows=await dbAll("sessions"), gs=await dbAll("segments");
     rd.rows=rows.filter(r=>r.deletedAt==null); rd.trash=rows.filter(r=>r.deletedAt!=null); rd.segs=new Map();
     gs.forEach(g=>{ let a=rd.segs.get(g.sid); if(!a){ a=[]; rd.segs.set(g.sid,a); } a.push(g); });
+    rd.localAudio=new Set();
+    if(OD.enabled){ try{ (await dbTx(["audioChunks"],"readonly",t=>t.objectStore("audioChunks").getAllKeys())).forEach(k=>rd.localAudio.add(k[0])); }catch(e){} }
   }
   const segNo=g=>parseInt(String(g.id).split("-")[1],10)||0;
   const sortSegs=a=>a.sort((x,y)=>(x.start-y.start)||(segNo(x)-segNo(y)));
@@ -1609,6 +1676,7 @@ body.has-page{background:var(--bg)}
       const m=document.createElement("div"); m.className="cm";
       m.textContent=(d.getMonth()+1)+"月"+d.getDate()+"日 "+p2(d.getHours())+":"+p2(d.getMinutes())+" · "+fmtT(r.dur||0)+" · "+nSeg+" 句"+(r.parts&&r.parts.length?" · 有录音":"")+(r.ended==null?" · 未结束":"")+(rf.folder==="all"&&r.folderId!=null&&folderById(r.folderId)?" · 📁"+folderName(r.folderId):"");
       c.append(t,m);
+      const sic=odIcons(r); if(sic) c.appendChild(sic);
       if((r.tags||[]).length){ const tl=document.createElement("div"); tl.className="tline"; r.tags.forEach(x=>tl.appendChild(tagChip(x))); c.appendChild(tl); }
       const sm=plainFirstLine(r.summary);
       if(sm){ const e=document.createElement("div"); e.className="cs"; e.textContent=sm; c.appendChild(e); }
@@ -1676,7 +1744,7 @@ body.has-page{background:var(--bg)}
   const folderName=id=>{ const f=folderById(id); return f?f.name:"未分类"; };
   function validFolderId(id){ if(id==null) return null; return (!foldersLoaded || folderById(id)) ? id : null; }
   async function loadFolders(){
-    try{ folders=(await dbAll("folders")).sort((a,b)=>(a.order-b.order)||(a.created-b.created)); }catch(e){ folders=[]; }
+    try{ folders=(await dbAll("folders")).filter(f=>!f.deletedAt).sort((a,b)=>(a.order-b.order)||(a.created-b.created)); }catch(e){ folders=[]; }
     foldersLoaded=true;
     if(settings.lastFolder!=null && !folderById(settings.lastFolder)){ settings.lastFolder=null; saveSettings(); }
     drawFolderChip();
@@ -1690,6 +1758,7 @@ body.has-page{background:var(--bg)}
   async function renameFolder(id,name){
     const f=folderById(id); name=(name||"").trim().slice(0,20); if(!f||!name||name===f.name) return;
     f.name=name; await dbPut("folders",f); drawFolderChip();
+    (await dbAll("sessions")).filter(r=>r.folderId===id).forEach(r=>syncTouch(r.id));      // readable 路径里有文件夹名：文件夹改名后，里面的会话要重新上传一次
   }
   async function reorderFolders(ids){
     ids.forEach((id,i)=>{ const f=folderById(id); if(f) f.order=i+1; });
@@ -1701,7 +1770,8 @@ body.has-page{background:var(--bg)}
     const rows=(await dbAll("sessions")).filter(r=>r.folderId===id);
     const now=Date.now();
     rows.forEach(r=>{ r.folderId=null; if(mode==="trash" && !(S&&S.id===r.id)) r.deletedAt=now; if(S&&S.id===r.id) S.row.folderId=null; });
-    await dbTx(["sessions","folders"],"readwrite",t=>{ rows.forEach(r=>t.objectStore("sessions").put(r)); t.objectStore("folders").delete(id); });
+    const gone=folderById(id);
+    await dbTx(["sessions","folders"],"readwrite",t=>{ rows.forEach(r=>t.objectStore("sessions").put(r)); if(gone) t.objectStore("folders").put(Object.assign({},gone,{deletedAt:Date.now()})); });   // 墓碑：才能同步删除到其他设备
     folders=folders.filter(f=>f.id!==id);
     if(settings.lastFolder===id){ settings.lastFolder=null; saveSettings(); }
     if(rf.folder===id) rf.folder="all";
@@ -1798,7 +1868,18 @@ body.has-page{background:var(--bg)}
     const now=Date.now(); await patchSessions(ok,r=>{ r.deletedAt=now; }); return ok.length;
   }
   const restoreSessions=ids=>patchSessions(ids,r=>{ r.deletedAt=null; if(r.folderId!=null && !folderById(r.folderId)) r.folderId=null; });
-  async function purgeSessions(ids){ for(const id of ids){ if(!recording(id)) await dbDelSession(id); } }   // 同时删除字幕和音频分片，释放空间
+  // 彻底删除：同时删除字幕和音频分片，释放空间；已同步到 OneDrive 的，还要排队清理云端的会话文件夹和 readable 文件
+  async function purgeSessions(ids){
+    for(const id of ids){
+      if(recording(id)) continue;
+      try{
+        const r=await dbGet("sessions",id);
+        if(r && (r.syncBase || r.readablePath)) await dbTx(["syncq"],"readwrite",t=>t.objectStore("syncq").put({key:"purge:"+id, id, readable:r.readablePath||"", audioSid:r.audioRemoteSid||null, ts:Date.now()}),{remote:true});
+      }catch(e){}
+      await dbDelSession(id);
+    }
+    odKick(1500);
+  }
   async function purgeExpired(){
     try{
       const cut=Date.now()-TRASH_DAYS*86400000;
@@ -1989,6 +2070,7 @@ body.has-page{background:var(--bg)}
     if(!det) return; $("menuTitle").textContent="更多"; const box=$("menuList"); box.textContent="";
     const add=(label,fn,danger,note)=>{ const b=document.createElement("button"); b.textContent=label; if(note){ const sm=document.createElement("small"); sm.textContent=note; b.appendChild(sm); } if(danger) b.style.color="var(--rec)"; b.onclick=()=>{ $("menuDlg").close(); fn(); }; box.appendChild(b); };
     add("重命名",renameDetail);
+    if(det.row.conflict) add("标记为已处理",async()=>{ det.row.conflict=false; try{ await dbPut("sessions",det.row,{remote:true}); toast("已清除冲突标记"); }catch(e){ dbFail(e); } },false,"这是一份冲突副本，和原记录对照处理后可以清除标记");
     const ids=spIds(det.segs);
     if(ids.length) add("重命名说话人",renameSpeakers,false,ids.length+" 位说话人");
     add("移动到文件夹",()=>pickFolder("移动到文件夹",det.row.folderId==null?null:det.row.folderId,async fid=>{
@@ -2088,6 +2170,11 @@ body.has-page{background:var(--bg)}
       my.parts.push({n:pt.n, offset:pt.offset, dur:Math.max(0,end-pt.offset), url:URL.createObjectURL(new Blob(list.map(c=>c.blob),{type:row.audioMime||"audio/webm"}))});
     });
     $("pSeek").max=my.dur; $("pSeek").disabled=!my.parts.length; $("pPlay").disabled=!my.parts.length; $("pBack15").disabled=!my.parts.length;
+    // 录音在 OneDrive、本机没有：点播放（或点句子）时才下载
+    if(!my.parts.length && OD.enabled && (row.audioFiles||[]).length){
+      my.remote=true; const n=$("pNote"); n.hidden=false; n.textContent="☁ 录音在 OneDrive 上，点播放时下载到本机（约 "+mb((row.audioFiles||[]).reduce((a,f)=>a+(f.size||0),0))+"）。";
+      $("pSeek").max=my.dur; $("pSeek").disabled=false; $("pPlay").disabled=false; $("pBack15").disabled=false; updatePlayerUI(); return;
+    }
     if(!my.parts.length){
       const n=$("pNote"); n.hidden=false;
       n.textContent=row.engine==="browser" ? "这条记录没有保存录音，只有字幕（较早版本的「浏览器自带」模式不录音，或录音被关闭）。" : "这条记录没有保存录音，只有字幕。";
@@ -2111,7 +2198,18 @@ body.has-page{background:var(--bg)}
     au.addEventListener("loadedmetadata",onmeta);
     au.src=pt.url; au.load();
   }
+  // 录音还在 OneDrive：下载（显示进度）→ 缓存到本机 → 重新装载播放器，再继续原来的操作
+  async function ensureAudio(then){
+    const my=P; if(!my||!my.remote||my.loading) return; my.loading=true;
+    const n=$("pNote"); n.hidden=false;
+    try{
+      await odFetchAudio(my.row,(g,tot)=>{ n.textContent="☁ 正在从 OneDrive 下载录音… "+(tot?Math.min(100,Math.round(g/tot*100))+"%":mb(g)); });
+      if(P!==my) return;
+      await loadPlayer(my.row); if(P && P.parts.length) then();
+    }catch(e){ my.loading=false; n.textContent="下载录音失败："+((e&&e.message)||"未知错误")+"（点播放重试）"; }
+  }
   function seekTo(T,play){
+    if(P && P.remote){ ensureAudio(()=>seekTo(T,play)); return; }
     if(!P || !P.parts.length) return;
     T=Math.max(0,Math.min(T,P.dur));
     let i=0; P.parts.forEach((p,k)=>{ if(p.offset<=T+1e-6) i=k; });
@@ -2133,6 +2231,7 @@ body.has-page{background:var(--bg)}
   });
   au.addEventListener("error",()=>{ if(P && P.parts.length){ const n=$("pNote"); n.hidden=false; n.textContent="这段录音无法播放（可能已损坏，或这个浏览器不支持该格式）。可以先导出音频用其他播放器打开。"; } });
   $("pPlay").onclick=()=>{
+    if(P && P.remote){ ensureAudio(()=>seekTo(0,true)); return; }
     if(!P || !P.parts.length) return;
     if(P.cur<0){ seekTo(0,true); return; }
     if(au.paused) au.play().catch(()=>{}); else au.pause();
@@ -2389,6 +2488,7 @@ body.has-page{background:var(--bg)}
   }
   const AUDIO_EXT={"audio/webm":"webm","audio/mp4":"m4a","audio/aac":"aac"};
   async function exportAudio(row){
+    if(OD.enabled && (row.audioFiles||[]).length && !(await hasLocalAudio(row.id))){ toast("正在从 OneDrive 下载录音…"); await odFetchAudio(row); }
     const chunks=await dbBySid("audioChunks",row.id);
     const rp=(row.parts||[]).slice().sort((a,b)=>a.n-b.n), ext=AUDIO_EXT[row.audioMime]||"bin", files=[];
     rp.forEach(pt=>{
@@ -3475,6 +3575,501 @@ registerProcessor("pcm16",PCM16);`;
     entries.length=0; queue.length=0; feed.innerHTML=""; showLive(""); stickToBottom=true; updateToLatest(); toast("已清空");
   }
 
+  // ---------- OneDrive 同步 ----------
+  // 本地 IndexedDB 始终是工作区（离线可录可看）；登录 OneDrive 后，会话、文件夹、标签在后台和 App Folder（应用/同声字幕）同步。
+  //   sessions/<id>/record.json      完整数据（字幕、时间戳、说话人、语言、标签、摘要、文件夹、updatedAt、deletedAt）
+  //   sessions/<id>/audio.webm|m4a   录音（多段续录时是 audio-p1.webm、audio-p2.webm…）
+  //   readable/<文件夹>/<日期 标题>/notes.md、subtitles.srt   给人直接看的，只写不读
+  //   _meta/folders.json、tags.json、settings.json            文件夹、标签预设、非敏感设置（绝不含密钥或口令）
+  // 登录由 Worker 代管（刷新令牌只在 KV 里）；页面向 Worker 要短期访问令牌，直接调用 Microsoft Graph 读写文件。
+  const GRAPH="https://graph.microsoft.com/v1.0", AROOT=GRAPH+"/me/drive/special/approot";
+  const OD_SCHEMA=1, OD_CHUNK=320*1024*10, OD_PULL_MS=5*60*1000;
+  const OD_SETTING_KEYS=["engine","diarize","refine","autoFallback","zhMode","afterEnd","lang","mode","glossary","llm","refineModel","sumModel"];   // 同步的设置（不含任何密钥、口令、连接地址和本机偏好）
+  const odSleep=ms=>new Promise(r=>setTimeout(r,ms));
+  let odCache=null;
+  function odLS(){ if(!odCache){ try{ odCache=JSON.parse(localStorage.getItem("lt-sync")||"{}")||{}; }catch(e){ odCache={}; } } return odCache; }
+  function odSave(){ try{ localStorage.setItem("lt-sync",JSON.stringify(odCache||{})); }catch(e){} }
+  class OdError extends Error{ constructor(msg,o){ super(msg); Object.assign(this,o||{}); } }
+  const encPath=p=>p.split("/").map(encodeURIComponent).join("/");
+  const itemUrl=p=>AROOT+":/"+encPath(p);
+  const odReady=()=>useRelay() && !!(relayBase() && settings.relayToken);
+
+  async function odToken(){
+    if(OD.tok && OD.tokExp>Date.now()+120000) return OD.tok;
+    let r; try{ r=await fetch(relayBase()+"/onedrive/token",{headers:{authorization:"Bearer "+settings.relayToken}}); }catch(e){ throw new OdError("网络不通",{net:true}); }
+    let j={}; try{ j=await r.json(); }catch(_){}
+    if(!r.ok){
+      if(j.reauth) throw new OdError(j.error||"OneDrive 登录已失效，请重新登录",{reauth:true});
+      if(r.status===401) throw new OdError("中转访问口令无效",{fatal:true});
+      if(r.status===404) throw new OdError("中转层还不支持 OneDrive，请更新并重新部署 Worker（见 README）",{fatal:true});
+      if(r.status===501) throw new OdError(j.error||"Worker 里还没有配置 OneDrive",{fatal:true});
+      throw new OdError(j.error||("中转返回 "+r.status),{retry:true});
+    }
+    OD.tok=j.access_token; OD.tokExp=Date.now()+(j.expires_in||3600)*1000; return OD.tok;
+  }
+  async function gerr(r){
+    let m=""; try{ const j=await r.json(); m=(j.error&&(j.error.message||j.error.code))||""; }catch(_){}
+    return new OdError("OneDrive 返回 "+r.status+(m?"："+m:""),{status:r.status,retry:r.status>=500||r.status===429||r.status===408});
+  }
+  async function gx(url,opt,tries){
+    opt=opt||{}; tries=tries||0;
+    const tok=await odToken();
+    let r; try{ r=await fetch(url,Object.assign({},opt,{headers:Object.assign({Authorization:"Bearer "+tok},opt.headers||{})})); }catch(e){ throw new OdError("网络不通",{net:true}); }
+    if(r.status===401 && !opt._r){ OD.tokExp=0; return gx(url,Object.assign({},opt,{_r:1}),tries); }
+    if((r.status===429||r.status===503||r.status===504) && tries<3){ const ra=r.headers.get("Retry-After"); await odSleep(Math.min(ra!=null&&ra!==""&&!isNaN(+ra) ? +ra : 2*(tries+1),30)*1000); return gx(url,opt,tries+1); }
+    return r;
+  }
+  // 小文件（≤4MB）直接 PUT；更大的用上传会话分块上传，记录会话地址，中断后从服务器已收到的位置续传
+  async function odPut(path,blob,ctype,key){
+    if(blob.size<=4*1024*1024){
+      const r=await gx(itemUrl(path)+":/content?@microsoft.graph.conflictBehavior=replace",{method:"PUT",headers:{"Content-Type":ctype||"application/octet-stream"},body:blob});
+      if(!r.ok) throw await gerr(r); return r.json();
+    }
+    const ls=odLS(); ls.upl=ls.upl||{}; const k=key||path; let url=null, offset=0;
+    const u=ls.upl[k]; if(u && u.size===blob.size && u.exp>Date.now()) url=u.url;
+    if(url){
+      let st=null; try{ st=await fetch(url); }catch(e){ throw new OdError("网络不通",{net:true}); }
+      if(st.ok){ const j=await st.json(), ne=(j.nextExpectedRanges||[])[0]; offset=ne ? parseInt(ne,10)||0 : blob.size; } else url=null;
+    }
+    if(!url){
+      const r=await gx(itemUrl(path)+":/createUploadSession",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({item:{"@microsoft.graph.conflictBehavior":"replace"}})});
+      if(!r.ok) throw await gerr(r);
+      url=(await r.json()).uploadUrl; ls.upl[k]={url,size:blob.size,exp:Date.now()+2*86400000}; odSave(); offset=0;
+    }
+    let last=null;
+    while(offset<blob.size){
+      const end=Math.min(offset+OD_CHUNK,blob.size); let r;
+      try{ r=await fetch(url,{method:"PUT",headers:{"Content-Range":"bytes "+offset+"-"+(end-1)+"/"+blob.size},body:blob.slice(offset,end)}); }
+      catch(e){ throw new OdError("网络不通",{net:true}); }      // 上传会话地址保留，下次从服务器已收到的位置继续
+      if(r.status===202){ const j=await r.json(), ne=(j.nextExpectedRanges||[])[0]; offset=ne ? parseInt(ne,10)||end : end; continue; }
+      if(r.status===200||r.status===201){ last=await r.json(); offset=blob.size; break; }
+      if(r.status===404||r.status===410){ delete ls.upl[k]; odSave(); throw new OdError("上传会话已失效，稍后重新上传",{retry:true}); }
+      throw await gerr(r);
+    }
+    delete ls.upl[k]; odSave(); return last;
+  }
+  async function odDel(path){
+    const r=await gx(itemUrl(path),{method:"DELETE"});
+    if(!r.ok && r.status!==404) throw await gerr(r);
+  }
+  async function odJson(path){
+    const r=await gx(itemUrl(path)+":/content");
+    if(r.status===404) return null; if(!r.ok) throw await gerr(r);
+    return r.json();
+  }
+  // 下载文件（带进度）。先取 downloadUrl（预授权地址，不用带令牌），取不到再走 /content
+  async function odDownload(path,onProgress){
+    const mr=await gx(itemUrl(path)+"?select=id,size,@microsoft.graph.downloadUrl");
+    if(mr.status===404) return null; if(!mr.ok) throw await gerr(mr);
+    const m=await mr.json(), du=m["@microsoft.graph.downloadUrl"];
+    let r; try{ r=du ? await fetch(du) : await gx(GRAPH+"/me/drive/items/"+m.id+"/content"); }catch(e){ throw new OdError("网络不通",{net:true}); }
+    if(!r.ok) throw await gerr(r);
+    const total=m.size||+r.headers.get("content-length")||0;
+    if(!r.body || !onProgress) return r.blob();
+    const rd=r.body.getReader(), parts=[]; let got=0;
+    for(;;){ const {value,done}=await rd.read(); if(done) break; parts.push(value); got+=value.length; onProgress(got,total); }
+    return new Blob(parts);
+  }
+
+  // ----- 文件名与 readable 路径 -----
+  const odSafe=t=>String(t||"").replace(/[\\/:*?"<>|\u0000-\u001f]/g,"_").replace(/\s+/g," ").trim().replace(/[. ]+$/,"").slice(0,60)||"未命名";
+  function readableBase(row,used){
+    const d=new Date(row.created), p=n=>String(n).padStart(2,"0");
+    let base="readable/"+odSafe(folderName(row.folderId==null?null:row.folderId))+"/"+d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+" "+odSafe(row.title);
+    if(used.has(base)) base+=" ("+String(row.id).slice(-4)+")";       // 重名时追加短 id
+    return base;
+  }
+  const cleanRow=r=>{ const o=Object.assign({},r); ["syncState","syncBase","conflict"].forEach(k=>delete o[k]); return o; };
+  const buildRecord=(row,segs)=>({schemaVersion:OD_SCHEMA, id:row.id, updatedAt:row.updatedAt, deletedAt:row.deletedAt||null, session:cleanRow(row), segments:segs});
+
+  // ----- 元数据：文件夹、标签预设、非敏感设置 -----
+  function odMetaDirty(k){ const ls=odLS(); (ls.meta||(ls.meta={}))[k]=true; odSave(); }
+  const odSettingsSubset=()=>{ const o={}; OD_SETTING_KEYS.forEach(k=>{ o[k]=settings[k]; }); return o; };
+  // 设置或标签预设变了：记下修改时间，下次同步上传（保存设置时调用）
+  function odSettingsChanged(){
+    const ls=odLS(), tj=JSON.stringify(settings.tagPresets||[]), sj=JSON.stringify(odSettingsSubset());
+    if(ls.lastTags===undefined){ ls.lastTags=tj; ls.lastSet=sj; odSave(); return; }
+    let ch=false;
+    if(ls.lastTags!==tj){ ls.lastTags=tj; ls.tagsAt=Date.now(); odMetaDirty("tags"); ch=true; }
+    if(ls.lastSet!==sj){ ls.lastSet=sj; ls.setAt=Date.now(); odMetaDirty("settings"); ch=true; }
+    if(ch) odSave(), odKick();
+  }
+
+  // ----- 上传 -----
+  async function pushSession(row,used){
+    const id=row.id, segs=sortSegs(await dbBySid("segments",id)), at=row.updatedAt, patch={};
+    // 1) 录音（只传一次；录音文件录完就不再变）
+    if(!row.audioRemoteSid){
+      const chunks=await dbBySid("audioChunks",id), have=new Set(chunks.map(c=>c.part)), known=(row.audioFiles||[]).slice();
+      const ext=AUDIO_EXT[row.audioMime]||"webm", multi=(row.parts||[]).length>1;
+      for(const pt of (row.parts||[])){
+        if(known.some(f=>f.part===pt.n) || !have.has(pt.n)) continue;
+        const list=chunks.filter(c=>c.part===pt.n).sort((a,b)=>a.idx-b.idx), blob=new Blob(list.map(c=>c.blob),{type:row.audioMime||"audio/webm"});
+        const name=multi ? "audio-p"+pt.n+"."+ext : "audio."+ext;
+        await odPut("sessions/"+id+"/"+name,blob,row.audioMime,"a:"+id+":"+name);
+        known.push({part:pt.n,name,size:blob.size});
+      }
+      patch.audioFiles=known;
+    }
+    // 2) readable（改名、移动文件夹、删除都会同步更新或删除）
+    let rp=row.readablePath||"";
+    if(row.deletedAt){ if(rp){ await odDel(rp); rp=""; } }
+    else{
+      const base=readableBase(row,used);
+      if(rp && rp!==base) await odDel(rp);
+      const view=Object.assign({},row,patch);
+      await odPut(base+"/notes.md",new Blob([buildMd(view,segs)],{type:"text/markdown"}),"text/markdown");
+      await odPut(base+"/subtitles.srt",new Blob([buildSrt(segs,view)],{type:"text/plain"}),"text/plain");
+      rp=base; used.add(base);
+    }
+    patch.readablePath=rp;
+    // 3) record.json 最后上传：其他设备看到它时，录音和 readable 都已经就绪
+    const it=await odPut("sessions/"+id+"/record.json",new Blob([JSON.stringify(buildRecord(Object.assign({},row,patch),segs))],{type:"application/json"}),"application/json");
+    if(it && it.id){ const ls=odLS(); (ls.items||(ls.items={}))[it.id]={k:"rec",sid:id}; odSave(); }
+    // 4) 标记已同步；上传期间如果又改过，保持待上传
+    const cur=await dbGet("sessions",id);
+    if(cur){ Object.assign(cur,patch,{syncBase:at}); if(cur.updatedAt===at) cur.syncState="synced"; await dbTx(["sessions"],"readwrite",t=>t.objectStore("sessions").put(cur),{remote:true}); }
+    OD.stats && OD.stats.up++;
+  }
+  async function pushMeta(){
+    const ls=odLS(), m=ls.meta||{};
+    if(m.folders){
+      const all=await dbAll("folders");
+      await odPut("_meta/folders.json",new Blob([JSON.stringify({schemaVersion:OD_SCHEMA,updatedAt:Date.now(),folders:all})],{type:"application/json"}),"application/json");
+      m.folders=false;
+    }
+    if(m.tags){ await odPut("_meta/tags.json",new Blob([JSON.stringify({schemaVersion:OD_SCHEMA,updatedAt:ls.tagsAt||Date.now(),presets:settings.tagPresets||[]})],{type:"application/json"}),"application/json"); m.tags=false; }
+    if(m.settings){ await odPut("_meta/settings.json",new Blob([JSON.stringify({schemaVersion:OD_SCHEMA,updatedAt:ls.setAt||Date.now(),settings:odSettingsSubset()})],{type:"application/json"}),"application/json"); m.settings=false; }
+    ls.meta=m; odSave();
+  }
+  async function pushAll(){
+    const rows=await dbAll("sessions"), used=new Set(rows.map(r=>r.readablePath).filter(Boolean));
+    // 彻底删除的会话：清理云端的会话文件夹和 readable 文件
+    const q=await dbTx(["syncq"],"readonly",t=>t.objectStore("syncq").getAll());
+    for(const it of q){
+      await odDel("sessions/"+it.id); if(it.readable) await odDel(it.readable);
+      await dbTx(["syncq"],"readwrite",t=>t.objectStore("syncq").delete(it.key),{remote:true});
+    }
+    let failed=0, last=null;
+    for(const row of rows.filter(r=>r.syncState!=="synced" && !(S && S.id===r.id))){
+      try{ await pushSession(row,used); }
+      catch(e){ if(e.reauth||e.fatal) throw e; failed++; last=e; if(e.net) throw e; }
+    }
+    try{ await pushMeta(); }catch(e){ if(e.reauth||e.fatal||e.net) throw e; failed++; last=e; }
+    if(failed) throw last||new OdError("部分内容上传失败",{retry:true});
+  }
+
+  // ----- 拉取与合并 -----
+  async function odReplaceSession(row,segs){
+    await dbTx(["sessions","segments"],"readwrite",t=>{
+      t.objectStore("sessions").put(row);
+      const os=t.objectStore("segments"), r=os.index("sid").openKeyCursor(IDBKeyRange.only(row.id));
+      r.onsuccess=()=>{ const c=r.result; if(c){ os.delete(c.primaryKey); c.continue(); } else segs.forEach(g=>os.put(g)); };
+    },{remote:true});
+  }
+  function remoteRow(rec,extra){ return Object.assign({},rec.session,{updatedAt:rec.updatedAt, deletedAt:rec.deletedAt||null, syncState:"synced", syncBase:rec.updatedAt},extra||{}); }
+  // 冲突副本：给另一份换新 id、标题加「（冲突副本）」；录音沿用原会话在 OneDrive 上的文件（audioRemoteSid），不重复上传
+  async function odMakeCopy(session,segs,origId){
+    let nid=Date.now(); while(await dbGet("sessions",nid)) nid++;
+    const row=Object.assign({},session,{id:nid, title:(session.title||"")+"（冲突副本）", conflict:true, syncState:"pending", syncBase:0, readablePath:"", audioRemoteSid:session.audioRemoteSid||origId, titleEdited:true, deletedAt:null});
+    const copies=segs.map(g=>{ const n=String(g.id).split("-")[1]||"0"; return Object.assign({},g,{id:nid+"-"+n, sid:nid}); });
+    await odReplaceSession(Object.assign(row,{updatedAt:Date.now()}),copies);
+    OD.stats && OD.stats.conflict++;
+  }
+  async function odMergeRecord(rec){
+    if(!rec || !rec.session || rec.id==null) return;
+    if(rec.schemaVersion>OD_SCHEMA) throw new OdError("OneDrive 里有来自更新版本的记录，请刷新页面更新应用",{fatal:true});
+    const id=rec.id; if(S && S.id===id) return;                      // 正在录的会话不合并
+    const L=await dbGet("sessions",id), rsegs=rec.segments||[];
+    if(!L){
+      if(rec.deletedAt) return;                                       // 别处已删除、本机没有：不用导入
+      await odReplaceSession(remoteRow(rec),rsegs); OD.stats && OD.stats.down++; return;
+    }
+    if(rec.updatedAt===L.updatedAt){ if(L.syncState!=="synced"||L.syncBase!==rec.updatedAt){ L.syncState="synced"; L.syncBase=rec.updatedAt; await dbTx(["sessions"],"readwrite",t=>t.objectStore("sessions").put(L),{remote:true}); } return; }
+    const pending=L.syncState!=="synced", remoteChanged=rec.updatedAt!==(L.syncBase||-1);
+    if(!remoteChanged) return;                                        // 云端没变，本地改动等着上传
+    if(!pending){ await odReplaceSession(remoteRow(rec,{conflict:L.conflict||false}),rsegs); OD.stats && OD.stats.down++; return; }
+    // 两边在上次同步后都有修改：updatedAt 较新的保留原 id，另一份存成冲突副本，不静默丢弃
+    const lsegs=await dbBySid("segments",id);
+    if(rec.updatedAt>L.updatedAt){
+      await odMakeCopy(L,lsegs,id);
+      await odReplaceSession(remoteRow(rec),rsegs); OD.stats && OD.stats.down++;
+    }else{
+      await odMakeCopy(rec.session,rsegs,id);
+      L.syncBase=rec.updatedAt; await dbTx(["sessions"],"readwrite",t=>t.objectStore("sessions").put(L),{remote:true});   // 云端这一版已知，本地较新的继续上传
+    }
+  }
+  async function odMergeMeta(name,j){
+    const ls=odLS();
+    if(name==="folders.json"){
+      const local=await dbAll("folders"), byId=new Map(local.map(f=>[f.id,f]));
+      let needPush=false;
+      for(const rf of (j.folders||[])){
+        const lf=byId.get(rf.id);
+        if(!lf) await dbPut("folders",rf,{remote:true});
+        else if((rf.updatedAt||0)>(lf.updatedAt||0)) await dbPut("folders",rf,{remote:true});
+        else if((rf.updatedAt||0)<(lf.updatedAt||0)) needPush=true;
+      }
+      const rids=new Set((j.folders||[]).map(f=>f.id)); if(local.some(f=>!rids.has(f.id))) needPush=true;
+      if(needPush) odMetaDirty("folders");
+      await loadFolders();
+    }else if(name==="tags.json"){
+      if((j.updatedAt||0)>(ls.tagsAt||0) && Array.isArray(j.presets)){
+        settings.tagPresets=j.presets.filter(x=>typeof x==="string").slice(0,50); ls.tagsAt=j.updatedAt; ls.lastTags=JSON.stringify(settings.tagPresets); odSave(); saveSettings(); try{ drawTagMgr(); }catch(e){}
+      }else if((j.updatedAt||0)<(ls.tagsAt||0)) odMetaDirty("tags");
+    }else if(name==="settings.json"){
+      if((j.updatedAt||0)>(ls.setAt||0) && j.settings && typeof j.settings==="object"){
+        OD_SETTING_KEYS.forEach(k=>{ if(k in j.settings && typeof j.settings[k]===typeof settings[k]) settings[k]=j.settings[k]; });
+        ls.setAt=j.updatedAt; ls.lastSet=JSON.stringify(odSettingsSubset()); odSave(); saveSettings(); applySettings();
+      }else if((j.updatedAt||0)<(ls.setAt||0)) odMetaDirty("settings");
+    }
+  }
+  // delta 条目 → 要处理的对象。注意：delta 返回的条目通常没有 parentReference.path，所以按条目 id 记住文件夹（id → 名字、父级），
+  // 再按「父文件夹」判断文件属于哪个会话（sessions/<id>/record.json）或 _meta
+  function odClassify(it,fmap){
+    const ls=odLS();
+    if(it.deleted){ const m=(ls.items||{})[it.id]; return m ? {kind:"gone",id:it.id,sid:m.sid} : null; }
+    if(!it.file) return null;
+    const name=it.name||"", pid=it.parentReference&&it.parentReference.id, par=pid&&fmap[pid];
+    let pname=par?par.name:"", gname=par&&par.parent&&fmap[par.parent]?fmap[par.parent].name:"";
+    const pp=decodeURIComponent((it.parentReference&&it.parentReference.path)||"");         // 个别账号会带路径：有就用
+    if(pp){ const m1=/\/sessions\/([^\/]+)$/.exec(pp); if(m1){ pname=m1[1]; gname="sessions"; } else if(/\/_meta$/.test(pp)) pname="_meta"; }
+    if(gname==="sessions" && name==="record.json") return {kind:"rec",id:it.id,sid:pname,etag:it.eTag};
+    if(pname==="_meta" && /^(folders|tags|settings)\.json$/.test(name)) return {kind:"meta",id:it.id,name};
+    return null;
+  }
+  async function odApply(list){
+    const ls=odLS(); ls.items=ls.items||{};
+    const metas=list.filter(x=>x.kind==="meta"), recs=list.filter(x=>x.kind==="rec"), gone=list.filter(x=>x.kind==="gone");
+    for(const g of gone){ delete ls.items[g.id]; await odRemoteGone(+g.sid); }
+    for(const m of ["folders.json","tags.json","settings.json"]){            // 先合并文件夹，会话里的 folderId 才有对应
+      const it=metas.find(x=>x.name===m); if(!it) continue;
+      const j=await odJson("_meta/"+m); if(j) await odMergeMeta(m,j);
+    }
+    for(const r of recs){
+      const rec=await odJson("sessions/"+r.sid+"/record.json"); if(!rec) continue;
+      ls.items[r.id]={k:"rec",sid:rec.id}; await odMergeRecord(rec);
+    }
+    odSave();
+  }
+  // 云端的 record.json 不见了（被手动删除，或另一台设备彻底删除）：本机还有的话重新上传，不静默丢数据；已在最近删除里的让它自己过期
+  async function odRemoteGone(sid){
+    const L=await dbGet("sessions",sid); if(!L || L.deletedAt || (S&&S.id===sid)) return;
+    L.syncState="pending"; L.syncBase=0; L.audioFiles=undefined; delete L.audioFiles; await dbTx(["sessions"],"readwrite",t=>t.objectStore("sessions").put(L),{remote:true});
+  }
+  async function odPull(){
+    const ls=odLS(); let url=ls.deltaLink||AROOT+"/delta", full=!ls.deltaLink, items=[], next="", guard=0;
+    for(;;){
+      if(++guard>300) throw new OdError("同步数据太多，稍后继续",{retry:true});
+      const r=await gx(url);
+      if(r.status===410){ ls.deltaLink=""; ls.items={}; ls.fmap={}; odSave(); url=AROOT+"/delta"; full=true; items=[]; continue; }      // 需要全量重新同步
+      if(r.status===400||r.status===404||r.status===501) return odPullScan();       // 这个账号的 App Folder 不支持 delta：改为逐个会话文件夹比对
+      if(!r.ok) throw await gerr(r);
+      const j=await r.json(); items=items.concat(j.value||[]);
+      if(j["@odata.nextLink"]){ url=j["@odata.nextLink"]; continue; }
+      next=j["@odata.deltaLink"]||""; break;
+    }
+    ls.fmap=ls.fmap||{};
+    items.forEach(it=>{ if(it.folder){ if(it.deleted) delete ls.fmap[it.id]; else ls.fmap[it.id]={name:it.name,parent:it.parentReference&&it.parentReference.id}; } });
+    const byId=new Map(); items.forEach(it=>{ const c=odClassify(it,ls.fmap); if(c) byId.set(it.id,c); });
+    await odApply([...byId.values()]);
+    if(next){ ls.deltaLink=next; odSave(); }
+  }
+  // delta 不可用时的退路：列出 sessions/ 下每个会话文件夹（一次请求带出里面的文件），按 eTag 找出有变化的 record.json
+  async function odPullScan(){
+    const ls=odLS(); ls.etags=ls.etags||{}; const list=[]; let url=itemUrl("sessions")+":/children?$top=200&$expand=children($select=id,name,eTag)&$select=id,name";
+    for(let g=0;url&&g<100;g++){
+      const r=await gx(url); if(r.status===404) break; if(!r.ok) throw await gerr(r);
+      const j=await r.json(); list.push(...(j.value||[])); url=j["@odata.nextLink"]||"";
+    }
+    const seen=new Set(), recs=[];
+    for(const f of list){ const rc=(f.children||[]).find(c=>c.name==="record.json"); if(!rc) continue; seen.add(f.name); if(ls.etags[f.name]!==rc.eTag){ recs.push({kind:"rec",id:rc.id,sid:f.name}); ls.etags[f.name]=rc.eTag; } }
+    const gone=Object.keys(ls.etags).filter(k=>/^\d+$/.test(k) && !seen.has(k)).map(k=>{ delete ls.etags[k]; return {kind:"gone",id:"scan:"+k,sid:k}; });
+    gone.forEach(g=>{ (ls.items=ls.items||{})[g.id]={k:"rec",sid:g.sid}; });
+    const metas=[]; const mr=await gx(itemUrl("_meta")+":/children?$select=id,name,eTag");
+    if(mr.ok){ for(const c of ((await mr.json()).value||[])){ if(/^(folders|tags|settings)\.json$/.test(c.name) && (ls.metaEtags||(ls.metaEtags={}))[c.name]!==c.eTag){ metas.push({kind:"meta",id:c.id,name:c.name}); ls.metaEtags[c.name]=c.eTag; } } }
+    await odApply(metas.concat(recs,gone));
+  }
+
+  // ----- 录音按需下载 -----
+  async function hasLocalAudio(id){ const n=await dbTx(["audioChunks"],"readonly",t=>t.objectStore("audioChunks").index("sid").count(IDBKeyRange.only(id))).catch(()=>0); return n>0; }
+  // 把这条记录在 OneDrive 上的录音下载并缓存到 IndexedDB（和本机录的格式一样，播放、导出都能直接用）
+  async function odFetchAudio(row,onProgress){
+    const owner=row.audioRemoteSid||row.id, files=(row.audioFiles||[]).slice(); if(!files.length) throw new OdError("这条记录在 OneDrive 上没有录音");
+    let total=files.reduce((a,f)=>a+(f.size||0),0), done=0;
+    for(const f of files){
+      const blob=await odDownload("sessions/"+owner+"/"+f.name,(g)=>onProgress&&onProgress(done+g,total));
+      if(!blob) throw new OdError("OneDrive 上找不到录音文件："+f.name);
+      done+=f.size||blob.size;
+      await dbTx(["audioChunks"],"readwrite",t=>t.objectStore("audioChunks").put({sid:row.id, idx:f.part*100000+1, part:f.part, blob}),{remote:true});
+    }
+  }
+  async function odAutoAudio(){
+    if(!settings.odAutoAudio) return;
+    for(const r of await dbAll("sessions")){
+      if(!r.deletedAt && (r.audioFiles||[]).length && !(S&&S.id===r.id) && !(await hasLocalAudio(r.id))){ try{ await odFetchAudio(r); }catch(e){ if(e.net||e.reauth) throw e; } }
+    }
+  }
+  // 清理本机录音缓存：只删除已经在 OneDrive 上有完整副本的本地录音
+  async function odClearLocalAudio(){
+    let n=0, bytes=0;
+    for(const r of await dbAll("sessions")){
+      if(S&&S.id===r.id) continue;
+      const uploaded=r.syncState==="synced" && (r.parts||[]).length && (r.parts||[]).every(p=>(r.audioFiles||[]).some(f=>f.part===p.n));
+      if(!uploaded && !(r.audioRemoteSid && (r.audioFiles||[]).length)) continue;
+      const ch=await dbBySid("audioChunks",r.id); if(!ch.length) continue;
+      ch.forEach(c=>{ bytes+=c.blob.size; });
+      await dbTx(["audioChunks"],"readwrite",t=>{ const os=t.objectStore("audioChunks"), q=os.index("sid").openKeyCursor(IDBKeyRange.only(r.id)); q.onsuccess=()=>{ const c=q.result; if(c){ os.delete(c.primaryKey); c.continue(); } }; },{remote:true});
+      n++;
+    }
+    return {n,bytes};
+  }
+
+  // ----- 调度 -----
+  function odSyncSoon(ms){ if(!OD.enabled) return; clearTimeout(OD.timer); OD.timer=setTimeout(()=>odSync(),ms==null?3000:ms); }
+  async function odCountPending(){
+    try{ const rows=await dbAll("sessions"), m=odLS().meta||{}; const q=await dbTx(["syncq"],"readonly",t=>t.objectStore("syncq").count());
+      OD.pending=rows.filter(r=>r.syncState!=="synced").length+(m.folders?1:0)+(m.tags?1:0)+(m.settings?1:0)+q; }catch(e){}
+  }
+  async function odSync(opt){
+    opt=opt||{};
+    if(!OD.enabled || !odReady()) return;
+    if(OD.needLogin && !opt.manual) return;
+    if(S && !S.closing){ OD.state="recording"; odUi(); return; }       // 录音进行中不同步
+    if(OD.running){ OD.again=true; return; }
+    if(navigator.onLine===false){ OD.state="offline"; odUi(); return; }
+    OD.running=true; OD.again=false; OD.state="syncing"; OD.err=""; OD.needLogin=false; OD.stats={up:0,down:0,conflict:0}; odUi();
+    try{
+      await odPull();
+      await pushAll();
+      await odAutoAudio();
+      OD.lastAt=Date.now(); const ls=odLS(); ls.lastAt=OD.lastAt; ls.first=true; odSave(); OD.retry=0; OD.state="ok";
+      if(opt.manual || opt.report) toast("同步完成：上传 "+OD.stats.up+" 条，下载 "+OD.stats.down+" 条"+(OD.stats.conflict?"，冲突 "+OD.stats.conflict+" 条":""));
+      else if(OD.stats.conflict) toast("有 "+OD.stats.conflict+" 条记录出现冲突，已保留两份（标题带「冲突副本」）");
+      if(OD.stats.down||OD.stats.conflict){ try{ if(isRecords() && $("recDetail").hidden) recRefresh(); }catch(e){} }
+    }catch(e){
+      OD.err=(e&&e.message)||"同步失败";
+      if(e.reauth){ OD.needLogin=true; OD.state="login"; }
+      else if(e.fatal){ OD.state="error"; }
+      else{ OD.state=e.net?"offline":"error"; OD.retry++; const wait=Math.min(300,5*Math.pow(2,Math.min(OD.retry,6)))*1000; clearTimeout(OD.timer); OD.timer=setTimeout(()=>odSync(),wait); }
+      dbg("OneDrive 同步失败："+OD.err);
+    }finally{
+      OD.running=false; await odCountPending(); odUi(); odDrawRowIcons();
+      if(OD.again && !OD.needLogin && OD.state!=="login") odSyncSoon(500);        // 同步进行中又被要求同步（或改了东西）：结束后马上再来一轮，不等退避
+    }
+  }
+  // ----- 登录 / 状态 -----
+  async function odRelayJson(path,opt){
+    const r=await fetch(relayBase()+path,Object.assign({headers:{authorization:"Bearer "+settings.relayToken}},opt));
+    let j={}; try{ j=await r.json(); }catch(_){}
+    return {r,j};
+  }
+  async function odRefreshStatus(){
+    if(!odReady()){ OD.logged=false; return; }
+    try{
+      const {r,j}=await odRelayJson("/onedrive/status");
+      if(r.status===401){ OD.logged=false; OD.err="中转访问口令无效"; return; }
+      if(r.status===404||r.status===501){ OD.logged=false; OD.err=j.error||"Worker 还没有配置 OneDrive（见 README）"; OD.unconfigured=true; return; }
+      OD.unconfigured=false; OD.err=""; OD.logged=!!j.loggedIn; OD.name=j.name||""; OD.email=j.email||"";
+      if(!OD.logged && OD.enabled){ odDisable(false); }
+    }catch(e){ OD.err="连不上中转（网络问题）"; OD.netErr=true; }
+  }
+  function odEnable(){ const ls=odLS(); ls.enabled=true; if(!ls.first) ls.meta={folders:true,tags:true,settings:true}; odSave(); OD.enabled=true; OD.state="idle"; OD.needLogin=false; }
+  function odDisable(reset){ const ls=odLS(); ls.enabled=false; if(reset){ ["deltaLink","items","fmap","etags","metaEtags","lastAt","first","upl"].forEach(k=>delete ls[k]); } odSave(); OD.enabled=false; OD.state="off"; OD.tok=null; clearTimeout(OD.timer); }
+  async function odLogin(){
+    if(!odReady()){ toast("请先把连接方式设为自建中转，并填好中转地址和访问口令"); return; }
+    if(S && !S.closing){ toast("录音中不能登录，请先结束录音"); return; }
+    try{
+      const {r,j}=await odRelayJson("/onedrive/login-ticket",{method:"POST",headers:{authorization:"Bearer "+settings.relayToken,"content-type":"application/json"},body:JSON.stringify({return:location.origin+location.pathname})});
+      if(!r.ok||!j.ticket){ toast(j.error||"取得登录码失败（"+r.status+"）"); return; }
+      location.href=relayBase()+"/onedrive/login?ticket="+encodeURIComponent(j.ticket);
+    }catch(e){ toast("连不上中转，请检查网络"); }
+  }
+  // 从微软登录页跳回来：?od=ok 或 ?od=error&msg=…
+  function odReturnFromLogin(){
+    const u=new URL(location.href), od=u.searchParams.get("od"); if(!od) return false;
+    const msg=u.searchParams.get("msg")||""; u.searchParams.delete("od"); u.searchParams.delete("msg");
+    try{ history.replaceState(history.state,"",u.pathname+(u.search||"")+u.hash); }catch(e){}
+    return {ok:od==="ok", msg};
+  }
+  async function odAfterLogin(res){
+    openPage("settings");
+    if(!res.ok){ toast("OneDrive 登录失败："+(res.msg||"未完成登录")); await odRefreshStatus(); odUi(); return; }
+    await odRefreshStatus(); odEnable(); toast("登录成功"+(OD.email?"："+OD.email:"")+"，正在同步…"); odUi();
+    odSync({manual:true,report:true});
+  }
+
+  // ----- 界面：设置页的 OneDrive 区块 -----
+  const ago=ts=>{ if(!ts) return "还没有同步过"; const s=Math.floor((Date.now()-ts)/1000); return s<60?"刚刚":s<3600?Math.floor(s/60)+" 分钟前":s<86400?Math.floor(s/3600)+" 小时前":Math.floor(s/86400)+" 天前"; };
+  function odStateText(){
+    if(OD.state==="syncing") return "同步中…";
+    if(OD.state==="recording") return "录音中，暂不同步（结束后自动同步）";
+    if(OD.needLogin||OD.state==="login") return "登录已失效，请重新登录";
+    if(OD.state==="offline") return "离线，联网后自动同步";
+    if(OD.state==="error") return "同步失败："+OD.err;
+    return OD.pending ? "有 "+OD.pending+" 项待上传" : "已是最新";
+  }
+  function odUi(){
+    const box=$("odBlock"); if(!box) return;
+    const need=!useRelay();
+    $("odNeedRelay").hidden=!need;
+    const loggedHere=OD.enabled, loggedWorker=OD.logged;
+    $("odLogin").hidden=need || (loggedWorker && !OD.needLogin);
+    $("odLogin").textContent=OD.needLogin ? "重新登录 OneDrive" : "登录 OneDrive";
+    $("odEnableRow").hidden=need || !(loggedWorker && !loggedHere);
+    $("odOn").hidden=need || !(loggedHere && loggedWorker);
+    if(!$("odOn").hidden){
+      $("odAcct").textContent=OD.email||OD.name||"已登录";
+      $("odLast").textContent=ago(OD.lastAt||odLS().lastAt);
+      $("odPend").textContent=String(OD.pending||0);
+      $("odState").textContent=odStateText();
+      $("odState").className="od-state"+(OD.state==="error"||OD.needLogin?" bad":"");
+      $("odSyncNow").disabled=OD.running;
+      setSwitch("odAutoAudio",!!settings.odAutoAudio);
+    }
+    $("odEnableAcct").textContent=OD.email||OD.name||"";
+    const bad=need ? "" : (!loggedWorker ? (OD.unconfigured||OD.netErr||OD.err ? OD.err : "") : "");
+    $("odErr").hidden=!bad; $("odErr").textContent=bad;
+  }
+  async function odOpenSettings(){ await odRefreshStatus(); await odCountPending(); odUi(); }
+  $("odLogin").onclick=odLogin;
+  $("odEnable").onclick=()=>{ odEnable(); odUi(); odSync({manual:true,report:true}); };
+  $("odSyncNow").onclick=()=>{ OD.needLogin=false; odSync({manual:true}); };
+  $("odAutoAudio").onclick=()=>{ settings.odAutoAudio=!settings.odAutoAudio; saveSettings(); odUi(); if(settings.odAutoAudio) odKick(500); };
+  $("odClear").onclick=async()=>{
+    if(!confirm("清理本机录音缓存？只会删除已经在 OneDrive 上有完整副本的本机录音，需要时可以再从 OneDrive 下载。")) return;
+    try{ const r=await odClearLocalAudio(); toast(r.n?"已清理 "+r.n+" 条记录的本机录音（"+mb(r.bytes)+"）":"没有可清理的录音（只有已同步到 OneDrive 的才会清理）"); refreshStoreInfo(); }catch(e){ dbFail(e); }
+  };
+  $("odLogout").onclick=()=>openChoice("退出 OneDrive",[
+    {v:"local",t:"仅在这台设备停止同步",sub:"其他设备不受影响，OneDrive 里的文件保留"},
+    {v:"keep",t:"退出登录，保留本机数据",sub:"所有设备都将停止同步，需要重新登录"},
+    {v:"clear",t:"退出登录，并清除本机已同步的数据",sub:"只清除已同步到 OneDrive 的记录和录音；还没上传的会保留"}],null,async v=>{
+      if(v==="local"){ odDisable(true); toast("已在这台设备停止同步"); odUi(); return; }
+      try{ await odRelayJson("/onedrive/logout",{method:"POST"}); }catch(e){ toast("连不上中转，退出失败"); return; }
+      if(v==="clear"){
+        const rows=await dbAll("sessions"); let n=0;
+        for(const r of rows){ if(r.syncState==="synced" && !(S&&S.id===r.id)){ await dbDelSession(r.id); n++; } }
+        toast("已退出登录，清除了本机 "+n+" 条已同步的记录");
+      }else toast("已退出登录，本机数据保留");
+      OD.logged=false; OD.name=OD.email=""; odDisable(true); odUi(); try{ loadRecData().catch(()=>{}); }catch(e){}
+    });
+  // 记录列表里每条记录的同步状态小图标：已同步 / 待上传 / 冲突；录音不在本机时显示云朵
+  const SYNC_ICONS={
+    synced:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4.5 4.5 0 0 1-.5-9A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 9.5z"/><path d="M9.5 13l2 2 3.5-4"/></svg>',
+    pending:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4.5 4.5 0 0 1-.5-9A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 9.5z"/><path d="M12 15V10M9.5 12l2.5-2.5 2.5 2.5"/></svg>',
+    conflict:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17h.01"/></svg>',
+    cloud:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4.5 4.5 0 0 1-.5-9A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 9.5z"/></svg>'};
+  function odIcons(r){
+    if(!OD.enabled) return null;
+    const a=document.createElement("span"); a.className="sync-ic";
+    const st=r.conflict ? "conflict" : (r.syncState==="synced" ? "synced" : "pending");
+    const lab={synced:"已同步",pending:"待上传",conflict:"冲突副本"}[st];
+    let h='<span class="si si-'+st+'" title="'+lab+'" aria-label="'+lab+'">'+SYNC_ICONS[st]+'</span>';
+    if((r.audioFiles||[]).length && !rd.localAudio.has(r.id) && !r.deletedAt) h+='<span class="si si-cloud" title="录音在 OneDrive，点击播放时下载" aria-label="录音在 OneDrive">'+SYNC_ICONS.cloud+'</span>';
+    a.innerHTML=h; return a;
+  }
+  function odDrawRowIcons(){ try{ if(isRecords() && !$("recHome").hidden && !sel.on) recRefresh(); }catch(e){} }   // 同步结束后刷新列表里的状态图标
+
   // ---------- Settings ----------
   // ⓘ 说明：点一下展开/收起对应的小字
   document.addEventListener("click",e=>{
@@ -3577,6 +4172,24 @@ registerProcessor("pcm16",PCM16);`;
   checkUnfinished();
   applySettings();
   applyUi();
+  // ---- OneDrive：旧数据迁移（补 updatedAt / syncState）、启动、回前台和定时拉取 ----
+  (async()=>{
+    try{
+      // 旧数据自动迁移：没有 updatedAt 的会话和文件夹补上（取创建/结束/摘要/删除时间中最大的），并标为待上传，首次登录时会和云端按 id 合并
+      const rows=(await dbAll("sessions")).filter(r=>r.updatedAt==null), fs=(await dbAll("folders")).filter(f=>f.updatedAt==null);
+      if(rows.length||fs.length) await dbTx(["sessions","folders"],"readwrite",t=>{
+        rows.forEach(r=>t.objectStore("sessions").put(Object.assign(r,{updatedAt:Math.max(r.created||0,r.ended||0,r.summaryAt||0,r.deletedAt||0), syncState:"pending"})));
+        fs.forEach(f=>t.objectStore("folders").put(Object.assign(f,{updatedAt:f.created||0})));
+      },{remote:true});
+    }catch(e){}
+    const ret=odReturnFromLogin();
+    OD.enabled=!!odLS().enabled && odReady();
+    if(ret){ odAfterLogin(ret); return; }
+    if(OD.enabled){ OD.logged=true; await odCountPending(); odSyncSoon(1500); }
+  })();
+  document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") odSyncSoon(800); });
+  window.addEventListener("online",()=>odSyncSoon(500));
+  setInterval(()=>{ if(document.visibilityState==="visible") odSyncSoon(0); },OD_PULL_MS);
   dbAll("sessions").then(r=>{ noRecords=r.length===0; applyUi(); }).catch(()=>{});
 })();
 </script>

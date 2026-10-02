@@ -3,10 +3,18 @@
 //   POST /summary          流式长文本摘要，格式同上，但允许更长的输入和输出
 //   GET  /deepgram-token   签发 Deepgram 短期令牌（手机端不需要保存 Deepgram 长期密钥）
 //   GET  /soniox-token     签发 Soniox 实时转录的临时 API 密钥（真正的密钥只放在这里的 SONIOX_API_KEY）
-// 所有请求都要带  Authorization: Bearer <ACCESS_TOKEN>
+//   OneDrive 同步（Worker 代管微软登录；刷新令牌只存在 KV 里，绝不下发到浏览器）：
+//   POST /onedrive/login-ticket  用 ACCESS_TOKEN 换一个一次性登录码（不要把 ACCESS_TOKEN 放进网址）
+//   GET  /onedrive/login?ticket= 凭一次性登录码跳转到微软登录页（不需要 Authorization）
+//   GET  /onedrive/callback      微软登录完成后的回调（校验 state，换令牌，存 KV，再跳回页面）
+//   GET  /onedrive/token         用刷新令牌换短期访问令牌，页面直接拿它调用 Microsoft Graph
+//   GET  /onedrive/status        是否已登录、账号名称 / 邮箱
+//   POST /onedrive/logout        删除 KV 里的令牌
+// 除 /onedrive/login 和 /onedrive/callback（浏览器跳转，靠一次性登录码和 state 保护）外，所有请求都要带  Authorization: Bearer <ACCESS_TOKEN>
 //
 // 需要的 Secret / 变量（见 README）：
 //   ACCESS_TOKEN（必填）  ANTHROPIC_API_KEY / DEEPSEEK_API_KEY / OPENAI_API_KEY / DEEPGRAM_API_KEY / SONIOX_API_KEY（用到哪个填哪个）
+//   OneDrive 同步用：MS_CLIENT_ID、MS_CLIENT_SECRET（Secret），以及 KV 绑定 ONEDRIVE_KV（在 wrangler.toml 里声明）
 //   ALLOWED_ORIGIN（可选，例如 https://ruqinga.github.io，不填则允许任何来源）
 
 const PROVIDERS = {
@@ -153,10 +161,124 @@ async function sonioxToken(env, h) {
   return json({ token: j.api_key, expires_in_seconds: 60 }, 200, { ...h, "cache-control": "no-store" });
 }
 
+// ---------------- OneDrive（Microsoft 身份平台 v2.0 授权码流程 + Microsoft Graph）----------------
+// 授权端点用 common：同时支持个人账户和组织账户。权限范围：Files.ReadWrite.AppFolder（只能访问应用专属文件夹）、
+// offline_access（拿刷新令牌）、User.Read（读账号名称）。这是单用户应用：一个 Worker 只绑定一个 OneDrive 账号，
+// 刷新令牌放在 KV 的固定键里。页面只拿到短期访问令牌，并直接调用 Graph 读写文件（文件内容不经过 Worker）。
+const MS_AUTH = "https://login.microsoftonline.com/common/oauth2/v2.0";
+const MS_SCOPE = "Files.ReadWrite.AppFolder offline_access User.Read";
+const KV_REFRESH = "refresh", KV_ACCOUNT = "account";
+
+function odConfigError(env) {
+  if (!env.MS_CLIENT_ID || !env.MS_CLIENT_SECRET) return "Worker 里没有配置 MS_CLIENT_ID / MS_CLIENT_SECRET（见 README 的 OneDrive 部分）";
+  if (!env.ONEDRIVE_KV) return "Worker 没有绑定 KV 命名空间 ONEDRIVE_KV（见 README：在 wrangler.toml 里声明并重新部署）";
+  return "";
+}
+function rand(n) {
+  const a = new Uint8Array(n); crypto.getRandomValues(a);
+  return Array.from(a, (x) => x.toString(16).padStart(2, "0")).join("");
+}
+const redirectUri = (req) => new URL(req.url).origin + "/onedrive/callback";
+function htmlPage(msg, status) {
+  const body = "<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><title>OneDrive</title>"
+    + "<body style='font:16px/1.6 -apple-system,sans-serif;padding:32px;max-width:520px;margin:auto'><h2>OneDrive 登录</h2><p>" + msg.replace(/[<>&]/g, "") + "</p>";
+  return new Response(body, { status, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
+}
+// 返回页面的地址只能是登录码里记下的那个（取自请求登录码时浏览器带的 Origin），不接受任何 URL 参数里的地址，避免被利用做开放重定向
+function backTo(ret, ok, msg) {
+  const u = new URL(ret); u.searchParams.set("od", ok ? "ok" : "error"); if (msg) u.searchParams.set("msg", msg.slice(0, 120));
+  return new Response(null, { status: 302, headers: { Location: u.toString(), "cache-control": "no-store" } });
+}
+async function msToken(env, form) {
+  const body = new URLSearchParams({ client_id: env.MS_CLIENT_ID, client_secret: env.MS_CLIENT_SECRET, scope: MS_SCOPE, ...form });
+  const res = await fetch(MS_AUTH + "/token", { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body });
+  let j = {}; try { j = await res.json(); } catch (_) {}
+  return { ok: res.ok, status: res.status, j };
+}
+
+async function odLoginTicket(req, env, h) {
+  const bad = odConfigError(env); if (bad) return json({ error: bad, configured: false }, 501, h);
+  let b = {}; try { b = await req.json(); } catch (_) {}
+  const origin = req.headers.get("Origin") || "";
+  let ret;
+  try { ret = new URL(String(b.return || "")); } catch (_) { return json({ error: "缺少返回地址" }, 400, h); }
+  const okProto = ret.protocol === "https:" || (ret.protocol === "http:" && /^(localhost|127\.0\.0\.1)$/.test(ret.hostname));
+  if (!okProto || (origin && ret.origin !== origin) || (env.ALLOWED_ORIGIN && ret.origin !== env.ALLOWED_ORIGIN)) return json({ error: "返回地址不被允许" }, 400, h);
+  ret.search = ""; ret.hash = "";
+  const ticket = rand(24);
+  await env.ONEDRIVE_KV.put("tk:" + ticket, JSON.stringify({ ret: ret.toString() }), { expirationTtl: 120 });
+  return json({ ticket }, 200, { ...h, "cache-control": "no-store" });
+}
+async function odLogin(req, env) {
+  const bad = odConfigError(env); if (bad) return htmlPage(bad, 501);
+  const ticket = new URL(req.url).searchParams.get("ticket") || "";
+  const raw = ticket ? await env.ONEDRIVE_KV.get("tk:" + ticket) : null;
+  if (!raw) return htmlPage("登录码无效或已过期，请回到「同声字幕」重新点「登录 OneDrive」。", 400);
+  await env.ONEDRIVE_KV.delete("tk:" + ticket);                    // 一次性
+  const state = rand(24);
+  await env.ONEDRIVE_KV.put("st:" + state, raw, { expirationTtl: 600 });
+  const u = new URL(MS_AUTH + "/authorize");
+  u.search = new URLSearchParams({ client_id: env.MS_CLIENT_ID, response_type: "code", redirect_uri: redirectUri(req), response_mode: "query", scope: MS_SCOPE, state, prompt: "select_account" }).toString();
+  return new Response(null, { status: 302, headers: { Location: u.toString(), "cache-control": "no-store" } });
+}
+async function odCallback(req, env) {
+  const bad = odConfigError(env); if (bad) return htmlPage(bad, 501);
+  const q = new URL(req.url).searchParams, state = q.get("state") || "";
+  const raw = state ? await env.ONEDRIVE_KV.get("st:" + state) : null;
+  if (!raw) return htmlPage("登录状态无效或已过期（可能是登录时间太长），请回到「同声字幕」重新登录。", 400);
+  await env.ONEDRIVE_KV.delete("st:" + state);                     // 一次性，防重放
+  const { ret } = JSON.parse(raw);
+  if (q.get("error")) return backTo(ret, false, q.get("error_description") || q.get("error"));
+  const code = q.get("code"); if (!code) return backTo(ret, false, "微软没有返回授权码");
+  let t;
+  try { t = await msToken(env, { grant_type: "authorization_code", code, redirect_uri: redirectUri(req) }); }
+  catch (e) { return backTo(ret, false, "连接微软失败"); }
+  if (!t.ok || !t.j.refresh_token) return backTo(ret, false, (t.j && (t.j.error_description || t.j.error)) || "换取令牌失败");
+  let name = "", email = "";
+  try {
+    const me = await (await fetch("https://graph.microsoft.com/v1.0/me?$select=displayName,mail,userPrincipalName", { headers: { Authorization: "Bearer " + t.j.access_token } })).json();
+    name = me.displayName || ""; email = me.mail || me.userPrincipalName || "";
+  } catch (_) {}
+  await env.ONEDRIVE_KV.put(KV_REFRESH, t.j.refresh_token);        // 刷新令牌只存在 KV，不下发给浏览器
+  await env.ONEDRIVE_KV.put(KV_ACCOUNT, JSON.stringify({ name, email, at: Date.now() }));
+  return backTo(ret, true, "");
+}
+async function odToken(env, h) {
+  const bad = odConfigError(env); if (bad) return json({ error: bad, configured: false }, 501, h);
+  const refresh = await env.ONEDRIVE_KV.get(KV_REFRESH);
+  if (!refresh) return json({ error: "还没有登录 OneDrive", reauth: true, code: "not_logged_in" }, 401, h);
+  let t;
+  try { t = await msToken(env, { grant_type: "refresh_token", refresh_token: refresh }); }
+  catch (e) { return json({ error: "连接微软失败，稍后重试" }, 502, h); }
+  if (!t.ok) {
+    const code = t.j && t.j.error;
+    if (code === "invalid_grant" || code === "interaction_required") return json({ error: "OneDrive 登录已失效，请重新登录", reauth: true, code: "invalid_grant" }, 401, h);
+    if (code === "invalid_client") return json({ error: "微软拒绝了应用凭据（MS_CLIENT_SECRET 错误或已到期，需要在 Azure 里重新生成）", upstream: t.status }, 502, h);
+    return json({ error: (t.j && t.j.error_description) || "微软返回 " + t.status, upstream: t.status }, t.status >= 500 ? 502 : 400, h);
+  }
+  if (t.j.refresh_token && t.j.refresh_token !== refresh) await env.ONEDRIVE_KV.put(KV_REFRESH, t.j.refresh_token);   // 微软换发了新的刷新令牌：更新
+  return json({ access_token: t.j.access_token, expires_in: t.j.expires_in || 3600 }, 200, { ...h, "cache-control": "no-store" });
+}
+async function odStatus(env, h) {
+  const bad = odConfigError(env); if (bad) return json({ error: bad, configured: false }, 501, h);
+  const has = !!(await env.ONEDRIVE_KV.get(KV_REFRESH));
+  let acc = {}; try { acc = JSON.parse((await env.ONEDRIVE_KV.get(KV_ACCOUNT)) || "{}"); } catch (_) {}
+  return json({ configured: true, loggedIn: has, name: has ? acc.name || "" : "", email: has ? acc.email || "" : "" }, 200, { ...h, "cache-control": "no-store" });
+}
+async function odLogout(env, h) {
+  const bad = odConfigError(env); if (bad) return json({ error: bad, configured: false }, 501, h);
+  await env.ONEDRIVE_KV.delete(KV_REFRESH); await env.ONEDRIVE_KV.delete(KV_ACCOUNT);
+  return json({ ok: true }, 200, h);
+}
+
 export default {
   async fetch(req, env) {
     const h = cors(env, req);
     if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: h });
+    const path0 = new URL(req.url).pathname.replace(/\/+$/, "");
+    // 浏览器跳转的两个地址不能带 Authorization：登录靠一次性登录码，回调靠一次性 state
+    if (path0 === "/onedrive/login" && req.method === "GET") return odLogin(req, env);
+    if (path0 === "/onedrive/callback" && req.method === "GET") return odCallback(req, env);
     const auth = req.headers.get("Authorization") || "";
     if (!env.ACCESS_TOKEN || !auth.startsWith("Bearer ") || !safeEqual(auth.slice(7), env.ACCESS_TOKEN)) {
       return json({ error: "访问口令无效" }, 401, h);
@@ -166,6 +288,10 @@ export default {
     if (path === "/summary" && req.method === "POST") return translate(req, env, h, LIMITS.summary);
     if (path === "/deepgram-token" && req.method === "GET") return deepgramToken(env, h);
     if (path === "/soniox-token" && req.method === "GET") return sonioxToken(env, h);
+    if (path === "/onedrive/login-ticket" && req.method === "POST") return odLoginTicket(req, env, h);
+    if (path === "/onedrive/token" && req.method === "GET") return odToken(env, h);
+    if (path === "/onedrive/status" && req.method === "GET") return odStatus(env, h);
+    if (path === "/onedrive/logout" && req.method === "POST") return odLogout(env, h);
     return json({ error: "未找到" }, 404, h);
   },
 };
