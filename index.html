@@ -59,16 +59,6 @@ button:active:not(:disabled){transform:scale(.97)}
 .li:active,.card:active{transform:none}
 
 /* ===== 实时页顶部 ===== */
-.live-head{display:flex;align-items:center;gap:var(--s1);padding:12px var(--s2) 8px}
-.lh-main{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:4px}
-.sess-title{border:0;background:none;padding:0;min-height:28px;font-size:20px;font-weight:650;letter-spacing:-.01em;color:var(--ink);text-align:left;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
-.lh-sub{display:flex;align-items:center;gap:var(--s1);flex-wrap:wrap}
-.status{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--muted);background:var(--fill);border-radius:999px;padding:4px 12px 4px 10px;min-height:28px}
-.dot{width:8px;height:8px;border-radius:50%;background:var(--faint)}
-.status.on{color:var(--rec-ink);background:color-mix(in srgb,var(--rec) 12%,var(--panel))}
-.status.on .dot{background:var(--rec);animation:breathe 1.6s ease-in-out infinite}
-@keyframes breathe{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.8)}}
-#folderChip{border:0;background:var(--fill);color:var(--muted);font-size:13px;cursor:pointer;padding:0 12px;border-radius:999px;min-height:28px;max-width:60vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .icon-btn{border:0;background:transparent;color:var(--ink2);width:44px;height:44px;border-radius:12px;display:grid;place-items:center;cursor:pointer}
 .icon-btn:hover{background:var(--fill)}
 .icon-btn:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -80,61 +70,22 @@ button:active:not(:disabled){transform:scale(.97)}
 /* ===== 字幕区 ===== */
 #feed{flex:1;overflow-y:auto;padding:4px var(--s2) var(--s3);overscroll-behavior:contain}
 /* 末尾留出空白：当前句缩回时内容变矮，滚动位置不会被浏览器强行上拉，正在看的内容不跳动 */
-#feed::after{content:"";display:block;height:35vh}
-.empty{color:var(--muted);text-align:center;margin-top:12vh;line-height:1.7;font-size:15px;padding:0 var(--s3)}
-.empty strong{color:var(--ink);font-weight:650;display:block;font-size:18px;margin-bottom:4px}
-.empty .ei{width:72px;height:72px;margin:0 auto var(--s2);border-radius:24px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center}
 .entry{padding:14px 0;border-bottom:1px solid var(--line)}
 .entry:last-child{border-bottom:0}
 .en{font-family:var(--font-en);font-size:var(--fs);line-height:1.5;color:var(--muted);transition:font-size .3s ease}
 .zh{font-size:var(--fs);line-height:1.6;margin-top:4px;min-height:1.6em;word-break:break-word;transition:font-size .3s ease,opacity .3s ease}
 /* 只有当前句放大约 1.3 倍：正在识别的预览行、正在翻译的那一句 */
-.entry.cur .en,.entry.cur .zh,.live .en,.live .zh{font-size:calc(var(--fs)*1.3)}
-.live{animation:fadeIn .25s var(--ease)}
-.live .zh{color:var(--muted)}
 .zh.pending{color:var(--muted)}
 .zh.error{color:var(--rec-ink);font-size:15px}
 .retry{margin-left:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:4px 12px;min-height:32px;font-size:14px;cursor:pointer}
-.live .en{color:var(--ink);font-style:italic;opacity:.75}
 /* 只看中文：当前句仍显示英文，翻译完成后英文平滑收起 */
 body.zh-only .entry .en{max-height:0;opacity:0;overflow:hidden;transition:max-height .3s ease,opacity .3s ease,font-size .3s ease}
-body.zh-only .entry.cur .en{max-height:12em;opacity:1}
-body.zh-only .entry.live .en{max-height:none;opacity:.75}
 
 /* ===== 底部控制区 ===== */
-footer{padding:8px var(--s2) 8px;background:var(--bg);border-top:1px solid var(--line)}
-.wave{height:0;overflow:hidden;display:flex;align-items:center;justify-content:center;gap:4px;margin-bottom:0;transition:height .2s var(--ease),margin .2s var(--ease)}
-.wave.on{height:32px;margin-bottom:4px}
-.wave i{display:block;width:4px;height:4px;border-radius:2px;background:var(--faint);opacity:.5;transition:height .08s linear,background-color .2s,opacity .2s}
-.wave.on i{background:var(--rec);opacity:1}
-.controls{display:grid;grid-template-columns:1fr auto 1fr;align-items:center}
-.side{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:64px;min-height:56px;font-size:12px;color:var(--muted);border:0;background:none;cursor:pointer;justify-self:center;padding:6px;border-radius:14px}
-.side svg{color:var(--ink2)}
-#mic{width:72px;height:72px;border-radius:50%;border:0;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;cursor:pointer;position:relative;box-shadow:0 6px 18px color-mix(in srgb,var(--accent) 38%,transparent);transition:transform .15s var(--ease),background-color .2s}
-#mic:active{transform:scale(.93)}
-#mic.on{background:var(--rec);box-shadow:0 6px 18px color-mix(in srgb,var(--rec) 38%,transparent)}
-#mic.on::after{content:"";position:absolute;inset:-7px;border-radius:50%;border:2px solid var(--rec);opacity:.5;animation:ring 1.6s ease-out infinite}
-@keyframes ring{from{transform:scale(.9);opacity:.6}to{transform:scale(1.18);opacity:0}}
-#mic:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
-.hint{text-align:center;font-size:13px;color:var(--muted);margin-top:6px;line-height:1.4}
-.hint:empty{display:none}
 
-.typebar{display:none;gap:8px;margin-bottom:8px}
-.typebar.show{display:flex}
-.typebar textarea{flex:1;resize:none;height:44px;border:1.5px solid var(--line);border-radius:var(--r-sm);background:var(--panel);color:var(--ink);padding:12px;font:15px/1.4 var(--font-en)}
-.typebar button{border:0;border-radius:var(--r-sm);background:var(--accent);color:var(--accent-ink);padding:0 20px;min-height:44px;font-size:15px;font-weight:600;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
 /* 打字输入打开时：底部控制区压缩，把高度留给字幕 */
-footer.typing{padding-top:6px;padding-bottom:4px}
-footer.typing #mic{width:52px;height:52px;box-shadow:none}
-footer.typing #mic svg{width:24px;height:24px}
-footer.typing .side{min-height:44px;min-width:44px;padding:0}
-footer.typing .side .lbl{display:none}
-footer.typing .hint{display:none}
-footer.typing #mic.on::after{inset:-4px}
-footer.typing .wave.on{height:18px;margin-bottom:2px}
 /* 输入框焦点：1.5px 主色边框 + 柔和外发光，不叠加浏览器默认的粗轮廓 */
 input:not([type=range]),textarea{outline:none}
-input:not([type=range]):focus,textarea:focus{outline:none;border-color:var(--accent)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 20%,transparent)}
 .linkbtn{border:0;background:none;color:var(--accent);font-size:15px;font-weight:600;padding:0 6px;min-height:44px;cursor:pointer;position:relative}
 .linkbtn.inline{display:inline;min-height:0;padding:0 2px;font-size:inherit;vertical-align:baseline}
 .linkbtn.inline::after{content:"";position:absolute;left:-6px;right:-6px;top:50%;height:44px;transform:translateY(-50%)}
@@ -142,15 +93,9 @@ input:not([type=range]):focus,textarea:focus{outline:none;border-color:var(--acc
 .entry .en,.entry .zh{padding-right:30px}
 .emore{position:absolute;top:6px;right:-10px;width:44px;height:44px;border:0;background:none;color:var(--muted);opacity:.45;display:grid;place-items:center;cursor:pointer;border-radius:50%}
 .emore:hover,.emore:focus-visible{opacity:.9}
-.entry.live .emore{display:none}
 .tline[hidden]{display:none}
 
 /* ===== 底部标签栏 ===== */
-.tabbar{display:flex;border-top:1px solid var(--line);background:color-mix(in srgb,var(--panel) 92%,transparent);-webkit-backdrop-filter:saturate(1.6) blur(14px);backdrop-filter:saturate(1.6) blur(14px);padding:0 var(--s1) env(safe-area-inset-bottom,0px)}
-.tabbar button{flex:1;min-height:var(--tabh);border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11px;font-weight:500;color:var(--muted);cursor:pointer;border-radius:12px}
-.tabbar button svg{width:24px;height:24px;stroke-width:1.8}
-.tabbar button[aria-pressed="true"]{color:var(--accent)}
-.tabbar button[aria-pressed="true"] svg{stroke-width:2.2}
 
 /* ===== 底部弹出面板 ===== */
 dialog{border:0;border-radius:20px 20px 0 0;padding:0;width:100%;max-width:720px;margin:auto auto 0;background:var(--panel);color:var(--ink);max-height:88vh;box-shadow:0 -8px 40px rgba(0,0,0,.18)}
@@ -173,7 +118,6 @@ input[type=range]{width:100%;accent-color:var(--accent);min-height:44px}
 .keyok{color:var(--ok)}
 
 /* ===== 设置页 ===== */
-.page{display:none;flex:1;overflow-y:auto;overscroll-behavior:contain;padding:0 var(--s2) var(--s3)}
 .page-title{font-size:28px;font-weight:700;letter-spacing:-.02em;margin:var(--s2) 4px var(--s1)}
 .gt{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:var(--s3) 16px 8px}
 .group{background:var(--panel);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
@@ -251,7 +195,6 @@ details.adv>.adv-body>*{border-top:1px solid var(--line)}
 .skel-card .skel{height:14px;margin-bottom:10px}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
-  .status.on .dot,#mic.on::after{animation:none}
 }
 .tg{display:inline-block;padding:1px 9px;border-radius:999px;font-size:12px;line-height:1.7;color:#fff;background:#888;white-space:nowrap}
 .tg.rm{cursor:pointer}
@@ -267,10 +210,6 @@ details.adv>.adv-body>*{border-top:1px solid var(--line)}
 .tm-row .cnt{flex:1;font-size:13px;color:var(--muted)}
 .tm-row button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:4px 10px;font-size:13px;cursor:pointer}
 .pair{display:flex;gap:4px;justify-self:center}
-#records{display:none;flex:1;overflow-y:auto;padding:10px 16px 28px;overscroll-behavior:contain}
-body.v-records #records{display:block}
-body.v-records #feed,body.v-records footer,body.v-records .live-head,body.v-settings #feed,body.v-settings footer,body.v-settings .live-head,body.v-settings #records,body.v-settings #selBar{display:none}
-body.v-settings #settingsView{display:block}
 .rh-tools{display:flex;gap:8px;margin-bottom:8px}
 .rh-tools input,.rh-tools select{border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);padding:9px 12px;font-size:15px;font-family:inherit;min-width:0}
 .rh-tools input{flex:1}
@@ -329,7 +268,6 @@ body.zh-only .dseg .e{display:none}
 .fchip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .fchip.plus{padding:6px 12px;font-weight:600}
 .fline{display:flex;justify-content:flex-end;margin-bottom:6px}
-#folderChip{border:0;background:none;color:var(--muted);font-size:13px;cursor:pointer;padding:2px 4px}
 .det-sub{font-size:13px;color:var(--muted);margin:-4px 0 8px}
 .swipe{position:relative;overflow:hidden;border-radius:12px;margin-bottom:10px}
 .swipe .card{margin-bottom:0;position:relative;transition:transform .2s ease;touch-action:pan-y;user-select:none;-webkit-user-select:none}
@@ -341,7 +279,6 @@ body.selecting .card .chk{display:block}
 .card.sel{outline:2px solid var(--accent)}
 .card.sel .chk{background:var(--accent);border-color:var(--accent);box-shadow:inset 0 0 0 3px var(--panel)}
 #selBar{display:none;align-items:center;gap:10px;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);background:var(--panel)}
-body.v-records.selecting #selBar{display:flex}
 #selBar button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:8px 12px;font-size:14px;cursor:pointer}
 #selBar button.danger{color:var(--rec)}
 #selBar button:disabled{opacity:.4}
@@ -436,37 +373,206 @@ body.v-records.selecting #selBar{display:flex}
 .sp{margin-bottom:4px}
 .zh.refresh{animation:refineFade .6s ease}
 .hit{color:var(--muted)}
+
+/* ===== 首页 / 页面栈 / 工具栏（无底部标签栏）===== */
+:root{ --home-bg:#FFFFFF; --sp1:#4C8DF6; --sp2:#2FAE78; --sp3:#9A6BE0; --sp4:#EF9440; --sp5:#E4608A; --sp6:#25AEC4; }
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){ --home-bg:#16181C; } }
+:root[data-theme="dark"]{ --home-bg:#16181C; }
+.mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-variant-numeric:tabular-nums}
+input:not([type=range]):focus,textarea:focus{outline:none;border-color:var(--accent)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 20%,transparent)}
+.hint{text-align:center;font-size:13px;color:var(--muted);padding:2px var(--s2);line-height:1.4}
+.hint:empty{display:none}
+.stage{flex:1;min-height:0;position:relative;overflow:hidden}
+#home{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--home-bg)}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:var(--s1);padding:8px var(--s2);min-height:56px;flex:none}
+.tb-right{display:flex;align-items:center;gap:var(--s1)}
+#folderChip{border:0;background:var(--fill);color:var(--ink2);font-size:14px;font-weight:500;cursor:pointer;padding:0 14px;border-radius:999px;min-height:36px;max-width:50vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;position:relative}
+#folderChip::after{content:"";position:absolute;left:0;right:0;top:50%;height:44px;transform:translateY(-50%)}
+.livebadge{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--ink2)}
+.livebadge i{width:9px;height:9px;border-radius:50%;background:var(--ok)}
+.livebadge.paused{color:var(--muted)} .livebadge.paused i{background:var(--faint)}
+.endbtn{border:0;border-radius:999px;background:var(--rec);color:#fff;font-size:14px;font-weight:600;min-height:36px;padding:0 16px;cursor:pointer;position:relative}
+.endbtn::after{content:"";position:absolute;left:0;right:0;top:50%;height:44px;transform:translateY(-50%)}
+.banner{margin:0 var(--s2) var(--s1)}
+/* 未录音：中央大按钮 */
+.idle{position:absolute;left:0;right:0;top:56px;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s1);padding:0 var(--s3) 8vh;transition:transform .38s var(--ease),opacity .3s ease,visibility 0s}
+#mic{width:120px;height:120px;border-radius:50%;border:0;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;cursor:pointer;position:relative;box-shadow:0 10px 30px color-mix(in srgb,var(--accent) 35%,transparent)}
+#mic::before,#mic::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:2px solid color-mix(in srgb,var(--accent) 50%,transparent);animation:glow 3.2s ease-out infinite}
+#mic::after{animation-delay:1.6s}
+@keyframes glow{0%{transform:scale(.94);opacity:.7}100%{transform:scale(1.32);opacity:0}}
+#mic:active{transform:scale(.95)}
+#mic:disabled{opacity:.4;box-shadow:none}
+#mic:disabled::before,#mic:disabled::after{display:none}
+.idle-t{font-size:16px;font-weight:600;color:var(--ink);margin-top:var(--s2)}
+.idle-sum{border:0;background:none;color:var(--muted);font-size:14px;cursor:pointer;min-height:44px;padding:0 12px;border-radius:12px;text-align:center}
+.idle-hint{font-size:13px;color:var(--muted);min-height:0}
+.idle-hint:empty{display:none}
+.sum-chip{border:0;background:var(--accent-soft);color:var(--accent);font-size:13px;font-weight:600;border-radius:999px;min-height:36px;padding:0 14px;cursor:pointer;position:relative}
+.sum-chip::after{content:"";position:absolute;left:0;right:0;top:50%;height:44px;transform:translateY(-50%)}
+/* 录音中：字幕区 + 工具栏 */
+.livepane{flex:1;min-height:0;display:flex;flex-direction:column;position:relative;opacity:0;visibility:hidden;transition:opacity .3s ease .12s,visibility 0s .4s}
+.toolbar{flex:none;display:flex;align-items:center;justify-content:space-between;gap:var(--s1);padding:10px var(--s2) calc(10px + env(safe-area-inset-bottom,0px));background:var(--panel);border-radius:20px 20px 0 0;box-shadow:0 -4px 24px rgba(16,24,40,.09);border-top:1px solid var(--line);position:relative;z-index:20;transform:translateY(110%);visibility:hidden;transition:transform .4s var(--ease),visibility 0s .4s}
+#home:not([data-st=idle]) .toolbar{transform:none;visibility:visible;transition:transform .4s var(--ease) .08s,visibility 0s}
+#home:not([data-st=idle]) .livepane{opacity:1;visibility:visible;transition:opacity .3s ease .15s,visibility 0s}
+#home:not([data-st=idle]) .idle{transform:translateY(34vh) scale(.28);opacity:0;visibility:hidden;pointer-events:none;transition:transform .38s var(--ease),opacity .3s ease,visibility 0s .4s}
+#home[data-st=idle] .idle{transform:none;opacity:1;visibility:visible}
+.tl-left{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600;color:var(--ink);min-width:0;white-space:nowrap;font-variant-numeric:tabular-nums}
+.recdot{width:10px;height:10px;border-radius:50%;background:var(--rec);flex:none;animation:blink 1.2s ease-in-out infinite}
+#home[data-st=paused] .toolbar .recdot,.recbar.paused .recdot{background:var(--faint);animation:none}
+@keyframes blink{50%{opacity:.3}}
+.tl-right{display:flex;align-items:center;gap:2px}
+.tbtn{width:44px;height:44px;border:0;border-radius:50%;background:none;color:var(--ink2);display:grid;place-items:center;cursor:pointer}
+.tbtn:hover{background:var(--fill)}
+.tbtn.big{width:52px;height:52px;background:var(--accent);color:var(--accent-ink);margin-left:6px}
+.tbtn.big:hover{background:var(--accent)}
+/* 字幕卡片 */
+#feed{flex:1;min-height:0;overflow-y:auto;padding:4px var(--s2) var(--s1);overscroll-behavior:contain}
+.entry{padding:12px 14px;margin:0 0 10px;border:1px solid var(--line);border-radius:16px;background:var(--panel);box-shadow:none}
+.entry:last-child{border-bottom:1px solid var(--line)}
+.entry.land{animation:land .38s var(--ease)}
+@keyframes land{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.ehead{display:flex;align-items:center;gap:8px;min-height:24px;margin-bottom:4px}
+.ehead .grow{flex:1}
+.ehead .emore{position:relative;top:auto;right:-12px;margin:-10px 0 -10px}
+.sp{margin:0;font-size:13px;font-weight:600;color:color-mix(in srgb,var(--c,#888) 68%,var(--ink))}
+.sp i{width:9px;height:9px}
+.lang{display:inline-block;font-size:11px;font-weight:600;line-height:1;padding:3px 7px;border-radius:999px;background:var(--fill);color:var(--muted);letter-spacing:.02em}
+.entry .en,.entry .zh{padding-right:0}
+.entry .en{color:var(--muted)}
+.entry.notr .en{color:var(--ink)}
+.esep{height:1px;background:var(--line);margin:8px 0}
+.entry .zh{margin-top:0;color:var(--ink);min-height:0}
+body.zh-only .entry.tr-done .en,body.zh-only .entry.tr-done .esep{display:none}
+body.zh-only .entry .en{max-height:none;opacity:1;overflow:visible}
+/* 「正在说」卡片 */
+.speak{flex:none;margin:0 var(--s2) 10px;border:1px solid var(--line);border-radius:16px;background:var(--panel);overflow:hidden}
+.speak-body{padding:12px 14px;min-height:76px;max-height:34vh;overflow-y:auto}
+.sp-en,.sp-zh{font-size:calc(var(--fs)*1.2);line-height:1.45;word-break:break-word}
+.sp-en{color:var(--ink)}
+.sp-en:empty::before{content:"正在聆听…";color:var(--faint)}
+.sp-en:not(:empty)::after{content:"";display:inline-block;width:2px;height:1.05em;background:var(--accent);margin-left:3px;vertical-align:text-bottom;animation:blink 1s step-end infinite}
+.sp-zh{font-weight:700;margin-top:6px}
+#home[data-st=paused] .sp-en:empty::before{content:"已暂停"}
+.speak-bar{display:flex;align-items:center;justify-content:space-between;gap:var(--s1);padding:6px 14px;border-top:1px solid var(--line);background:var(--fill);font-size:11px;color:var(--muted);min-height:30px}
+.live-tag{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:11px;letter-spacing:.06em;font-weight:600;color:var(--ok)}
+#home[data-st=paused] .live-tag{color:var(--faint)}
+.lvl-msg{flex:1;text-align:right;color:var(--warn-ink);font-size:12px;font-weight:600}
+.lvl{display:inline-flex;align-items:flex-end;gap:3px;height:14px}
+.lvl i{width:5px;border-radius:2px;background:var(--line);transition:background-color .12s}
+.lvl i:nth-child(1){height:6px}.lvl i:nth-child(2){height:10px}.lvl i:nth-child(3){height:14px}
+.lvl i.on{background:var(--ok)}
+.tolatest{position:absolute;left:50%;bottom:calc(var(--speakh,110px) + 18px);transform:translateX(-50%);border:0;border-radius:999px;background:var(--ink);color:var(--home-bg);font-size:13px;font-weight:600;min-height:36px;padding:0 14px;box-shadow:0 4px 14px rgba(0,0,0,.25);cursor:pointer;z-index:5}
+.tolatest::after{content:"";position:absolute;left:0;right:0;top:50%;height:44px;transform:translateY(-50%)}
+/* 打字浮层 */
+.typelayer{position:absolute;inset:0;z-index:15}
+.tl-backdrop{position:absolute;inset:0}
+.type-card{position:absolute;left:var(--s2);right:var(--s2);bottom:calc(var(--tbh,72px) + 8px);display:flex;gap:var(--s1);align-items:flex-end;padding:10px;background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:0 8px 28px rgba(16,24,40,.18);animation:land .25s var(--ease)}
+.type-card textarea{flex:1;resize:none;height:64px;border:1.5px solid var(--line);border-radius:12px;background:var(--panel);color:var(--ink);padding:10px 12px;font:15px/1.4 var(--font-zh)}
+.type-card button{border:0;border-radius:12px;background:var(--accent);color:var(--accent-ink);min-height:44px;padding:0 18px;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
+/* 更多菜单（右上角弹出） */
+.popover{position:absolute;top:52px;right:var(--s2);width:232px;background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:0 12px 36px rgba(16,24,40,.2);padding:6px;z-index:40;transform-origin:top right;animation:pop .18s var(--ease)}
+@keyframes pop{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
+.popover button{display:flex;align-items:center;gap:12px;width:100%;min-height:44px;border:0;background:none;border-radius:10px;padding:0 10px;font-size:15px;color:var(--ink);cursor:pointer;text-align:left}
+.popover button:hover,.popover button:active{background:var(--fill);transform:none}
+.popover button.danger{color:var(--rec-ink)}
+.popover svg{width:20px;height:20px;flex:none;color:var(--ink2)}
+.popover hr{border:0;border-top:1px solid var(--line);margin:4px 6px}
+.mm-seg{padding:6px 10px 8px}
+.mm-t{display:flex;align-items:center;gap:12px;font-size:15px;color:var(--ink);margin-bottom:8px}
+.mm-seg .segc button{min-height:36px;width:auto;padding:0 6px;font-size:13px;display:block;text-align:center}
+/* 页面（记录 / 设置）：从主页推入 */
+.page{position:absolute;inset:0;z-index:30;display:block;background:var(--bg);overflow-y:auto;overscroll-behavior:contain;padding:0 var(--s2) calc(var(--s3) + env(safe-area-inset-bottom,0px));transform:translateX(100%);visibility:hidden;transition:transform .3s var(--ease),visibility 0s .3s;box-shadow:-8px 0 24px rgba(0,0,0,.08)}
+.page.open{transform:none;visibility:visible;transition:transform .3s var(--ease),visibility 0s}
+#records{padding:0 var(--s2) calc(var(--s3) + env(safe-area-inset-bottom,0px))}
+.page-bar{display:flex;align-items:center;gap:var(--s1);position:sticky;top:0;z-index:3;background:var(--bg);margin:0 calc(var(--s2) * -1);padding:4px var(--s2)}
+.page-bar .page-title{margin:0;font-size:22px}
+.backbtn{border:0;background:none;color:var(--accent);font-size:17px;font-weight:500;min-height:44px;padding:0 8px 0 0;cursor:pointer;white-space:nowrap}
+.rec-titlerow .page-title{margin:var(--s1) 4px 0 0;font-size:22px;flex:1}
+.rec-head{position:sticky;top:0;z-index:3;background:var(--bg);margin:0 calc(var(--s2) * -1);padding:0 var(--s2)}
+#selBar{position:sticky;bottom:0;margin:0 calc(var(--s2) * -1);padding:10px var(--s2) calc(10px + env(safe-area-inset-bottom,0px));z-index:4}
+body.selecting #selBar{display:flex}
+.recbar{display:flex;align-items:center;justify-content:center;gap:8px;flex:none;width:100%;border:0;background:var(--rec);color:#fff;font-size:13px;font-weight:600;min-height:28px;cursor:pointer;font-variant-numeric:tabular-nums}
+.recbar[hidden]{display:none}
+.recbar .recdot{background:#fff;width:8px;height:8px}
+.dhead{display:flex;align-items:center;gap:8px;margin-bottom:2px}
+.toast{bottom:calc(120px + env(safe-area-inset-bottom,0px))}
+.ai-body{max-height:55vh;overflow-y:auto;margin:6px 0 12px}
 </style>
 </head>
 <body>
 <div class="app">
-  <div class="banner" id="banner" role="status"></div>
+  <button class="recbar" id="recBar" hidden aria-label="回到主页"><i class="recdot"></i><span id="recBarTxt">录音中 00:00</span></button>
+  <div class="stage">
+    <section id="home" data-st="idle" aria-label="主页">
+      <header class="topbar">
+        <button id="folderChip" aria-label="选择存入的文件夹">📁 未分类 ▾</button>
+        <div class="tb-right">
+          <span class="livebadge" id="liveBadge" hidden><i></i><span id="liveBadgeTxt">Live</span></span>
+          <button class="endbtn" id="endBtn" hidden>结束</button>
+          <button class="icon-btn" id="moreBtn" aria-label="更多" aria-haspopup="menu" aria-expanded="false"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
+        </div>
+      </header>
+      <div class="banner" id="banner" role="status"></div>
 
-  <header class="live-head" id="liveHead">
-    <div class="lh-main">
-      <button class="sess-title" id="sessTitle" aria-label="记录标题，点击编辑">新记录</button>
-      <div class="lh-sub">
-        <div class="status" id="status" role="status"><span class="dot"></span><span id="statusText">未开始</span></div>
-        <button id="folderChip" aria-label="选择存入的文件夹">📁 未分类</button>
+      <div class="idle" id="idle">
+        <button id="mic" aria-label="开始录音">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+        </button>
+        <div class="idle-t">点击开始录音</div>
+        <button class="idle-sum" id="idleSum" aria-label="识别设置，点击修改"></button>
+        <div class="idle-hint" id="idleHint"></div>
+        <button class="sum-chip" id="sumChip" hidden></button>
       </div>
-    </div>
-    <button class="icon-btn" id="liveMore" aria-label="更多" aria-haspopup="dialog">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
-    </button>
-  </header>
 
-  <main id="feed" aria-live="polite">
-    <div class="empty" id="empty">
-      <div class="ei"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 10v4M8 6v12M12 3v18M16 7v10M20 10v4"/></svg></div>
-      <strong>点下方麦克风开始</strong>
-      把手机对准说英文的人，每说完一句，<br>中文译文会自动出现在这里。
-    </div>
-  </main>
+      <div class="livepane" id="livePane">
+        <main id="feed" aria-live="polite"></main>
+        <button class="tolatest" id="toLatest" hidden>↓ 回到最新</button>
+        <div class="hint" id="hint" role="status"></div>
+        <div class="speak" id="speak" aria-live="off">
+          <div class="speak-body"><div class="sp-en" id="spEn"></div><div class="sp-zh" id="spZh" hidden></div></div>
+          <div class="speak-bar"><span class="live-tag" id="liveTag">● LIVE</span><span class="lvl-msg" id="lvlMsg" hidden>声音太小</span><span class="lvl" id="lvl" aria-hidden="true"><i></i><i></i><i></i></span></div>
+        </div>
+      </div>
 
-  <section id="records" aria-live="polite">
+      <div class="typelayer" id="typeLayer" hidden>
+        <div class="tl-backdrop" id="typeBackdrop"></div>
+        <div class="type-card">
+          <textarea id="typeInput" placeholder="粘贴或输入中文 / English / Español…" enterkeyhint="send" aria-label="输入文字"></textarea>
+          <button id="typeSend">发送</button>
+        </div>
+      </div>
+
+      <div class="toolbar" id="toolbar">
+        <div class="tl-left"><i class="recdot"></i><span id="statusText">录音中 (00:00)</span></div>
+        <div class="tl-right">
+          <button class="tbtn" id="aiBtn" aria-label="AI 阶段摘要"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M18.5 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg></button>
+          <button class="tbtn" id="toggleType" aria-label="打字输入"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h.01M11 10h.01M15 10h.01M8 14h8"/></svg></button>
+          <button class="tbtn" id="markBtn" aria-label="标记重点"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg></button>
+          <button class="tbtn big" id="pauseBtn" aria-label="暂停"><svg id="pauseIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1.2"/><rect x="14" y="5" width="4" height="14" rx="1.2"/></svg></button>
+        </div>
+      </div>
+
+      <div class="popover" id="moreMenu" role="menu" hidden>
+        <button role="menuitem" id="mmRecords"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>记录</button>
+        <button role="menuitem" id="mmSettings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>设置</button>
+        <hr>
+        <div class="mm-seg"><div class="mm-t"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M7 10h10M7 14h6"/></svg>显示方式</div>
+          <div class="segc" id="mmMode" role="radiogroup" aria-label="显示方式"><button data-mode="both" aria-pressed="true">中英对照</button><button data-mode="zh" aria-pressed="false">只看译文</button></div></div>
+        <div id="mmSession">
+          <hr>
+          <button role="menuitem" id="mmRename"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>重命名本次记录</button>
+          <button role="menuitem" id="mmCopy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>复制全文</button>
+          <button role="menuitem" id="mmExport"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M8 8l4-4 4 4M5 15v4h14v-4"/></svg>导出</button>
+          <button role="menuitem" id="mmClear" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/></svg>清空屏幕</button>
+        </div>
+      </div>
+    </section>
+
+  <section id="records" class="page" aria-label="记录">
     <div id="recHome">
       <div class="rec-head">
         <div class="rec-titlerow" id="recTitleRow">
+          <button class="backbtn" id="recBack" aria-label="返回">‹ 返回</button>
           <div class="page-title" id="recTitle">记录</div>
           <button class="icon-btn" id="recSearchBtn" aria-label="搜索"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg></button>
           <button class="icon-btn" id="selToggle" aria-label="选择"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 12.3l2.4 2.4 4.6-5"/></svg></button>
@@ -520,10 +626,18 @@ body.v-records.selecting #selBar{display:flex}
       </div>
       <div id="detList"></div>
     </div>
+  <div id="selBar">
+    <button id="selAll">全选</button>
+    <span id="selCount">已选 0 条</span>
+    <span style="flex:1"></span>
+    <button id="selTrash" class="linkbtn">最近删除</button>
+    <button id="selMove">移动到…</button>
+    <button id="selDel" class="danger">删除</button>
+  </div>
   </section>
 
   <section id="settingsView" class="page" aria-label="设置">
-    <div class="page-title">设置</div>
+    <div class="page-bar"><button class="backbtn" id="setBack" aria-label="返回">‹ 返回</button><div class="page-title">设置</div></div>
 
     <h2 class="gt">语音识别</h2>
     <div class="group">
@@ -539,6 +653,14 @@ body.v-records.selecting #selBar{display:flex}
         <input type="password" id="dgKey" placeholder="Deepgram 密钥" autocomplete="off" spellcheck="false">
         <div class="note" style="font-size:13px;color:var(--muted)">只保存在这台手机的浏览器里。在 <a href="https://console.deepgram.com" target="_blank" rel="noopener" style="color:var(--accent)">Deepgram Console</a> 申请。</div>
       </div>
+      <div class="li col" id="zhRow">
+        <div class="li-h">中文内容<button class="ibtn" data-info="zhInfo" aria-expanded="false" aria-controls="zhInfo" aria-label="说明">ⓘ</button></div>
+        <div class="segc" id="zhSeg" role="radiogroup" aria-label="中文内容">
+          <button data-v="off" aria-pressed="true">不翻译</button>
+          <button data-v="en" aria-pressed="false">译为英文</button>
+        </div>
+      </div>
+      <div class="info" id="zhInfo" hidden>Soniox 自动识别中文、英文、西班牙语：英文和西班牙语译为中文（Soniox 内置翻译）。中文句子默认不翻译，只显示原文；选「译为英文」后，中文句子确定后交给所选的大语言模型翻译成英文（不经过 Soniox）。</div>
       <div class="li tog" id="fallbackRow"><span class="li-t">自动切换到备用引擎<button class="ibtn" data-info="fbInfo" aria-expanded="false" aria-controls="fbInfo" aria-label="说明">ⓘ</button></span><button class="sw" id="autoFallback" role="switch" aria-checked="true" aria-label="自动切换到备用引擎"></button></div>
       <div class="info" id="fbInfo" hidden></div>
     </div>
@@ -588,7 +710,7 @@ body.v-records.selecting #selBar{display:flex}
         <div class="li-h">显示方式</div>
         <div class="segc" id="modeSeg" role="radiogroup" aria-label="显示方式">
           <button data-mode="both" aria-pressed="true">中英对照</button>
-          <button data-mode="zh" aria-pressed="false">只看中文</button>
+          <button data-mode="zh" aria-pressed="false">只看译文</button>
         </div>
       </div>
       <div class="li col">
@@ -608,6 +730,13 @@ body.v-records.selecting #selBar{display:flex}
 
     <h2 class="gt">录音与存储</h2>
     <div class="group">
+      <div class="li col">
+        <div class="li-h">结束录音后</div>
+        <div class="segc" id="afterSeg" role="radiogroup" aria-label="结束录音后">
+          <button data-v="home" aria-pressed="true">回到首页</button>
+          <button data-v="detail" aria-pressed="false">打开这条记录</button>
+        </div>
+      </div>
       <div class="li tog" id="saveAudioRow"><span class="li-t">保存录音<button class="ibtn" data-info="audioInfo" aria-expanded="false" aria-controls="audioInfo" aria-label="说明">ⓘ</button></span><button class="sw" id="saveAudio" role="switch" aria-checked="true" aria-label="保存录音"></button></div>
       <div class="info" id="audioInfo" hidden>约 15MB/小时，只存在这台手机的浏览器里。三种识别引擎都会保存，字幕时间与录音对齐，可点句跳播。</div>
       <div class="li col">
@@ -631,50 +760,25 @@ body.v-records.selecting #selBar{display:flex}
     </div>
     <div style="height:var(--s2)"></div>
   </section>
-
-  <div id="selBar">
-    <button id="selAll">全选</button>
-    <span id="selCount">已选 0 条</span>
-    <span style="flex:1"></span>
-    <button id="selTrash" class="linkbtn">最近删除</button>
-    <button id="selMove">移动到…</button>
-    <button id="selDel" class="danger">删除</button>
   </div>
-
-  <footer id="liveFoot">
-    <div class="typebar" id="typebar">
-      <textarea id="typeInput" placeholder="粘贴或输入英文…" enterkeyhint="send" aria-label="输入英文"></textarea>
-      <button id="typeSend">翻译</button>
-    </div>
-    <div class="wave" id="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-    <div class="controls">
-      <button class="side" id="markBtn" aria-label="标记重点">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg>
-        <span class="lbl">标记</span>
-      </button>
-      <button id="mic" aria-label="开始收听">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
-      </button>
-      <button class="side" id="toggleType" aria-label="打字输入">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h.01M11 10h.01M15 10h.01M8 14h8"/></svg>
-        <span class="lbl">打字</span>
-      </button>
-    </div>
-    <div class="hint" id="hint" role="status"></div>
-  </footer>
-
-  <nav class="tabbar" id="tabs" aria-label="主导航">
-    <button data-view="live" aria-pressed="true" aria-label="实时">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4M8 6v12M12 3v18M16 7v10M20 10v4"/></svg>实时
-    </button>
-    <button data-view="records" aria-pressed="false" aria-label="记录">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>记录
-    </button>
-    <button data-view="settings" aria-pressed="false" aria-label="设置">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>设置
-    </button>
-  </nav>
 </div>
+
+<dialog id="endDlg">
+  <div class="sheet">
+    <h2>结束录音？</h2>
+    <div class="rec-note" id="endNote">结束后会自动保存这条记录，并在后台生成摘要。</div>
+    <button class="done" id="endOk">结束并保存</button>
+    <button class="done alt" id="endCancel">继续录音</button>
+  </div>
+</dialog>
+
+<dialog id="aiDlg">
+  <div class="sheet">
+    <h2>阶段摘要</h2>
+    <div class="ai-body"><div class="md" id="aiBody"></div><div class="sum-err" id="aiErr" hidden></div></div>
+    <div class="actions"><button id="aiCopy">复制</button><button id="aiClose">关闭</button></div>
+  </div>
+</dialog>
 
 <dialog id="choiceDlg">
   <div class="sheet">
@@ -777,19 +881,21 @@ body.v-records.selecting #selBar{display:flex}
 <script>
 (function(){
   const $ = id => document.getElementById(id);
-  const feed=$("feed"), empty=$("empty"), mic=$("mic"), banner=$("banner"), hint=$("hint");
+  const feed=$("feed"), empty=document.createElement("div"), mic=$("mic"), banner=$("banner"), hint=$("hint");
   // 底部提示行：首次使用（还没有任何记录）显示一句建议；之后只用来显示状态信息，没有内容时不占空间
   let noRecords=false;
-  const defaultHint=()=>noRecords ? "建议在安静环境，靠近说话人" : "";
+  const FIRST_HINT="建议靠近说话人，环境尽量安静";
+  const defaultHint=()=>"";           // 录音中的状态提示默认为空，不占位；首次使用的提示单独显示在大按钮下面
   const setHint=t=>{ hint.textContent=t||""; };
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   const API_URL="https://api.anthropic.com/v1/messages";
 
-  let listening=false, liveEl=null, wakeLock=null;
+  let listening=false, liveEl=null, wakeLock=null, sumWatch=null;
+  const pageStack=[];            // 已打开的页面（记录 / 设置），从主页推入
   const entries=[]; const queue=[]; let busy=false; let seq=0; let stickToBottom=true;
 
   // 设置项。v3 起三个设置改名（值不变）：provider→llm（大语言模型服务商）、route→connection（连接方式）、model→refineModel（精修/翻译模型）
-  const settings={connection:"direct", relayUrl:"", relayToken:"", llm:"anthropic", lastFolder:null, saveAudio:true, tagPresets:["重点","作业","考试","没听懂"], sumModel:"", apiKey:"", dgKey:"", engine:"soniox", diarize:true, refine:true, autoFallback:true, refineModel:"claude-haiku-4-5-20251001", lang:"en-US", mode:"both", size:22, glossary:"", theme:"auto", debug:false};
+  const settings={connection:"direct", relayUrl:"", relayToken:"", llm:"anthropic", lastFolder:null, saveAudio:true, tagPresets:["重点","作业","考试","没听懂"], sumModel:"", apiKey:"", dgKey:"", engine:"soniox", diarize:true, refine:true, autoFallback:true, refineModel:"claude-haiku-4-5-20251001", zhMode:"off", afterEnd:"home", lang:"en-US", mode:"both", size:22, glossary:"", theme:"auto", debug:false};
   const LEGACY_KEYS={provider:"llm", route:"connection", model:"refineModel"};
   // 旧键名 → 新键名：新键已存在时以新键为准；迁移后立即写回，旧键删除
   function migrateSettings(saved){
@@ -863,10 +969,10 @@ body.v-records.selecting #selBar{display:flex}
     $("glossary").value=settings.glossary||"";
     document.documentElement.style.setProperty("--fs", settings.size+"px");
     document.body.classList.toggle("zh-only", settings.mode==="zh");
-    setSeg("modeSeg","mode",settings.mode); setSeg("themeSeg","v",settings.theme);
+    setSeg("modeSeg","mode",settings.mode); setSeg("mmMode","mode",settings.mode); setSeg("themeSeg","v",settings.theme); setSeg("zhSeg","v",settings.zhMode==="en"?"en":"off"); setSeg("afterSeg","v",settings.afterEnd==="detail"?"detail":"home");
     $("dbgWrap").hidden=!settings.debug;
     applyTheme();
-    try{ drawSessTitle(); }catch(e){}   // 启动时会话状态还没初始化，忽略
+    try{ applyUi(); }catch(e){}   // 启动时会话状态还没初始化，忽略
   }
   const MODELS={
     anthropic:[["claude-haiku-4-5-20251001","Haiku（快、便宜，推荐）"],["claude-sonnet-5-5","Sonnet（更准，稍慢）"]],
@@ -1000,11 +1106,33 @@ body.v-records.selecting #selBar{display:flex}
     if(!real.length && !row.parts.length && row.dur<2){ dbDelSession(row.id).catch(()=>{}); return; }
     try{ await dbPut("sessions",row); }catch(e){ dbFail(e); }
     if(real.length>10 && !row.summary && sumReady()) queueSummary(row.id);
+    applyUi();
+    if(s.userEnd) afterUserEnd(row);
+  }
+  // 点「结束」之后：回到未录音状态并显示摘要生成进度，或按设置直接打开这条记录的详情
+  function afterUserEnd(row){
+    if(settings.afterEnd==="detail"){ openPage("records"); openDetail(row.id); return; }
+    watchSummary(row.id);
+  }
+  function watchSummary(id){
+    clearInterval(sumWatch); const chip=$("sumChip"); let n=0;
+    chip.onclick=()=>{ openPage("records"); openDetail(id); };
+    const tick=async()=>{
+      n++; const st=sumState[id]; let row=null; try{ row=await dbGet("sessions",id); }catch(e){}
+      if(listening){ clearInterval(sumWatch); return; }
+      if(st && st.status==="running"){ chip.hidden=false; chip.textContent="正在生成摘要…"; }
+      else if(row && row.summary){ chip.hidden=false; chip.textContent="摘要已生成 · 查看"; clearInterval(sumWatch); }
+      else if(st && st.status==="error"){ chip.hidden=false; chip.textContent="摘要生成失败 · 查看"; clearInterval(sumWatch); }
+      else if(n>4){ chip.hidden=true; clearInterval(sumWatch); }       // 没有触发摘要（句子太少或没配置）
+      if(n>240) clearInterval(sumWatch);
+    };
+    tick(); sumWatch=setInterval(tick,700);
   }
   function segRecord(e){
     const r={id:e.segId, sid:e.sid, start:e.start, end:e.end, en:e.en, zh:e.zh||"", tags:e.tags||[], kind:"seg"};
     if(e.speaker!=null) r.speaker=e.speaker;       // 说话人（旧数据没有这个字段）
-    if(e.rawEn) r.rawEn=e.rawEn;                   // 精修改写英文前的原始识别文本
+    if(e.rawEn) r.rawEn=e.rawEn;                   // 精修改写原文前的原始识别文本
+    r.language=e.language||"en";                   // 原文语言 zh / en / es（旧数据没有这个字段，按英文处理）
     return r;
   }
   function segSave(e){ if(e.segId) dbPut("segments",segRecord(e)).catch(dbFail); }
@@ -1053,13 +1181,12 @@ body.v-records.selecting #selBar{display:flex}
   }
 
   // ---------- 中断与恢复 ----------
-  function addBreak(gap){ addDivider("[中断 "+fmtT(gap)+"]"); }
+  function addBreak(gap,label){ addDivider("["+(label||"中断")+" "+fmtT(gap)+"]"); }
   function addDivider(label){
     const t=nowT(), seg={id:S.id+"-"+(++S.segN), sid:S.id, start:t, end:t, en:label, zh:"", tags:[], kind:"break"};
     dbPut("segments",seg).catch(dbFail);
-    hideEmpty();
     const el=document.createElement("div"); el.className="divider"; el.textContent=seg.en;
-    if(liveEl && liveEl.parentNode===feed) feed.insertBefore(el,liveEl); else feed.appendChild(el);
+    feed.appendChild(el);
     scrollDown();
   }
   function interrupt(){
@@ -1068,7 +1195,7 @@ body.v-records.selecting #selBar{display:flex}
     listening=false;
     audioStop(); releaseCapture(); if(eng) eng.stop();
     try{ wakeLock && wakeLock.release(); }catch(e){} wakeLock=null;
-    engState="idle"; setStatus(false,"已中断 "+fmt(listenSecs)); setHint("录音已中断，点麦克风继续");
+    engState="idle"; applyUi(); setHint("录音已中断，点右下角的按钮继续");
     if(document.visibilityState==="visible") showIntDlg(); else S.needPrompt=true;
   }
   function showIntDlg(){ if(S){ S.needPrompt=false; if(!$("intDlg").open) $("intDlg").showModal(); } }
@@ -1076,7 +1203,7 @@ body.v-records.selecting #selBar{display:flex}
   $("intEnd").onclick=()=>{
     $("intDlg").close();
     if(S){ S.closing=true; sessEnd(); }
-    setStatus(false,"已暂停"); setHint(defaultHint());
+    applyUi(); setHint(defaultHint());
   };
   async function checkPipeline(){
     if(!listening || !cap || !S) return;
@@ -1232,7 +1359,8 @@ body.v-records.selecting #selBar{display:flex}
   }
   // 实时字幕里一句话的操作菜单：长按字幕或点右上角的「…」
   function entryMenu(e){
-    const items=[{label:"打标签",fn:()=>editEntryTags(e)},
+    const items=[{label:"标记",note:"#"+markTag(),fn:()=>{ addTagToEntry(e,markTag()); toast("已标记：#"+markTag()); vibrate(); }},
+      {label:"打标签",fn:()=>editEntryTags(e)},
       {label:"复制",note:"英文和中文",fn:()=>copyText((e.en+(e.zh?"\n"+e.zh:"")).trim(),"已复制这一句")}];
     if(S && S.id===e.sid && spIds(entries.filter(x=>x.sid===S.id)).length) items.push({label:"修改说话人",note:e.speaker!=null?spName(S.row,e.speaker):"未识别",fn:()=>pickSpeaker(e)});
     openMenu("这一句",items);
@@ -1334,20 +1462,85 @@ body.v-records.selecting #selBar{display:flex}
   };
 
   // ---------- Records: list / filter / search ----------
-  let view="live";
+  const isRecords=()=>pageStack.includes("records");
   const rd={rows:[],trash:[],segs:new Map()};   // rows：正常记录；trash：最近删除
   const rf={q:"",tags:new Set(),sort:"new",folder:"all"};
   const tv={tag:null};
-  function showView(v,o){
-    const prev=view; view=v;
-    document.body.classList.toggle("v-records",v==="records"); document.body.classList.toggle("v-settings",v==="settings");
-    document.querySelectorAll("#tabs button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.view===v)));
-    if(v==="records"){ if(o&&o.trash) gotoTrash(); else if($("recDetail").hidden) recRefresh(); }
-    else{ pausePlayer(); if(v==="live") scrollDown(); }
-    if(v==="settings"){ applySettings(); refreshStoreInfo(); }
-    if(prev!==v){ const el=v==="live"?$("feed"):v==="records"?$("records"):$("settingsView"); if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches)) el.animate([{opacity:0,transform:"translateY(6px)"},{opacity:1,transform:"none"}],{duration:200,easing:"cubic-bezier(.2,.8,.2,1)"}); }
+  // ---------- 页面栈：记录 / 设置从主页推入，左上角「‹ 返回」、系统返回键、iPhone 左边缘右滑都能返回 ----------
+  const pageEl=n=>n==="records" ? $("records") : $("settingsView");
+  let suppressPop=false, popSeen=false;
+  function openPage(name,o){
+    o=o||{};
+    const idx=pageStack.indexOf(name);
+    if(idx>=0 && idx<pageStack.length-1) closePagesTo(idx+1);
+    if(idx<0){ pageStack.push(name); history.pushState({d:pageStack.length},""); const el=pageEl(name); el.scrollTop=0; el.style.zIndex=30+pageStack.length; el.classList.add("open"); }   // 后打开的页面盖在上面
+    if(name==="records"){ if(o.trash) gotoTrash(); else if($("recDetail").hidden) recRefresh(); }
+    if(name==="settings"){ applySettings(); refreshStoreInfo(); }
+    closeMoreMenu(); applyUi();
   }
-  document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>showView(b.dataset.view));
+  function closeTopPage(){
+    const n=pageStack.pop(); if(!n) return;
+    pageEl(n).classList.remove("open"); pausePlayer();
+    if(n==="records" && sel.on) setSelMode(false);
+    applyUi();
+  }
+  function closePagesTo(len){
+    const k=pageStack.length-len; if(k<=0) return;
+    while(pageStack.length>len) closeTopPage();
+    suppressPop=true; history.go(-k);                 // 让浏览器历史和页面栈保持一致（只会触发一次 popstate，忽略它）
+  }
+  const closeAllPages=()=>closePagesTo(0);
+  function subpane(){ return !$("recTrash").hidden ? "trash" : !$("recTags").hidden ? "tags" : !$("recDetail").hidden ? "detail" : null; }
+  function subBack(){ const n=subpane(); if(n==="trash") $("trBack").click(); else if(n==="tags") $("tvBack").click(); else if(n==="detail") $("detBack").click(); }
+  function navBack(){
+    if(!pageStack.length) return;
+    if(pageStack[pageStack.length-1]==="records" && subpane()){ subBack(); return; }   // 记录详情 → 记录列表 → 主页
+    history.back();
+  }
+  try{ history.replaceState({d:0},""); }catch(e){}
+  window.addEventListener("popstate",e=>{
+    popSeen=true;
+    if(suppressPop){ suppressPop=false; return; }
+    const d=(e.state&&e.state.d)||0;
+    if(d===pageStack.length-1 && pageStack[pageStack.length-1]==="records" && subpane()){ subBack(); try{ history.pushState({d:pageStack.length},""); }catch(_){} return; }
+    while(pageStack.length>d) closeTopPage();
+  });
+  // iPhone 主屏幕网页没有浏览器的边缘返回手势：从屏幕左边缘向右滑动返回（Safari 里系统手势会触发 popstate，这里就不重复处理）
+  let edge=null;
+  document.addEventListener("touchstart",e=>{ const t=e.touches[0]; edge=(pageStack.length && t && t.clientX<=22) ? {x:t.clientX,y:t.clientY} : null; if(edge) popSeen=false; },{passive:true});
+  document.addEventListener("touchend",e=>{
+    if(!edge) return; const t=e.changedTouches[0], g=edge; edge=null;
+    if(t.clientX-g.x>70 && Math.abs(t.clientY-g.y)<60) setTimeout(()=>{ if(!popSeen) navBack(); },80);
+  },{passive:true});
+  $("recBack").onclick=navBack; $("setBack").onclick=navBack;
+  $("recBar").onclick=closeAllPages;
+  function showView(v,o){ if(v==="live") closeAllPages(); else openPage(v,o); }       // 兼容旧调用
+
+  // ---------- 右上角「⋯」菜单 ----------
+  const mm=$("moreMenu");
+  function closeMoreMenu(){ if(!mm.hidden){ mm.hidden=true; $("moreBtn").setAttribute("aria-expanded","false"); } }
+  function toggleMoreMenu(){
+    if(!mm.hidden){ closeMoreMenu(); return; }
+    const hasContent=recActive() || entries.length>0;
+    $("mmSession").hidden=!hasContent; $("mmRename").hidden=!S;
+    setSeg("mmMode","mode",settings.mode);
+    mm.hidden=false; $("moreBtn").setAttribute("aria-expanded","true");
+  }
+  $("moreBtn").onclick=e=>{ e.stopPropagation(); toggleMoreMenu(); };
+  document.addEventListener("click",e=>{ if(!mm.hidden && !mm.contains(e.target) && !$("moreBtn").contains(e.target)) closeMoreMenu(); });
+  document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeMoreMenu(); });
+  $("mmRecords").onclick=()=>openPage("records");
+  $("mmSettings").onclick=()=>openPage("settings");
+  document.querySelectorAll("#mmMode button").forEach(b=>b.onclick=()=>{ settings.mode=b.dataset.mode; saveSettings(); applySettings(); setSeg("mmMode","mode",settings.mode); });
+  $("mmCopy").onclick=()=>{ closeMoreMenu(); copyAll(); };
+  $("mmExport").onclick=()=>{ closeMoreMenu(); exportTxt(); };
+  $("mmClear").onclick=()=>{ closeMoreMenu(); clearScreen(); };
+  $("mmRename").onclick=()=>{
+    closeMoreMenu(); if(!S) return;
+    const n=prompt("记录标题",S.row.title); if(!n||!n.trim()) return;
+    S.row.title=n.trim().slice(0,100); S.row.titleEdited=true; sessSave(); toast("已重命名");
+  };
+  $("idleSum").onclick=()=>openPage("settings");
   function pane(name){ ["recHome","recTags","recTrash","recDetail"].forEach(n=>{ $(n).hidden=(n!==name); }); $("records").scrollTop=0; }
   async function loadRecData(){
     const rows=await dbAll("sessions"), gs=await dbAll("segments");
@@ -1523,7 +1716,7 @@ body.v-records.selecting #selBar{display:flex}
   }
   function drawFolderChip(){
     if(settings.lastFolder!=null && foldersLoaded && !folderById(settings.lastFolder)) settings.lastFolder=null;
-    $("folderChip").textContent="📁 "+folderName(settings.lastFolder);
+    $("folderChip").textContent="📁 "+folderName(settings.lastFolder)+" ▾"; try{ applyUi(); }catch(e){}
   }
   // 通用文件夹选择：cb(folderId|null)；里面可直接新建
   function pickFolder(title,cur,cb){
@@ -1574,7 +1767,7 @@ body.v-records.selecting #selBar{display:flex}
     });
     dragSort(box,async ids=>{ try{ await reorderFolders(ids); }catch(e){ dbFail(e); } recFolderChanged(); });
   }
-  function recFolderChanged(){ if(view==="records" && $("recHome").hidden===false) { drawFolderBar(); renderHome(); } }
+  function recFolderChanged(){ if(isRecords() && $("recHome").hidden===false) { drawFolderBar(); renderHome(); } }
   $("fmClose").onclick=()=>$("fmDlg").close();
   $("fmAdd").onclick=async()=>{ const v=$("fmNew").value; $("fmNew").value=""; if(!v.trim()) return; try{ await createFolder(v); }catch(e){ dbFail(e); } drawFolderMgr(); recFolderChanged(); };
   $("fmNew").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); $("fmAdd").click(); } });
@@ -1842,8 +2035,11 @@ body.v-records.selecting #selBar{display:flex}
       const z=document.createElement("div"); z.className="z"; z.textContent=g.zh||"";
       const e=document.createElement("div"); e.className="e"; e.textContent=g.en||"";
       const tl=document.createElement("div"); tl.className="tline";
-      if(g.speaker!=null && g.speaker!=="" && spShow(det.row,det.segs)) tx.appendChild(spEl(det.row,g.speaker));
-      tx.append(z,e,tl); row.append(tm,tx);
+      if(!g.zh){ z.textContent=g.en||""; e.hidden=true; }      // 没有译文（如中文原文不翻译）：只显示原文一行
+      const head=document.createElement("div"); head.className="dhead";
+      if(g.speaker!=null && g.speaker!=="" && spShow(det.row,det.segs)) head.appendChild(spEl(det.row,g.speaker));
+      const pill=document.createElement("span"); pill.className="lang"; pill.textContent=langPill(g.language||"en"); head.appendChild(pill);
+      tx.append(head,z,e,tl); row.append(tm,tx);
       const draw=()=>{
         tl.textContent=""; (g.tags||[]).forEach(t=>tl.appendChild(tagChip(t)));
         const more=document.createElement("button"); more.className="tmore"; more.textContent="…"; more.setAttribute("aria-label","标签");
@@ -1954,7 +2150,7 @@ body.v-records.selecting #selBar{display:flex}
     plSpeed=+b.dataset.rate; au.playbackRate=plSpeed; au.defaultPlaybackRate=plSpeed;
     document.querySelectorAll("#player [data-rate]").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));
   });
-  tagWatchers.push(()=>{ if(view!=="records") return; if(!$("recDetail").hidden) reloadDetail(); else recRefresh(); });
+  tagWatchers.push(()=>{ if(!isRecords()) return; if(!$("recDetail").hidden) reloadDetail(); else recRefresh(); });
 
   // ---------- Auto title ----------
   const TITLE_SYS="你是标题助手。根据英文课程、讲座或会议转写的一部分，起一个中文标题，概括主题，不超过 15 个字。只输出标题本身，不要引号、书名号、标点和解释。";
@@ -2011,7 +2207,7 @@ body.v-records.selecting #selBar{display:flex}
   const sumState={};      // 会话 id → {status:"running"|"error", text, progress, err}
   const sumQueue=[]; let sumBusy=false;
   const SUM_LIMIT=60000, SUM_CHUNK=50000;
-  const SUM_SYS="你是一名英文课程、讲座、会议的学习助理。根据用户提供的英文转写（每行以 [mm:ss] 时间戳开头），用简体中文输出 Markdown 摘要。输出的第一行必须是“标题：”加一个不超过 15 个字的中文标题（概括主题，不加引号和标点），然后空一行，再严格使用下面的结构和标题，不要添加其他章节：\n\n"
+  const SUM_SYS="你是一名英文课程、讲座、会议的学习助理。根据用户提供的转写（原文可能是英文、中文或西班牙语，非英文的行会在时间戳后标注语言；每行以 [mm:ss] 时间戳开头），一律用简体中文输出 Markdown 摘要；引用原话时保留原文，不要翻译引文。输出的第一行必须是“标题：”加一个不超过 15 个字的中文标题（概括主题，不加引号和标点），然后空一行，再严格使用下面的结构和标题，不要添加其他章节：\n\n"
     +"## 一句话概括\n（一句话）\n\n"
     +"## 主要内容\n（按主题分段，每段用加粗小标题，并在小标题里标注大致时间点，格式如 **主题名 [12:30]**；下面用要点列出内容）\n\n"
     +"## 关键术语\n（每条：英文原词 — 中文解释；没有则写“无”）\n\n"
@@ -2069,12 +2265,13 @@ body.v-records.selecting #selBar{display:flex}
   }
   async function summarize(row,segs,st){
     const sp=spShow(row,segs);
-    const line=g=>"["+fmtT(g.start)+"] "+(sp&&g.speaker!=null&&g.speaker!==""?spName(row,g.speaker)+"：":"")+(g.en||"");
+    const lg=g=>{ const l=g.language||"en"; return l==="en" ? "" : "（"+langName(l)+"）"; };
+    const line=g=>"["+fmtT(g.start)+"] "+lg(g)+(sp&&g.speaker!=null&&g.speaker!==""?spName(row,g.speaker)+"：":"")+(g.en||"");
     const lines=segs.map(line);
     const head=[];
     if((row.tags||[]).length) head.push("【会话标签（主题提示）】\n"+row.tags.join("、"));
     const gl=(settings.glossary||"").trim(); if(gl) head.push("【场景与术语】\n"+gl);
-    const tagged=segs.filter(g=>(g.tags||[]).length).slice(0,300).map(g=>"["+fmtT(g.start)+"] ["+g.tags.join("、")+"] "+(sp&&g.speaker!=null&&g.speaker!==""?spName(row,g.speaker)+"：":"")+(g.en||""));
+    const tagged=segs.filter(g=>(g.tags||[]).length).slice(0,300).map(g=>"["+fmtT(g.start)+"] ["+g.tags.join("、")+"] "+lg(g)+(sp&&g.speaker!=null&&g.speaker!==""?spName(row,g.speaker)+"：":"")+(g.en||""));
     head.push("【带标记的句子】\n"+(tagged.length?tagged.join("\n"):"（无）"));
     const ctx=head.join("\n\n");
     const total=lines.join("\n").length;
@@ -2211,7 +2408,8 @@ body.v-records.selecting #selBar{display:flex}
   }
   const srtTime=t=>{ t=Math.max(0,t); const ms=Math.round(t*1000), h=Math.floor(ms/3600000), m=Math.floor(ms%3600000/60000), s=Math.floor(ms%60000/1000); return p2(h)+":"+p2(m)+":"+p2(s)+","+String(ms%1000).padStart(3,"0"); };
   function buildSrt(segs,row){
-    const list=segs.filter(g=>g.kind!=="break"), sp=spShow(row,list), lab=g=>sp&&g.speaker!=null&&g.speaker!==""?"["+spName(row,g.speaker)+"] ":"";
+    const list=segs.filter(g=>g.kind!=="break"), sp=spShow(row,list);
+    const lab=g=>"["+(sp&&g.speaker!=null&&g.speaker!==""?spName(row,g.speaker)+" · ":"")+langPill(g.language||"en")+"] ";   // 注明说话人和语言
     return list.map((g,i)=>{
       const next=list[i+1]; let end=g.end;
       if(!(end>g.start+0.2)) end=Math.min(g.start+3, next&&next.start>g.start ? next.start : g.start+3);
@@ -2228,7 +2426,7 @@ body.v-records.selecting #selBar{display:flex}
     const sp=spShow(row,segs);
     segs.forEach(g=>{
       if(g.kind==="break"){ out.push("*"+g.en+"*", ""); return; }
-      out.push("**["+fmtT(g.start)+"]** "+(sp&&g.speaker!=null&&g.speaker!==""?"**"+spName(row,g.speaker)+"**：":"")+(g.en||"")+((g.tags||[]).length?"  "+g.tags.map(t=>"#"+t.replace(/\s+/g,"_")).join(" "):""));
+      out.push("**["+fmtT(g.start)+"]** "+"（"+langPill(g.language||"en")+"）"+(sp&&g.speaker!=null&&g.speaker!==""?"**"+spName(row,g.speaker)+"**：":"")+(g.en||"")+((g.tags||[]).length?"  "+g.tags.map(t=>"#"+t.replace(/\s+/g,"_")).join(" "):""));
       if(g.zh) out.push("> "+g.zh);
       out.push("");
     });
@@ -2296,7 +2494,7 @@ body.v-records.selecting #selBar{display:flex}
       const segs=(Array.isArray(x.segments)?x.segments:[]).map((g,i)=>({
         id:id+"-"+(i+1), sid:id, start:num(g&&g.start,0), end:num(g&&g.end,0), en:String((g&&g.en)||""), zh:String((g&&g.zh)||""),
         tags:strs(g&&g.tags), kind:(g&&g.kind)==="break"?"break":"seg"}));
-      segs.forEach((g,i)=>{ const o=x.segments[i]; if(o && o.speaker!=null && o.speaker!=="") g.speaker=String(o.speaker).slice(0,20); if(typeof (o&&o.rawEn)==="string") g.rawEn=o.rawEn; });
+      segs.forEach((g,i)=>{ const o=x.segments[i]; if(o && o.speaker!=null && o.speaker!=="") g.speaker=String(o.speaker).slice(0,20); if(typeof (o&&o.rawEn)==="string") g.rawEn=o.rawEn; if(g.kind==="seg") g.language=/^[a-z]{2}$/i.test((o&&o.language)||"") ? String(o.language).toLowerCase() : "en"; });
       if(!row.speakerNames) delete row.speakerNames;
       try{
         await dbTx(["sessions","segments"],"readwrite",t=>{
@@ -2310,19 +2508,21 @@ body.v-records.selecting #selBar{display:flex}
     afterImport();
     toast("已导入 "+n+" 条记录");
   }
-  function afterImport(){ loadKnownTags(); loadFolders(); if(view==="records" && $("recDetail").hidden) recRefresh(); }
+  function afterImport(){ loadKnownTags(); loadFolders(); if(isRecords() && $("recDetail").hidden) recRefresh(); }
   $("backupFile").onchange=e=>{ const f=e.target.files[0]; e.target.value=""; if(f) importBackup(f); };
 
   // ---------- Feed ----------
-  const tailH=()=>window.innerHeight*0.35;   // 与 #feed::after 的高度（35vh）一致
-  feed.addEventListener("scroll",()=>{ stickToBottom = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 60+tailH(); });
-  function scrollDown(){ if(stickToBottom) feed.scrollTop=Math.max(0,feed.scrollHeight-feed.clientHeight-tailH()); }
-  function hideEmpty(){ if(empty.parentNode) empty.remove(); }
+  // 自动滚动：新句子出现时滚到底；用户向上翻看时停止，并显示「↓ 回到最新」
+  feed.addEventListener("scroll",()=>{ stickToBottom = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 60; updateToLatest(); },{passive:true});
+  function updateToLatest(){ $("toLatest").hidden = stickToBottom || !entries.length; }
+  function scrollDown(){ if(stickToBottom) feed.scrollTop=feed.scrollHeight; updateToLatest(); }
+  $("toLatest").onclick=()=>{ stickToBottom=true; feed.scrollTo({top:feed.scrollHeight,behavior:"smooth"}); $("toLatest").hidden=true; };
+  function hideEmpty(){}
 
   // ---------- 说话人 ----------
   // Soniox 返回的说话人编号（字符串 "1","2"…）；显示名默认「说话人 N」，可在记录详情里按会话改名（row.speakerNames）。
   // 只有同一场里出现 2 个及以上说话人，或者用户改过名时才显示标签，单人讲课不会每句都带“说话人 1”。
-  const SP_COLORS=["#e0527a","#2f7de1","#2fa56b","#d98a1c","#8a5cd6","#17a2b8","#c2561b","#6c7a89"];
+  const SP_COLORS=["#4C8DF6","#2FAE78","#9A6BE0","#EF9440","#E4608A","#25AEC4","#8E9A3B","#7B86A0"];   // 柔和的蓝、绿、紫、橙…，深浅色下都清晰
   const spColor=id=>{ const n=parseInt(id,10), k=Number.isFinite(n)?Math.abs(n):[...String(id)].reduce((a,c)=>a+c.charCodeAt(0),0); return SP_COLORS[k%SP_COLORS.length]; };
   const spName=(row,id)=>((row&&row.speakerNames&&row.speakerNames[id])||("说话人 "+id));
   const spIds=list=>[...new Set(list.map(g=>g.speaker).filter(x=>x!=null&&x!==""))];
@@ -2340,48 +2540,77 @@ body.v-records.selecting #selBar{display:flex}
     const show=spShow(S.row,mine);
     mine.forEach(e=>{
       if(!e.row || !e.row.isConnected) return;
-      const old=e.row.querySelector(".sp"); if(old) old.remove();
-      if(show && e.speaker!=null) e.row.insertBefore(spEl(S.row,e.speaker),e.row.firstChild);
+      const slot=e.row.querySelector(".sp-slot"); if(!slot) return; slot.textContent="";
+      if(show && e.speaker!=null) slot.appendChild(spEl(S.row,e.speaker));
     });
   }
 
+  const MORE_SVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>';
+  // 一句字幕 = 一张卡片：说话人 · 语言标记 · …；原文（灰）→ 分隔线 → 译文；没有译文的只显示原文一行
   function renderEntry(e){
-    hideEmpty();
-    const div=document.createElement("div"); div.className="entry cur"; e.row=div;   // 翻译中的一句放大，完成后缩回
-    const en=document.createElement("div"); en.className="en"; en.textContent=e.en;
-    const zh=document.createElement("div"); zh.className="zh pending"; zh.textContent="翻译中…";
-    const tl=document.createElement("div"); tl.className="tline";
-    div.append(en,zh,tl); e.tagsEl=tl; drawTags(e);
-    if(e.speaker!=null && S && S.id===e.sid && spShow(S.row,entries.filter(x=>x.sid===S.id).concat([e]))) div.insertBefore(spEl(S.row,e.speaker),div.firstChild);
-    attachLongPress(div,()=>entryMenu(e));
-    const more=document.createElement("button"); more.className="emore"; more.setAttribute("aria-label","这一句的更多操作");
-    more.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>';
+    const div=document.createElement("div"); div.className="entry land"+(e.noTr?" notr":""); e.row=div; div.dataset.lang=e.language||"en";
+    const head=document.createElement("div"); head.className="ehead";
+    const slot=document.createElement("span"); slot.className="sp-slot";
+    const pill=document.createElement("span"); pill.className="lang"; pill.textContent=langPill(e.language||"en");
+    const grow=document.createElement("span"); grow.className="grow";
+    const more=document.createElement("button"); more.className="emore"; more.setAttribute("aria-label","这一句的更多操作"); more.innerHTML=MORE_SVG;
     more.onclick=ev=>{ ev.stopPropagation(); entryMenu(e); };
-    div.appendChild(more);
-    if(liveEl && liveEl.parentNode===feed) feed.insertBefore(div, liveEl); else feed.appendChild(div);
-    e.el=zh; scrollDown();
+    head.append(slot,pill,grow,more);
+    const en=document.createElement("div"); en.className="en"; en.textContent=e.en;
+    div.append(head,en);
+    if(!e.noTr){
+      const sep=document.createElement("div"); sep.className="esep";
+      const zh=document.createElement("div"); zh.className="zh pending"; zh.textContent="翻译中…";
+      div.append(sep,zh); e.el=zh;
+    }
+    const tl=document.createElement("div"); tl.className="tline"; div.appendChild(tl); e.tagsEl=tl; drawTags(e);
+    if(e.speaker!=null && S && S.id===e.sid && spShow(S.row,entries.filter(x=>x.sid===S.id).concat([e]))) slot.appendChild(spEl(S.row,e.speaker));
+    attachLongPress(div,()=>entryMenu(e));
+    feed.appendChild(div); scrollDown();
   }
-  function setZh(e){ e.el.className="zh"; e.el.textContent=e.zh; scrollDown(); }
+  function setZh(e){ if(!e.el) return; e.el.className="zh"; e.el.textContent=e.zh; if(e.row) e.row.classList.add("tr-done"); scrollDown(); }
   function setError(e,msg){
-    const z=e.el; z.className="zh error"; z.textContent=msg;
+    const z=e.el; if(!z) return; z.className="zh error"; z.textContent=msg;
     const b=document.createElement("button"); b.className="retry"; b.textContent="重试";
-    b.onclick=()=>{ z.className="zh pending"; z.textContent="翻译中…"; e.status="waiting"; if(e.row) e.row.classList.add("cur"); queue.push(e); pump(); };
+    b.onclick=()=>{ z.className="zh pending"; z.textContent="翻译中…"; e.status="waiting"; queue.push(e); pump(); };
     z.appendChild(b);
   }
+  // 「正在说」卡片：固定在字幕列表下方，随识别实时更新；一句确定后清空，内容落入上方的普通卡片
+  const spEn=$("spEn"), spZh=$("spZh");
   function showLive(text,zh){
-    if(!text && !zh){ if(liveEl){ liveEl.remove(); liveEl=null; } return; }
-    hideEmpty();
-    if(!liveEl){ liveEl=document.createElement("div"); liveEl.className="entry live"; liveEl.innerHTML='<div class="en"></div><div class="zh" style="display:none"></div>'; feed.appendChild(liveEl); }
-    liveEl.children[0].textContent=text||"";
-    const z=liveEl.children[1]; z.textContent=zh||""; z.style.display=zh?"":"none";   // 引擎自带翻译时，预览行也显示中文
-    scrollDown();
+    liveEl=(text||zh)?$("speak"):null;
+    spEn.textContent=text||""; spZh.textContent=zh||""; spZh.hidden=!zh;     // 引擎自带翻译时也实时显示译文
   }
-  // extra：{translation, speaker}。引擎自带译文（Soniox）时直接显示，不再排进 Claude 翻译队列
+  // ---------- 语言（中文 / 英文 / 西班牙语自动识别）----------
+  const LANG_PILL={zh:"中", en:"EN", es:"ES"}, LANG_NAME={zh:"中文", en:"英文", es:"西班牙语"};
+  const normLang=l=>{ l=String(l||"").toLowerCase().slice(0,2); return l||"en"; };
+  const langPill=l=>LANG_PILL[l]||String(l||"EN").toUpperCase();
+  const langName=l=>LANG_NAME[l]||String(l).toUpperCase();
+  // 打字输入没有引擎帮忙识别语言：按汉字 / 西语特征字符与常见词粗略判断
+  function detectLang(t){
+    t=String(t||"");
+    const han=(t.match(/[\u4e00-\u9fff]/g)||[]).length, lat=(t.match(/[A-Za-z\u00c0-\u017f]/g)||[]).length;
+    if(han && han>=lat/2) return "zh";
+    if(/[¿¡ñÑ]/.test(t)) return "es";
+    const es=(t.match(/\b(el|la|los|las|de|que|y|en|un|una|es|por|con|para|no|se|su|al|lo|como|más|pero|muy|está|hola|gracias|qué|cómo|esto|ese|esta|son|del)\b/gi)||[]).length;
+    const en=(t.match(/\b(the|and|is|are|of|to|in|that|it|for|with|this|was|you|have|not|be|on|as|at|we|they)\b/gi)||[]).length;
+    if(/[áéíóú]/i.test(t) && es>=en) return "es";
+    return es>en && es>=2 ? "es" : "en";
+  }
+  // 译文方向：英文 / 西语 → 中文；中文 → 按设置「中文内容」译为英文，或不翻译
+  const tgtOf=lang=>lang==="zh" ? (settings.zhMode==="en" ? "en" : null) : "zh";
+  
+  // extra：{translation, speaker, language}。引擎自带译文（Soniox）时直接显示，不再排进 Claude 翻译队列
   function commit(text,start,end,extra){
     text=(text||"").trim(); if(!text) return;
-    const tr=extra && extra.translation ? String(extra.translation).trim() : "";
-    const e={id:++seq, en:text, zh:tr, status:tr?"done":"waiting", tags:[]};
+    const language=normLang(extra && extra.language || "en");
+    let tr=extra && extra.translation ? String(extra.translation).trim() : "";
+    // 中文句子：Soniox 不需要翻译成中文，返回的「译文」（通常与原文相同）一律不显示
+    if(language==="zh") tr="";
+    const tgt=tgtOf(language);
+    const e={id:++seq, en:text, zh:tr, language, tgt, status:(tr||!tgt)?"done":"waiting", tags:[]};
     if(tr) e.zhSrc="engine";
+    if(!tgt) e.noTr=true;                  // 不需要译文的卡片：只显示原文一行
     if(extra && extra.speaker!=null && extra.speaker!=="") e.speaker=String(extra.speaker);
     if(S){
       e.sid=S.id; e.segId=S.id+"-"+(++S.segN);
@@ -2395,23 +2624,21 @@ body.v-records.selecting #selBar{display:flex}
     if(S && e.speaker!=null && prevSp<2 && spIds(entries.filter(x=>x.sid===S.id)).length>=2) refreshLiveSpeakers();
     if(tr){
       setZh(e);
-      // 译文已在预览里放大显示过：落成字幕后平滑缩回（连续两帧后再去掉 cur，过渡才会生效）
-      requestAnimationFrame(()=>requestAnimationFrame(()=>{ if(e.row) e.row.classList.remove("cur"); }));
-      if(settings.refine!==false && useRelay() && translateReady() && S) refineEntry(e);
-    }else{ queue.push(e); pump(); }
+      if(settings.refine!==false && useRelay() && translateReady() && S && language!=="zh") refineEntry(e);
+    }else if(tgt){ queue.push(e); pump(); }
   }
 
   // ---------- 翻译精修（后台，不阻塞字幕） ----------
   // 每句先按 Soniox 的原文+译文显示；同时把「原文 + Soniox 译文 + 前 3 句 + 场景术语」交给 Claude 快速校对。
   // 请求并行发出，但结果按句子顺序依次应用（前面的还没回来就先等，避免后一句先改、读起来乱序）；
   // 失败、解析不了、超过 8 秒一律静默放弃，保持原样。
-  const REFINE_SYS="你是一名英文课程、讲座、会议的字幕校对员。用户给出语音识别的英文【原文】和机器翻译的【Soniox 译文】，以及【前文】和【场景与术语】。请校对：1）修正原文里明显的识别错误（同音词、专有名词、术语，参考前文和术语表），没有把握就不要改；2）让中文译文准确、通顺、口语化，术语译法与术语表一致。不要增删原文没有的内容。严格按下面两行格式输出，不要解释：\n英文：（校对后的英文，没有修改就原样照抄）\n中文：（校对后的中文）";
+  const REFINE_SYS="你是一名多语种（中文、英文、西班牙语）课程、讲座、会议的字幕校对员。用户给出语音识别的【原文】（会说明原文语言）和机器翻译的【Soniox 译文】（简体中文），以及【前文】和【场景与术语】。请校对：1）修正原文里明显的识别错误（同音词、专有名词、术语，参考前文和术语表），没有把握就不要改，原文必须保持原来的语言；2）让中文译文准确、通顺、口语化，术语译法与术语表一致。不要增删原文没有的内容。严格按下面两行格式输出，不要解释：\n原文：（校对后的原文，没有修改就原样照抄）\n译文：（校对后的中文）";
   const REFINE_MS=8000;
   let refineTail=Promise.resolve();
   function refineEntry(e){
-    const prev=entries.filter(x=>x.status==="done" && x.id<e.id).slice(-3).map(x=>"EN: "+x.en+"\nZH: "+x.zh).join("\n");
+    const prev=prevCtx(e);
     const g=(settings.glossary||"").trim();
-    const user=(prev?"【前文】\n"+prev+"\n\n":"")+(g?"【场景与术语】\n"+g+"\n\n":"")+"【原文】\n"+e.en+"\n\n【Soniox 译文】\n"+e.zh;
+    const user=(prev?"【前文】\n"+prev+"\n\n":"")+(g?"【场景与术语】\n"+g+"\n\n":"")+"【原文语言】"+langName(e.language)+"\n【原文】\n"+e.en+"\n\n【Soniox 译文】\n"+e.zh;
     const t0=performance.now();
     const req=Promise.race([
       llmStream(REFINE_SYS,user,600,null,{model:settings.refineModel,path:"/translate"}),
@@ -2421,7 +2648,7 @@ body.v-records.selecting #selBar{display:flex}
     refineTail=mine;
   }
   function parseRefine(t){
-    const m=/英文[:：]\s*([\s\S]*?)\n\s*中文[:：]\s*([\s\S]+)/.exec(t||"");
+    const m=/(?:原文|英文)[:：]\s*([\s\S]*?)\n\s*(?:译文|中文)[:：]\s*([\s\S]+)/.exec(t||"");
     if(!m) return null;
     const en=m[1].trim(), zh=m[2].trim();
     return zh ? {en,zh} : null;
@@ -2447,11 +2674,18 @@ body.v-records.selecting #selBar{display:flex}
     try{ await translate(e); } finally{ busy=false; if(e.row) e.row.classList.remove("cur"); segSave(e); pump(); }
   }
 
+  // 前文上下文：同一翻译方向的最近 3 句（「原文 / 译文」成对）
+  function prevCtx(e){
+    const a=e.language==="zh"?"ZH":e.language==="es"?"ES":"EN", b=e.tgt==="en"?"EN":"ZH";
+    return entries.filter(x=>x.status==="done" && x.id<e.id && x.tgt===e.tgt && x.zh).slice(-3).map(x=>a+": "+x.en+"\n"+b+": "+x.zh).join("\n");
+  }
   async function translate(e){
     if(!translateReady()){ e.status="failed"; setError(e,useRelay()?"还没填中转地址或访问口令":"还没填 API 密钥"); showBanner(useRelay()?'请到底部的「设置」页，填入中转地址和访问口令。':'请到底部的「设置」页，填入 Claude API 密钥。'); return; }
-    const prev=entries.filter(x=>x.status==="done" && x.id<e.id).slice(-3).map(x=>"EN: "+x.en+"\nZH: "+x.zh).join("\n");
+    const prev=prevCtx(e);
     const g=(settings.glossary||"").trim();
-    const system="你是一名专业的英译中同声传译员。把用户给出的【待翻译】英文翻译成自然、口语化、通顺的简体中文。只输出中文译文本身，不要解释、不要引号、不要保留英文。语音识别结果可能有错字或缺标点，请根据上下文合理理解后翻译。人名、品牌名如无通用中文译名可保留英文。"
+    const system=(e.tgt==="en"
+      ? "你是一名专业的中译英同声传译员。把用户给出的【待翻译】中文翻译成自然、口语化、通顺的英文。只输出英文译文本身，不要解释、不要引号、不要保留中文。语音识别结果可能有错字或缺标点，请根据上下文合理理解后翻译。"
+      : "你是一名专业的同声传译员。把用户给出的【待翻译】"+langName(e.language)+"翻译成自然、口语化、通顺的简体中文。只输出中文译文本身，不要解释、不要引号、不要保留原文。语音识别结果可能有错字或缺标点，请根据上下文合理理解后翻译。人名、品牌名如无通用中文译名可保留原文。")
       + (g ? "\n\n场景与术语要求：\n"+g : "");
     const user=(prev ? "【前文，仅供参考上下文，不要翻译】\n"+prev+"\n\n" : "") + "【待翻译】\n"+e.en;
 
@@ -2524,10 +2758,46 @@ body.v-records.selecting #selBar{display:flex}
   }
 
   // ---------- 状态栏 ----------
-  function setStatus(on,text){
-    $("status").classList.toggle("on",on); $("statusText").textContent=text;
-    mic.classList.toggle("on",on); mic.setAttribute("aria-label", on?"停止收听":"开始收听");
+  // ---------- 主页状态：idle（未录音）/ live（录音中）/ paused（已暂停）----------
+  // 所有界面（大按钮、工具栏、顶部 Live 标记、红色横条、首页设置摘要）都由这一个函数按当前状态刷新
+  const isPaused=()=>!!(S && !S.closing && S.intAt!=null && !listening);
+  const uiState=()=>listening ? "live" : isPaused() ? "paused" : "idle";
+  const recActive=()=>uiState()!=="idle";
+  function statusLabel(){
+    const t=fmt(Math.floor(nowT()||0));
+    if(listening){
+      if(engState==="connecting") return "连接中…";
+      if(engState==="retry") return "重连中（"+(eng?eng.retries:0)+"/3）";
+      return "录音中 ("+t+")";
+    }
+    return isPaused() ? "已暂停 ("+t+")" : "未开始";
   }
+  function summaryLine(){
+    const sx=settings.engine==="soniox";
+    const langs=sx ? "中 / 英 / 西" : "英", to=sx ? (settings.zhMode==="en" ? "中文 / 英文" : "中文") : "中文";
+    return langs+" → "+to+" · "+(ENGINE_NAMES[settings.engine]||"")+" · "+folderName(settings.lastFolder);
+  }
+  let lastUi="";
+  function applyUi(){
+    const st=uiState(), home=$("home");
+    if(home.dataset.st!==st){ home.dataset.st=st; if(st==="idle") $("sumChip").hidden=$("sumChip").hidden; }
+    const label=statusLabel(); $("statusText").textContent=label;
+    $("liveBadge").hidden=st==="idle"; $("liveBadge").classList.toggle("paused",st==="paused"); $("liveBadgeTxt").textContent=st==="paused"?"已暂停":"Live";
+    $("endBtn").hidden=st==="idle";
+    const pb=$("pauseBtn"), paused=st==="paused";
+    pb.setAttribute("aria-label",paused?"继续录音":"暂停");
+    const icon=paused ? '<path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/>' : '<rect x="6" y="5" width="4" height="14" rx="1.2"/><rect x="14" y="5" width="4" height="14" rx="1.2"/>';
+    if(lastUi!==st){ $("pauseIcon").innerHTML=icon; $("liveTag").textContent=paused?"已暂停":"● LIVE"; lastUi=st; if(st!=="live") setLevel(0,true); }
+    $("idleSum").textContent=summaryLine();
+    $("idleHint").textContent=(st==="idle" && noRecords) ? FIRST_HINT : "";
+    // 打开记录 / 设置页时，顶部的红色横条提示录音仍在继续，点击回到主页
+    const bar=$("recBar"), show=recActive() && pageStack.length>0;
+    bar.hidden=!show; bar.classList.toggle("paused",paused);
+    if(show) $("recBarTxt").textContent=(paused?"已暂停 ":"录音中 ")+fmt(Math.floor(nowT()||0));
+    document.body.classList.toggle("has-page",pageStack.length>0);
+  }
+  function setStatus(){ applyUi(); }
+  setInterval(()=>{ try{ if(recActive()) applyUi(); }catch(e){} },500);
 
   // ---------- 公共模块：麦克风采集 → 16kHz 单声道 Int16 PCM（AudioWorklet，每块约 100ms） ----------
   // 各流式引擎（Soniox、Deepgram）都从这里取音频，录音存档（MediaRecorder）用同一个 MediaStream。
@@ -2802,8 +3072,8 @@ registerProcessor("pcm16",PCM16);`;
   //   - 最终 token 只下发一次；非最终 token 每条消息整体替换。特殊 token：<end>（端点）、<fin>。
   //   - 译文 token 没有时间戳；顺序严格是「原文块 → 对应译文块 → 下一个原文块 → …」，所以按这个顺序配对。
   //   - 错误：{error_code, error_message}（401 鉴权、402/429 额度或并发、400 参数、408/500/503 可重试）。
-  const SX_MODELS=["stt-rt-v5","stt-rt-v3"];
-  const SENT_END=/[.!?。！？]["'”’)\]]*$/, ANY_PUNCT=/[.!?,;:。！？，；：]["'”’)\]]*$/;
+  const SX_MODELS=["stt-rt-v5","stt-rt-v3"], SX_LANGS=["zh","en","es"];   // 语言提示：中文、英文、西班牙语；开启语言识别后每个 token 带 language
+  const SENT_END=/[.!?。！？¿¡]["'”’)\]]*$/, ANY_PUNCT=/[.!?,;:。！？，；：、]["'”’)\]]*$/;
   class SonioxEngine extends WsEngine{
     constructor(h){
       super(h); this.toks=[]; this.nonfinal=[]; this.lastKind=null; this.endSeen=false; this.endAt=0; this.timer=null;
@@ -2832,7 +3102,7 @@ registerProcessor("pcm16",PCM16);`;
     }
     config(){
       const c={api_key:this.authInfo.key, model:this.model(), audio_format:"pcm_s16le", sample_rate:PCM_RATE, num_channels:1,
-        language_hints:["en"], enable_endpoint_detection:true, translation:{type:"one_way", target_language:"zh"}};
+        language_hints:SX_LANGS, enable_language_identification:true, enable_endpoint_detection:true, translation:{type:"one_way", target_language:"zh"}};
       if(settings.diarize!==false) c.enable_speaker_diarization=true;
       const ctx=this.opts.context && this.opts.context(); if(ctx) c.context=ctx;
       return c;
@@ -2858,10 +3128,12 @@ registerProcessor("pcm16",PCM16);`;
     }
     origText(){ return this.toks.filter(t=>this.isOrig(t)).map(t=>t.text).join("").trim(); }
     // 一句话的边界只出现在“原文块+译文块”配对完成之后：下一个原文 token 到来时才可能切，保证原文和译文不错位
+    unitLang(){ const t=this.toks.find(t=>this.isOrig(t) && t.language); return t?normLang(t.language):null; }
     cutBefore(next){
       const o=this.toks.filter(t=>this.isOrig(t)); if(!o.length) return false;
       const text=o.map(t=>t.text).join("").trim();
-      const words=text.split(/\s+/).filter(Boolean).length;
+      const zh=this.unitLang()==="zh";
+      const words=zh ? Math.round(text.length/1.8) : text.split(/\s+/).filter(Boolean).length;   // 中文没有空格：约 1.8 个字算一个词
       const span=(o[o.length-1].end_ms||0)-(o[0].start_ms||0);
       if(next.speaker!=null && o[0].speaker!=null && next.speaker!==o[0].speaker) return true;   // 换人说话
       if(this.endSeen){ this.endSeen=false; return true; }                                          // 端点之后的新原文是新的一句
@@ -2871,7 +3143,11 @@ registerProcessor("pcm16",PCM16);`;
     }
     addFinal(t){
       if(this.isOrig(t)){
-        if(this.lastKind==="t" && this.cutBefore(t)) this.commitPending();
+        // 同一句里语言切换：在切换处分成两张卡片，每张只有一种语言
+        const ul=this.unitLang();
+        if(this.toks.length && ul && t.language && normLang(t.language)!==ul) this.commitPending();
+        // 中文没有译文块，不会出现 lastKind==="t"，同样按边界规则切
+        else if((this.lastKind==="t" || ul==="zh") && this.cutBefore(t)) this.commitPending();
         this.lastKind="o";
       }else this.lastKind="t";
       this.toks.push(t);
@@ -2882,7 +3158,7 @@ registerProcessor("pcm16",PCM16);`;
       clearTimeout(this.timer); this.timer=null;
       if(!this.toks.length) return;
       let delay=null;
-      if(this.lastKind==="t") delay=this.endSeen ? 600 : (SENT_END.test(this.origText()) ? 1200 : 4000);
+      if(this.lastKind==="t" || this.unitLang()==="zh") delay=this.endSeen ? 600 : (SENT_END.test(this.origText()) ? 1200 : 4000);   // 中文没有译文，不用等
       else if(this.endSeen) delay=2500;                 // 端点已到但译文还没来：多等一会儿
       if(delay==null) return;
       if(this.nonfinal.length) delay=Math.max(delay,8000);   // 还有没定稿的内容在变，别急着提交
@@ -2896,7 +3172,8 @@ registerProcessor("pcm16",PCM16);`;
       if(!text) return;      // 只有译文没有原文：没法配对，丢弃
       const first=o[0], last=o[o.length-1];
       const ts=ms=>typeof ms==="number" ? this.tl(ms/1000) : null;
-      this.h.onFinal({text, translation:zh, startSec:ts(first.start_ms), endSec:ts(last.end_ms), speaker:first.speaker!=null?String(first.speaker):null});
+      const lang=normLang((o.find(t=>t.language)||{}).language||"en");
+      this.h.onFinal({text, translation:zh, language:lang, startSec:ts(first.start_ms), endSec:ts(last.end_ms), speaker:first.speaker!=null?String(first.speaker):null});
     }
     preview(){
       const all=this.toks.concat(this.nonfinal);
@@ -2975,12 +3252,12 @@ registerProcessor("pcm16",PCM16);`;
   const engineHandlers={
     now:()=>nowT()||0,
     onPartial:(t,z)=>showLive(t,z),
-    onFinal:r=>{ commit(r.text,r.startSec,r.endSec,{translation:r.translation,speaker:r.speaker}); showLive(""); },
+    onFinal:r=>{ commit(r.text,r.startSec,r.endSec,{translation:r.translation,speaker:r.speaker,language:r.language}); showLive(""); },
     onStatus:st=>{
       engState=st.state; dbg("引擎状态："+st.state+(st.retries?"（重连 "+st.retries+"/3）":""));
       if(ENGINES[activeEngine] && ENGINES[activeEngine].streaming){
         refreshStatus();
-        if(st.state==="live") setHint("");
+        if(st.state==="live" && !fellBack) setHint("");   // 切到备用引擎后的提示要一直留着
       }
     },
     onHint:t=>{ setHint(t); },
@@ -3000,8 +3277,8 @@ registerProcessor("pcm16",PCM16);`;
     const old=eng; if(old) old.abort();      // 把没确定的那句先送出，再丢弃旧连接
     activeEngine="deepgram"; engState="connecting";
     addDivider("[已切换识别引擎]");
-    setHint("Soniox 不可用（"+String(msg).replace(/[。\s]+$/,"")+"），已切换到备用引擎 Deepgram，翻译改用 "+llmName());
-    toast("已切换到备用引擎");
+    setHint("Soniox 不可用（"+String(msg).replace(/[。\s]+$/,"")+"），已切换到备用引擎 Deepgram：备用引擎仅识别英文，翻译改用 "+llmName());
+    toast("已切换到备用引擎（仅识别英文）");
     console.warn("[识别引擎] Soniox 失败，切换到 Deepgram：",msg);
     eng=ENGINES.deepgram.create(engineHandlers);
     refreshStatus();
@@ -3009,37 +3286,36 @@ registerProcessor("pcm16",PCM16);`;
     catch(e){ fellBack=false; return false; }
     return true;
   }
-  function refreshStatus(){
-    const info=ENGINES[activeEngine]; if(!info || !info.streaming) return;
-    const t=fmt(listenSecs)+(fellBack?" · 已切换到备用引擎":"");
-    const txt = engState==="connecting" ? "连接中… "+t
-      : engState==="live" ? "收听中 "+t
-      : engState==="retry" ? "重连中（"+(eng?eng.retries:0)+"/3）"+t
-      : (S && S.intAt!=null && !S.closing) ? "已中断 "+t
-      : "已暂停 "+t;
-    setStatus(listening, txt);
-  }
+  function refreshStatus(){ applyUi(); }
   // 录音用的麦克风流：浏览器自带引擎自己管麦克风，没有 PCM 采集，录音存档就单独开一路（Soniox / Deepgram 共用 cap.stream）
   let recStream=null, meter=null;
   const MIC_CONSTRAINTS={audio:{channelCount:1,echoCancellation:false,noiseSuppression:true,autoGainControl:true}};
   // 实时音量波形：从麦克风流取真实音量，竖条按时间向左滚动
+  // 收音强度：三格指示，按实时音量点亮；音量持续过低时提示「声音太小」
+  let lowSince=0;
+  function setLevel(lvl,reset){
+    const bars=$("lvl").children, th=[0.035,0.11,0.26];
+    for(let i=0;i<3;i++) bars[i].classList.toggle("on",lvl>th[i]);
+    if(reset){ lowSince=0; $("lvlMsg").hidden=true; return; }
+    const now=performance.now();
+    if(lvl>0.05){ lowSince=0; $("lvlMsg").hidden=true; }
+    else{ if(!lowSince) lowSince=now; if(now-lowSince>4000) $("lvlMsg").hidden=false; }
+  }
   function startMeter(stream,ctx){
     stopMeter();
-    const wave=$("wave"), bars=[...wave.children]; let own=null, c=ctx;
+    let own=null, c=ctx;
     try{ if(!c){ const AC=window.AudioContext||window.webkitAudioContext; c=own=new AC(); } }catch(e){ return; }
     let src, an;
     try{ src=c.createMediaStreamSource(stream); an=c.createAnalyser(); an.fftSize=512; src.connect(an); }
     catch(e){ try{ own&&own.close(); }catch(_){} return; }
-    const buf=new Uint8Array(an.fftSize), hist=new Array(bars.length).fill(0); let raf=0, last=0;
-    wave.classList.add("on");
+    const buf=new Uint8Array(an.fftSize); let raf=0, last=0;
     const tick=ts=>{
-      raf=requestAnimationFrame(tick); if(ts-last<70) return; last=ts;
+      raf=requestAnimationFrame(tick); if(ts-last<90) return; last=ts;
       an.getByteTimeDomainData(buf); let sum=0; for(let i=0;i<buf.length;i++){ const d=(buf[i]-128)/128; sum+=d*d; }
-      hist.shift(); hist.push(Math.min(1,Math.sqrt(sum/buf.length)*5));
-      bars.forEach((b,i)=>{ b.style.height=(4+hist[i]*26).toFixed(1)+"px"; });
+      setLevel(Math.min(1,Math.sqrt(sum/buf.length)*5));
     };
     raf=requestAnimationFrame(tick);
-    meter={stop(){ cancelAnimationFrame(raf); try{ src.disconnect(); an.disconnect(); }catch(e){} try{ own&&own.state!=="closed"&&own.close(); }catch(e){} wave.classList.remove("on"); bars.forEach(b=>{ b.style.height=""; }); }};
+    meter={stop(){ cancelAnimationFrame(raf); try{ src.disconnect(); an.disconnect(); }catch(e){} try{ own&&own.state!=="closed"&&own.close(); }catch(e){} setLevel(0,true); }};
   }
   function stopMeter(){ if(meter){ meter.stop(); meter=null; } }
   function releaseCapture(){
@@ -3073,7 +3349,7 @@ registerProcessor("pcm16",PCM16);`;
       else if(n==="NotFoundError"||n==="OverconstrainedError") showBanner("没有检测到麦克风，请检查设备。");
       else if(n==="NotReadableError") showBanner("麦克风被其他应用占用，请关闭后重试。");
       else showBanner("音频启动失败："+((err&&err.message)||n||"未知错误"));
-      listening=false; setStatus(false,"未开始"); setHint("点麦克风重试");
+      listening=false; applyUi(); setHint("点中央的录音按钮重试");
       return false;
     }
     // 1b. 不用 PCM 采集的引擎（浏览器自带）：录音存档单独开一路麦克风，识别引擎照常自己管麦克风
@@ -3086,7 +3362,7 @@ registerProcessor("pcm16",PCM16);`;
     // 2. 会话与录音存档
     if(resume && S){
       const ms=performance.now()-S.intAt; S.gapMs+=ms; S.intAt=null; S.closing=false;
-      addBreak(ms/1000);
+      addBreak(ms/1000,S.paused?"暂停":"中断"); S.paused=false;
     }else sessBegin(activeEngine);
     if(cap){
       audioStart(cap.stream);
@@ -3119,9 +3395,9 @@ registerProcessor("pcm16",PCM16);`;
       if(eng) eng.abort();
       await sessEnd();
     }
-    const resuming = !!(S && S.intAt!=null && !S.closing && ENGINES[S.row.engine] && ENGINES[S.row.engine].usesMic);
+    const resuming = !!(S && S.intAt!=null && !S.closing && ENGINES[S.row.engine]);
     activeEngine = resuming ? S.row.engine : settings.engine; fellBack=false;
-    listening=true; setStatus(true,"收听中"); setHint("");
+    listening=true; applyUi(); setHint(""); $("sumChip").hidden=true; clearInterval(sumWatch);
     acquireWake();
     await startEngine(resuming);
   }
@@ -3132,12 +3408,27 @@ registerProcessor("pcm16",PCM16);`;
     const info=ENGINES[activeEngine];
     if(eng && !eng.stopped){ audioStop(); releaseCapture(); eng.stop(); }      // 引擎 flush 完最后一句后回调 onClosed → 结束会话
     else if(S){ audioStop(); releaseCapture(); sessEnd(); }                     // 已中断后直接结束
-    if(info && info.streaming){ engState="idle"; refreshStatus(); if(!listenSecs) setStatus(false,"已暂停"); }
-    else setStatus(false,"已暂停");
+    engState="idle"; applyUi();
     setHint(defaultHint());
     try{ wakeLock && wakeLock.release(); }catch(e){} wakeLock=null;
   }
-  mic.onclick=()=>{ listening?stop():start(); };
+  // 暂停：停止发送音频并关闭识别连接（Soniox 按连接时长计费，所以不用保活而是直接断开），时间轴冻结；继续时重新连接，接在同一条记录后面
+  function pauseRec(){
+    if(!S || S.closing || S.intAt!=null || !listening) return;
+    S.intT=nowT(); S.intAt=performance.now(); S.paused=true;
+    listening=false;
+    audioStop(); releaseCapture(); if(eng) eng.stop();
+    try{ wakeLock && wakeLock.release(); }catch(e){} wakeLock=null;
+    engState="idle"; applyUi(); dbg("暂停录音");
+  }
+  mic.onclick=()=>{ if(!listening) start(); };
+  $("pauseBtn").onclick=()=>{ if(listening) pauseRec(); else if(isPaused()) start(); };
+  $("endBtn").onclick=()=>{
+    $("endNote").textContent="已录 "+fmt(Math.floor(nowT()||0))+"。结束后会自动保存这条记录"+(sumReady()?"，并在后台生成摘要":"")+"。";
+    $("endDlg").showModal();
+  };
+  $("endCancel").onclick=()=>$("endDlg").close();
+  $("endOk").onclick=()=>{ $("endDlg").close(); if(S) S.userEnd=true; stop(); };
   document.addEventListener("visibilitychange",async()=>{
     if(document.visibilityState!=="visible") return;
     if(S && S.needPrompt) showIntDlg();
@@ -3146,10 +3437,33 @@ registerProcessor("pcm16",PCM16);`;
   });
 
   // ---------- Typing / keyboard dictation ----------
-  $("toggleType").onclick=()=>{ const t=$("typebar"); t.classList.toggle("show"); $("liveFoot").classList.toggle("typing",t.classList.contains("show")); if(t.classList.contains("show")) $("typeInput").focus(); };
-  function sendTyped(){ const v=$("typeInput").value; if(v.trim()){ commit(v); $("typeInput").value=""; } }
+  const typeLayer=$("typeLayer");
+  function openType(){ $("home").style.setProperty("--tbh",$("toolbar").offsetHeight+"px"); typeLayer.hidden=false; $("typeInput").focus(); }
+  function closeType(){ typeLayer.hidden=true; $("typeInput").blur(); }
+  $("toggleType").onclick=()=>{ typeLayer.hidden ? openType() : closeType(); };
+  $("typeBackdrop").onclick=closeType;
+  // 打字内容同样自动识别语言（中文 / 英文 / 西班牙语），再按设置翻译
+  function sendTyped(){ const v=$("typeInput").value; if(v.trim()){ commit(v,null,null,{language:detectLang(v)}); $("typeInput").value=""; closeType(); } }
   $("typeSend").onclick=sendTyped;
-  $("typeInput").addEventListener("keydown",e=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); sendTyped(); } });
+  $("typeInput").addEventListener("keydown",e=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); sendTyped(); } else if(e.key==="Escape") closeType(); });
+
+  // ---------- AI 阶段摘要：到目前为止的内容，随时看一眼，不保存 ----------
+  const STAGE_SYS="你是一名学习助理。下面是一场正在进行的录音到目前为止的转写（原文可能是英文、中文或西班牙语，非英文的行会在时间戳后标注语言；每行以 [mm:ss] 时间戳开头）。请用简体中文给出阶段摘要：先用一句话说明目前讲到哪里；再列 3～6 个要点，每条带时间点 [mm:ss]；最后如果出现了关键术语，列出「原文 — 中文解释」。引用原话时保留原文。不要标题行，不要编造转写里没有的内容。";
+  let aiRun=0;
+  $("aiBtn").onclick=async()=>{
+    if(!sumReady()){ openPage("settings"); toast(useRelay()?"请先填写中转地址和访问口令":"请先填写 Claude API 密钥"); return; }
+    const mine=S ? entries.filter(e=>e.sid===S.id) : [];
+    if(mine.length<2){ toast("内容还太少，多录一会儿再试"); return; }
+    const lines=mine.map(e=>"["+fmtT(e.start)+"] "+(e.language&&e.language!=="en"?"（"+langName(e.language)+"）":"")+e.en).join("\n");
+    const head=[]; const gl=(settings.glossary||"").trim(); if(gl) head.push("【场景与术语】\n"+gl);
+    const my=++aiRun, body=$("aiBody"), err=$("aiErr");
+    body.textContent="正在生成…"; err.hidden=true; if(!$("aiDlg").open) $("aiDlg").showModal();
+    try{
+      await llmStream(STAGE_SYS,head.concat(["【到目前为止的转写】\n"+lines]).join("\n\n"),1500,t=>{ if(my===aiRun) renderMd(body,t); });
+    }catch(e){ if(my===aiRun){ body.textContent=""; err.hidden=false; err.textContent="生成失败："+((e&&e.message)||"未知错误"); } }
+  };
+  $("aiClose").onclick=()=>{ aiRun++; $("aiDlg").close(); };
+  $("aiCopy").onclick=()=>copyText($("aiBody").innerText,"已复制摘要");
 
   // ---------- Export ----------
   function fullText(){ return entries.map(e=> settings.mode==="zh" ? (e.zh||"") : (e.en+"\n"+(e.zh||""))).join("\n\n"); }
@@ -3165,12 +3479,8 @@ registerProcessor("pcm16",PCM16);`;
   function clearScreen(){
     if(!entries.length) return;
     if(!confirm("确定清空当前屏幕上的字幕？「记录」里已保存的内容不会被删除。")) return;
-    entries.length=0; queue.length=0; feed.innerHTML=""; feed.appendChild(empty); liveEl=null; toast("已清空");
+    entries.length=0; queue.length=0; feed.innerHTML=""; showLive(""); stickToBottom=true; updateToLatest(); toast("已清空");
   }
-  $("liveMore").onclick=()=>openMenu("更多",[
-    {label:"复制全文",fn:copyAll},
-    {label:"导出文本",note:".txt",fn:exportTxt},
-    {label:"清空当前屏幕字幕",note:"已保存的记录不受影响",danger:true,fn:clearScreen}]);
 
   // ---------- Settings ----------
   // ⓘ 说明：点一下展开/收起对应的小字
@@ -3230,6 +3540,8 @@ registerProcessor("pcm16",PCM16);`;
     settings.connection=b.dataset.v; saveSettings(); applySettings(); hideBanner(); checkEngine();
   });
   document.querySelectorAll("#themeSeg button").forEach(b=>b.onclick=()=>{ settings.theme=b.dataset.v; saveSettings(); applySettings(); });
+  document.querySelectorAll("#zhSeg button").forEach(b=>b.onclick=()=>{ settings.zhMode=b.dataset.v; saveSettings(); applySettings(); });
+  document.querySelectorAll("#afterSeg button").forEach(b=>b.onclick=()=>{ settings.afterEnd=b.dataset.v; saveSettings(); applySettings(); });
   document.querySelectorAll("#modeSeg button").forEach(b=>b.onclick=()=>{ settings.mode=b.dataset.mode; saveSettings(); applySettings(); });
   // 输入框
   $("apiKey").oninput=e=>{ settings.apiKey=e.target.value.trim(); saveSettings(); };
@@ -3266,24 +3578,13 @@ registerProcessor("pcm16",PCM16);`;
   $("tagMgrClose").onclick=()=>$("tagMgrDlg").close();
   $("dbgCopy").onclick=async()=>{ try{ await navigator.clipboard.writeText(dbgBuf.join("\n")); toast("已复制日志"); }catch(e){ toast("复制失败"); } };
   $("dbgClear").onclick=()=>{ dbgBuf.length=0; drawDbg(); };
-  // 实时页顶部：会话标题（点击编辑）
-  function drawSessTitle(){
-    const el=$("sessTitle"), row=S && S.row, txt=row ? row.title : "新记录";
-    if(el.textContent!==txt) el.textContent=txt;
-    el.classList.toggle("ph",!row);
-  }
-  setInterval(()=>{ try{ drawSessTitle(); }catch(e){} },1000);
-  $("sessTitle").onclick=()=>{
-    if(!S){ toast("开始收听后，可以在这里给记录命名"); return; }
-    const n=prompt("记录标题",S.row.title); if(!n||!n.trim()) return;
-    S.row.title=n.trim().slice(0,100); S.row.titleEdited=true; sessSave(); drawSessTitle();
-  };
   loadKnownTags();
   loadFolders();
   purgeExpired();          // 每次打开应用时清理超过 30 天的“最近删除”
   checkUnfinished();
   applySettings();
-  dbAll("sessions").then(r=>{ noRecords=r.length===0; if(!listening && !hint.textContent) setHint(defaultHint()); }).catch(()=>{});
+  applyUi();
+  dbAll("sessions").then(r=>{ noRecords=r.length===0; applyUi(); }).catch(()=>{});
 })();
 </script>
 </body>
