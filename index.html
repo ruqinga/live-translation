@@ -477,9 +477,6 @@ body.zh-only .entry .en{max-height:none;opacity:1;overflow:visible}
 .popover button.danger{color:var(--rec-ink)}
 .popover svg{width:20px;height:20px;flex:none;color:var(--ink2)}
 .popover hr{border:0;border-top:1px solid var(--line);margin:4px 6px}
-.mm-seg{padding:6px 10px 8px}
-.mm-t{display:flex;align-items:center;gap:12px;font-size:15px;color:var(--ink);margin-bottom:8px}
-.mm-seg .segc button{min-height:36px;width:auto;padding:0 6px;font-size:13px;display:block;text-align:center}
 /* 页面（记录 / 设置）：从主页推入 */
 .page{position:absolute;inset:0;z-index:30;display:block;background:var(--bg);overflow-y:auto;overscroll-behavior:contain;padding:0 var(--s2) calc(var(--s3) + env(safe-area-inset-bottom,0px));transform:translateX(100%);visibility:hidden;transition:transform .3s var(--ease),visibility 0s .3s;box-shadow:-8px 0 24px rgba(0,0,0,.08)}
 .page.open{transform:none;visibility:visible;transition:transform .3s var(--ease),visibility 0s}
@@ -556,9 +553,6 @@ body.has-page{background:var(--bg)}
       <div class="popover" id="moreMenu" role="menu" hidden>
         <button role="menuitem" id="mmRecords"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>记录</button>
         <button role="menuitem" id="mmSettings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>设置</button>
-        <hr>
-        <div class="mm-seg"><div class="mm-t"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M7 10h10M7 14h6"/></svg>显示方式</div>
-          <div class="segc" id="mmMode" role="radiogroup" aria-label="显示方式"><button data-mode="both" aria-pressed="true">中英对照</button><button data-mode="zh" aria-pressed="false">只看译文</button></div></div>
         <div id="mmSession">
           <hr>
           <button role="menuitem" id="mmRename"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>重命名本次记录</button>
@@ -970,7 +964,7 @@ body.has-page{background:var(--bg)}
     $("glossary").value=settings.glossary||"";
     document.documentElement.style.setProperty("--fs", settings.size+"px");
     document.body.classList.toggle("zh-only", settings.mode==="zh");
-    setSeg("modeSeg","mode",settings.mode); setSeg("mmMode","mode",settings.mode); setSeg("themeSeg","v",settings.theme); setSeg("zhSeg","v",settings.zhMode==="en"?"en":"off"); setSeg("afterSeg","v",settings.afterEnd==="detail"?"detail":"home");
+    setSeg("modeSeg","mode",settings.mode); setSeg("themeSeg","v",settings.theme); setSeg("zhSeg","v",settings.zhMode==="en"?"en":"off"); setSeg("afterSeg","v",settings.afterEnd==="detail"?"detail":"home");
     $("dbgWrap").hidden=!settings.debug;
     applyTheme();
     try{ applyUi(); }catch(e){}   // 启动时会话状态还没初始化，忽略
@@ -1524,7 +1518,6 @@ body.has-page{background:var(--bg)}
     if(!mm.hidden){ closeMoreMenu(); return; }
     const hasContent=recActive() || entries.length>0;
     $("mmSession").hidden=!hasContent; $("mmRename").hidden=!S;
-    setSeg("mmMode","mode",settings.mode);
     mm.hidden=false; $("moreBtn").setAttribute("aria-expanded","true");
   }
   $("moreBtn").onclick=e=>{ e.stopPropagation(); toggleMoreMenu(); };
@@ -1532,7 +1525,6 @@ body.has-page{background:var(--bg)}
   document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeMoreMenu(); });
   $("mmRecords").onclick=()=>openPage("records");
   $("mmSettings").onclick=()=>openPage("settings");
-  document.querySelectorAll("#mmMode button").forEach(b=>b.onclick=()=>{ settings.mode=b.dataset.mode; saveSettings(); applySettings(); setSeg("mmMode","mode",settings.mode); });
   $("mmCopy").onclick=()=>{ closeMoreMenu(); copyAll(); };
   $("mmExport").onclick=()=>{ closeMoreMenu(); exportTxt(); };
   $("mmClear").onclick=()=>{ closeMoreMenu(); clearScreen(); };
