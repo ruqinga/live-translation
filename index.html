@@ -48,7 +48,7 @@
 }
 *,*::before,*::after{box-sizing:border-box}
 html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
-body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-zh);-webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased;padding:env(safe-area-inset-top,0px) env(safe-area-inset-left,0px) 0 env(safe-area-inset-right,0px)}
+body{height:100%;margin:0;background:var(--home-bg);color:var(--ink);font-family:var(--font-zh);-webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased;padding:env(safe-area-inset-top,0px) env(safe-area-inset-left,0px) 0 env(safe-area-inset-right,0px)}
 .app{height:100%;display:flex;flex-direction:column;max-width:720px;margin:0 auto;position:relative}
 button{font-family:inherit;color:inherit}
 button:not(:disabled){-webkit-user-select:none;user-select:none}
@@ -382,7 +382,7 @@ body.selecting .card .chk{display:block}
 input:not([type=range]):focus,textarea:focus{outline:none;border-color:var(--accent)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 20%,transparent)}
 .hint{text-align:center;font-size:13px;color:var(--muted);padding:2px var(--s2);line-height:1.4}
 .hint:empty{display:none}
-.stage{flex:1;min-height:0;position:relative;overflow:hidden}
+.stage{flex:1;min-height:0;position:relative;overflow:hidden;overflow:clip}   /* clip：屏幕外的页面里的元素获得焦点时，容器也不会被横向滚动 */
 #home{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--home-bg)}
 .topbar{display:flex;align-items:center;justify-content:space-between;gap:var(--s1);padding:8px var(--s2);min-height:56px;flex:none}
 .tb-right{display:flex;align-items:center;gap:var(--s1)}
@@ -491,6 +491,7 @@ body.zh-only .entry .en{max-height:none;opacity:1;overflow:visible}
 .rec-head{position:sticky;top:0;z-index:3;background:var(--bg);margin:0 calc(var(--s2) * -1);padding:0 var(--s2)}
 #selBar{position:sticky;bottom:0;margin:0 calc(var(--s2) * -1);padding:10px var(--s2) calc(10px + env(safe-area-inset-bottom,0px));z-index:4}
 body.selecting #selBar{display:flex}
+body.has-page{background:var(--bg)}
 .recbar{display:flex;align-items:center;justify-content:center;gap:8px;flex:none;width:100%;border:0;background:var(--rec);color:#fff;font-size:13px;font-weight:600;min-height:28px;cursor:pointer;font-variant-numeric:tabular-nums}
 .recbar[hidden]{display:none}
 .recbar .recdot{background:#fff;width:8px;height:8px}
@@ -1473,7 +1474,7 @@ body.selecting #selBar{display:flex}
     o=o||{};
     const idx=pageStack.indexOf(name);
     if(idx>=0 && idx<pageStack.length-1) closePagesTo(idx+1);
-    if(idx<0){ pageStack.push(name); history.pushState({d:pageStack.length},""); const el=pageEl(name); el.scrollTop=0; el.style.zIndex=30+pageStack.length; el.classList.add("open"); }   // 后打开的页面盖在上面
+    if(idx<0){ pageStack.push(name); history.pushState({d:pageStack.length},""); const el=pageEl(name); $("records").parentNode.scrollLeft=0; el.scrollTop=0; el.style.zIndex=30+pageStack.length; el.classList.add("open"); }   // 后打开的页面盖在上面
     if(name==="records"){ if(o.trash) gotoTrash(); else if($("recDetail").hidden) recRefresh(); }
     if(name==="settings"){ applySettings(); refreshStoreInfo(); }
     closeMoreMenu(); applyUi();
