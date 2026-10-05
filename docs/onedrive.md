@@ -40,7 +40,7 @@ _meta/folders.json、tags.json、settings.json                    文件夹、�
 
 ## OneDrive 的 Azure 应用注册和 Worker 配置
 
-1. 打开 <https://portal.azure.com> → Microsoft Entra ID → 应用注册 → 新注册。名称填「同声字幕」（OneDrive 里的文件夹就叫「应用 / 同声字幕」）；**受支持的账户类型**选「任何组织目录中的账户和个人 Microsoft 账户」；**重定向 URI** 平台选 **Web**，填 `https://<你的Worker地址>/onedrive/callback`（要和 Worker 的实际地址完全一致）。
+1. 打开 <https://portal.azure.com> → Microsoft Entra ID → 应用注册 → 新注册。名称填「同声字幕」（OneDrive 里的文件夹就叫「应用 / 同声字幕」）；**受支持的账户类型**选「**仅个人 Microsoft 账户**」（Personal Microsoft accounts only；Worker 的授权端点是 `consumers`，只接受个人账户）；**重定向 URI** 平台选 **Web**，填 `https://<你的Worker地址>/onedrive/callback`（要和 Worker 的实际地址完全一致）。
 2. 应用注册 → API 权限 → 添加权限 → Microsoft Graph → **委托的权限**：`Files.ReadWrite.AppFolder`、`offline_access`、`User.Read`（后两个通常默认就有）。
 3. 证书和密码 → 新客户端密码，复制它的**值**（只显示一次）。**客户端密码有有效期（最长 24 个月），到期后同步会提示「微软拒绝了应用凭据」，需要重新生成一个并更新 Worker 的 `MS_CLIENT_SECRET`。**
 4. 复制应用的「应用程序(客户端) ID」。到 Worker 的 Settings → Variables and Secrets 添加（类型选 **Secret**）：`MS_CLIENT_ID`（应用程序 ID）、`MS_CLIENT_SECRET`（上一步的密码值）。
@@ -48,4 +48,7 @@ _meta/folders.json、tags.json、settings.json                    文件夹、�
 6. 重新部署 Worker（Git 集成合并到 main 后自动部署；之前部署过的需要更新代码）。回到页面：设置 → 存储与同步 → 登录 OneDrive。
 7. 登录完成后，在 OneDrive 网页的「应用」文件夹里找到「同声字幕」；电脑装了 OneDrive 客户端的话，本地的 OneDrive 文件夹里 `应用\同声字幕`（英文系统是 `Apps\同声字幕`）下就能看到 `readable/…/notes.md` 等文件。
 
-注意：`Files.ReadWrite.AppFolder` 在个人 Microsoft 账户上是成熟功能；组织（工作或学校）账户的 App Folder 支持在微软文档里仍标注为预览，可能受管理员策略限制。我没能在真实账号上验证（云端环境访问不了微软文档和账号），个人账号是首选。
+注意：
+- 只支持**个人 Microsoft 账户**（OneDrive 个人版），不支持工作或学校账户。
+- 已经注册过应用的：如果账户类型不是「仅个人 Microsoft 账户」，到应用的「清单 (Manifest)」里把 `signInAudience` 改成 `"PersonalMicrosoftAccount"`，同时把 `requestedAccessTokenVersion`（新版清单在 `api` 段里）或 `accessTokenAcceptedVersion`（旧版清单）设为 `2`，**两处一起改、一起保存**，否则会保存失败。也可以直接按上面的步骤重新注册一个。
+- 登录时如果看到 `unauthorized_client: ... not enabled for consumers`，说明应用的账户类型没有包含个人账户，按上一条修改；看到 `contextID ... did not have a matching cookie`，关掉所有登录标签，回到页面重新点「登录 OneDrive」，并确认 Safari 没有开无痕模式或阻止 Cookie。

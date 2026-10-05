@@ -162,10 +162,10 @@ async function sonioxToken(env, h) {
 }
 
 // ---------------- OneDrive（Microsoft 身份平台 v2.0 授权码流程 + Microsoft Graph）----------------
-// 授权端点用 common：同时支持个人账户和组织账户。权限范围：Files.ReadWrite.AppFolder（只能访问应用专属文件夹）、
+// 授权端点用 consumers：应用注册为「仅个人 Microsoft 账户」，只接受个人账户（outlook.com / hotmail / live 等）登录。权限范围：Files.ReadWrite.AppFolder（只能访问应用专属文件夹）、
 // offline_access（拿刷新令牌）、User.Read（读账号名称）。这是单用户应用：一个 Worker 只绑定一个 OneDrive 账号，
 // 刷新令牌放在 KV 的固定键里。页面只拿到短期访问令牌，并直接调用 Graph 读写文件（文件内容不经过 Worker）。
-const MS_AUTH = "https://login.microsoftonline.com/common/oauth2/v2.0";
+const MS_AUTH = "https://login.microsoftonline.com/consumers/oauth2/v2.0";
 const MS_SCOPE = "Files.ReadWrite.AppFolder offline_access User.Read";
 const KV_REFRESH = "refresh", KV_ACCOUNT = "account";
 
