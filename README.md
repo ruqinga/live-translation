@@ -27,5 +27,5 @@
 
 - [功能说明](docs/features.md)：界面、多语言识别、引擎切换与自动备用、翻译精修、记录与摘要、设置迁移
 - [部署与配置](docs/setup.md)：获取密钥、费用参考、Cloudflare Worker 中转、接口说明、使用注意
-- [OneDrive 同步](docs/onedrive.md)：设计与同步规则、Azure 应用注册、KV 配置
+- [OneDrive 同步](docs/onedrive.md)：设计与同步规则、首次同步（空应用文件夹）与排查、Azure 应用注册、KV 配置
 - [手动测试清单](docs/testing.md)
