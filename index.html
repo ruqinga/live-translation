@@ -949,7 +949,7 @@ body.has-page{background:var(--bg)}
     if(!settings.debug) return;
     const d=new Date(), p=n=>String(n).padStart(2,"0");
     dbgBuf.push(p(d.getHours())+":"+p(d.getMinutes())+":"+p(d.getSeconds())+" "+msg);
-    if(dbgBuf.length>200) dbgBuf.shift();
+    if(dbgBuf.length>500) dbgBuf.shift();
     drawDbg();
   }
   function drawDbg(){ const el=document.getElementById("dbgLog"); if(el){ el.textContent=dbgBuf.join("\n"); el.scrollTop=el.scrollHeight; } }
@@ -3607,20 +3607,62 @@ registerProcessor("pcm16",PCM16);`;
     }
     OD.tok=j.access_token; OD.tokExp=Date.now()+(j.expires_in||3600)*1000; return OD.tok;
   }
+  // 请求标签：方法 + 相对 approot 的路径（去掉域名、查询参数，不含令牌），用于错误信息和调试面板
+  function odLabel(method,url){
+    try{
+      const u=new URL(url);
+      if(u.hostname!=="graph.microsoft.com") return method+" （"+(/upload|files|sharepoint|livefilestore/.test(u.hostname)?"上传会话":"下载地址")+"）";
+      let p=decodeURIComponent(u.pathname).replace(/^\/v1\.0\/me\/drive/,"").replace("/special/approot","approot");
+      return method+" "+p;
+    }catch(e){ return method; }
+  }
   async function gerr(r){
     let m=""; try{ const j=await r.json(); m=(j.error&&(j.error.message||j.error.code))||""; }catch(_){}
-    return new OdError("OneDrive 返回 "+r.status+(m?"："+m:""),{status:r.status,retry:r.status>=500||r.status===429||r.status===408});
+    return new OdError("OneDrive 返回 "+r.status+(m?"："+m:"")+(r.odReq?"（"+r.odReq+"）":""),{status:r.status,req:r.odReq,retry:r.status>=500||r.status===429||r.status===408});
   }
   async function gx(url,opt,tries){
     opt=opt||{}; tries=tries||0;
     const tok=await odToken();
-    let r; try{ r=await fetch(url,Object.assign({},opt,{headers:Object.assign({Authorization:"Bearer "+tok},opt.headers||{})})); }catch(e){ throw new OdError("网络不通",{net:true}); }
+    const label=odLabel(opt.method||"GET",url);
+    let r; try{ r=await fetch(url,Object.assign({},opt,{headers:Object.assign({Authorization:"Bearer "+tok},opt.headers||{})})); }catch(e){ dbg("OD "+label+" → 网络错误"); throw new OdError("网络不通（"+label+"）",{net:true}); }
+    r.odReq=label; dbg("OD "+label+" → "+r.status+(tries?"（第 "+(tries+1)+" 次）":""));
     if(r.status===401 && !opt._r){ OD.tokExp=0; return gx(url,Object.assign({},opt,{_r:1}),tries); }
     if((r.status===429||r.status===503||r.status===504) && tries<3){ const ra=r.headers.get("Retry-After"); await odSleep(Math.min(ra!=null&&ra!==""&&!isNaN(+ra) ? +ra : 2*(tries+1),30)*1000); return gx(url,opt,tries+1); }
     return r;
   }
-  // 小文件（≤4MB）直接 PUT；更大的用上传会话分块上传，记录会话地址，中断后从服务器已收到的位置续传
+  // 应用文件夹是微软第一次访问 approot 时才创建的；子文件夹（sessions、_meta、readable）由这里创建，已存在（409）就忽略
+  async function odEnsureRoot(){
+    const ls=odLS(); if(OD.rootOk || ls.rootOk){ OD.rootOk=true; return; }
+    const r=await gx(AROOT+"?select=id,name");          // 访问 approot 本身，微软会在这时创建「应用/同声字幕」
+    if(!r.ok) throw await gerr(r);
+    for(const d of ["sessions","_meta","readable"]) await odMkdir(d);
+    OD.rootOk=true; ls.rootOk=true; odSave();
+  }
+  async function odMkdir(path){
+    const parts=path.split("/").filter(Boolean); let cur="";
+    OD.dirs=OD.dirs||new Set();
+    for(const n of parts){
+      const full=cur?cur+"/"+n:n;
+      if(!OD.dirs.has(full)){
+        const r=await gx((cur?itemUrl(cur)+":/children":AROOT+"/children"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:n,folder:{},"@microsoft.graph.conflictBehavior":"fail"})});
+        if(!r.ok && r.status!==409) throw await gerr(r);        // 409 nameAlreadyExists：已经有了
+        OD.dirs.add(full);
+      }
+      cur=full;
+    }
+  }
+  // 写入遇到 404（应用文件夹或父文件夹还不存在）：先创建再重试一次
   async function odPut(path,blob,ctype,key){
+    try{ await odMkdir(path.split("/").slice(0,-1).join("/")); return await odPutRaw(path,blob,ctype,key); }
+    catch(e){
+      if(e.status!==404) throw e;
+      const ls=odLS(); ls.rootOk=false; OD.rootOk=false; OD.dirs=new Set(); odSave();
+      await odEnsureRoot(); await odMkdir(path.split("/").slice(0,-1).join("/"));
+      return odPutRaw(path,blob,ctype,key);
+    }
+  }
+  // 小文件（≤4MB）直接 PUT；更大的用上传会话分块上传，记录会话地址，中断后从服务器已收到的位置续传
+  async function odPutRaw(path,blob,ctype,key){
     if(blob.size<=4*1024*1024){
       const r=await gx(itemUrl(path)+":/content?@microsoft.graph.conflictBehavior=replace",{method:"PUT",headers:{"Content-Type":ctype||"application/octet-stream"},body:blob});
       if(!r.ok) throw await gerr(r); return r.json();
@@ -3628,7 +3670,7 @@ registerProcessor("pcm16",PCM16);`;
     const ls=odLS(); ls.upl=ls.upl||{}; const k=key||path; let url=null, offset=0;
     const u=ls.upl[k]; if(u && u.size===blob.size && u.exp>Date.now()) url=u.url;
     if(url){
-      let st=null; try{ st=await fetch(url); }catch(e){ throw new OdError("网络不通",{net:true}); }
+      let st=null; try{ st=await fetch(url); }catch(e){ throw new OdError("网络不通（GET 上传会话）",{net:true}); }
       if(st.ok){ const j=await st.json(), ne=(j.nextExpectedRanges||[])[0]; offset=ne ? parseInt(ne,10)||0 : blob.size; } else url=null;
     }
     if(!url){
@@ -3640,7 +3682,8 @@ registerProcessor("pcm16",PCM16);`;
     while(offset<blob.size){
       const end=Math.min(offset+OD_CHUNK,blob.size); let r;
       try{ r=await fetch(url,{method:"PUT",headers:{"Content-Range":"bytes "+offset+"-"+(end-1)+"/"+blob.size},body:blob.slice(offset,end)}); }
-      catch(e){ throw new OdError("网络不通",{net:true}); }      // 上传会话地址保留，下次从服务器已收到的位置继续
+      catch(e){ dbg("OD PUT 上传会话 "+offset+"-"+end+" → 网络错误"); throw new OdError("网络不通（PUT 上传会话 "+offset+"-"+end+"）",{net:true}); }      // 上传会话地址保留，下次从服务器已收到的位置继续
+      r.odReq="PUT 上传会话 "+path+" "+offset+"-"+end; dbg("OD "+r.odReq+" → "+r.status);
       if(r.status===202){ const j=await r.json(), ne=(j.nextExpectedRanges||[])[0]; offset=ne ? parseInt(ne,10)||end : end; continue; }
       if(r.status===200||r.status===201){ last=await r.json(); offset=blob.size; break; }
       if(r.status===404||r.status===410){ delete ls.upl[k]; odSave(); throw new OdError("上传会话已失效，稍后重新上传",{retry:true}); }
@@ -3863,7 +3906,7 @@ registerProcessor("pcm16",PCM16);`;
       if(++guard>300) throw new OdError("同步数据太多，稍后继续",{retry:true});
       const r=await gx(url);
       if(r.status===410){ ls.deltaLink=""; ls.items={}; ls.fmap={}; odSave(); url=AROOT+"/delta"; full=true; items=[]; continue; }      // 需要全量重新同步
-      if(r.status===400||r.status===404||r.status===501) return odPullScan();       // 这个账号的 App Folder 不支持 delta：改为逐个会话文件夹比对
+      if(r.status===400||r.status===404||r.status===501){ dbg("delta 不可用（"+r.status+"），改为逐个会话文件夹比对"); return odPullScan(); }       // 这个账号的 App Folder 不支持 delta：改为逐个会话文件夹比对
       if(!r.ok) throw await gerr(r);
       const j=await r.json(); items=items.concat(j.value||[]);
       if(j["@odata.nextLink"]){ url=j["@odata.nextLink"]; continue; }
@@ -3940,6 +3983,7 @@ registerProcessor("pcm16",PCM16);`;
     if(navigator.onLine===false){ OD.state="offline"; odUi(); return; }
     OD.running=true; OD.again=false; OD.state="syncing"; OD.err=""; OD.needLogin=false; OD.stats={up:0,down:0,conflict:0}; odUi();
     try{
+      await odEnsureRoot();
       await odPull();
       await pushAll();
       await odAutoAudio();
@@ -3975,7 +4019,7 @@ registerProcessor("pcm16",PCM16);`;
     }catch(e){ OD.err="连不上中转（网络问题）"; OD.netErr=true; }
   }
   function odEnable(){ const ls=odLS(); ls.enabled=true; if(!ls.first) ls.meta={folders:true,tags:true,settings:true}; odSave(); OD.enabled=true; OD.state="idle"; OD.needLogin=false; }
-  function odDisable(reset){ const ls=odLS(); ls.enabled=false; if(reset){ ["deltaLink","items","fmap","etags","metaEtags","lastAt","first","upl"].forEach(k=>delete ls[k]); } odSave(); OD.enabled=false; OD.state="off"; OD.tok=null; clearTimeout(OD.timer); }
+  function odDisable(reset){ const ls=odLS(); ls.enabled=false; if(reset){ ["deltaLink","items","fmap","etags","metaEtags","lastAt","first","upl","rootOk"].forEach(k=>delete ls[k]); } odSave(); OD.enabled=false; OD.state="off"; OD.tok=null; clearTimeout(OD.timer); }
   async function odLogin(){
     if(!odReady()){ toast("请先把连接方式设为自建中转，并填好中转地址和访问口令"); return; }
     if(S && !S.closing){ toast("录音中不能登录，请先结束录音"); return; }

@@ -38,6 +38,20 @@ _meta/folders.json、tags.json、settings.json                    文件夹、�
 
 **设置 → 存储与同步 → OneDrive**：未登录显示「登录 OneDrive」；已登录显示账号邮箱、状态、上次同步时间、待上传数量、「立即同步」、「自动下载录音」、「清理本机录音缓存」和「退出登录」。退出登录会问你：只在这台设备停止同步（其他设备不受影响）；退出登录并保留本机数据（所有设备都停止同步）；退出登录并清除本机已同步的数据（还没上传的会保留）。需要「连接方式」为「自建中转」，并且 Worker 已按下面的步骤配置好。
 
+## 首次同步与应用文件夹
+
+新账号第一次同步时，OneDrive 里的「应用 / 同声字幕」文件夹**还不存在**，直接访问它下面的子路径会返回 `404 Item not found`。App 的处理方式：
+
+1. 先请求 `/me/drive/special/approot`，微软在这一步创建应用文件夹；再按需创建 `sessions`、`_meta`、`readable` 三个子文件夹（已存在返回 409，直接忽略）。成功后记下状态，之后不再重复检查。
+2. 读取 `_meta/*.json`、`record.json` 等文件时，404 表示「云端还没有这个文件」，按空数据处理，不报错。
+3. 拉取基于 `/special/approot/delta`（approot 本身一定存在）；没有 deltaLink 时做完整拉取。delta 不可用时退回逐文件夹扫描。
+4. 上传前先确认父文件夹存在（`readable/<文件夹>/<记录>`、`sessions/<id>`）；如果上传仍遇到 404（例如用户在 OneDrive 里手动删掉了应用文件夹），会重新创建文件夹并重试一次。
+
+### 排查：同步失败时看什么
+
+- 错误信息带失败的请求，格式如 `OneDrive 返回 403：accessDenied（PUT approot:/_meta/folders.json:/content）`；路径里不含令牌和域名。
+- 打开设置里的「调试模式」，调试面板会按顺序列出每个 OneDrive 请求，形如 `OD PUT approot:/sessions/12/record.json:/content → 201`，方便定位是哪一步失败。
+
 ## OneDrive 的 Azure 应用注册和 Worker 配置
 
 1. 打开 <https://portal.azure.com> → Microsoft Entra ID → 应用注册 → 新注册。名称填「同声字幕」（OneDrive 里的文件夹就叫「应用 / 同声字幕」）；**受支持的账户类型**选「**仅个人 Microsoft 账户**」（Personal Microsoft accounts only；Worker 的授权端点是 `consumers`，只接受个人账户）；**重定向 URI** 平台选 **Web**，填 `https://<你的Worker地址>/onedrive/callback`（要和 Worker 的实际地址完全一致）。
