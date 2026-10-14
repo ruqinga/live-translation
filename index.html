@@ -602,6 +602,11 @@ body.has-page{background:var(--bg)}
 .fold{display:none!important}
 .lchap{display:flex;gap:10px;align-items:center;margin:10px 0 0;padding:6px 10px;border-radius:10px;background:var(--fill);font-size:14px;font-weight:600;cursor:pointer}
 .card .cn{font-size:12px;color:var(--faint);margin-top:2px}
+
+.mm-t{flex:1;display:flex;flex-direction:column;min-width:0}.mm-t small{font-size:12px;color:var(--muted);margin-top:1px}
+.mm-sw{flex:none;position:relative;width:38px;height:22px;border-radius:11px;background:#C8CCD3;transition:background .2s}
+.mm-sw::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:left .2s}
+#mmTwo[aria-checked="true"] .mm-sw{background:var(--accent)}#mmTwo[aria-checked="true"] .mm-sw::after{left:18px}
 </style>
 </head>
 <body>
@@ -664,6 +669,7 @@ body.has-page{background:var(--bg)}
       <div class="popover" id="moreMenu" role="menu" hidden>
         <button role="menuitem" id="mmRecords"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>记录</button>
         <button role="menuitem" id="mmSettings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>设置</button>
+        <button role="menuitemcheckbox" id="mmTwo" aria-checked="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h14M14 4l4 4-4 4M20 16H6M10 12l-4 4 4 4"/></svg><span class="mm-t">双语互译<small id="mmTwoSub"></small></span><span class="mm-sw" aria-hidden="true"></span></button>
         <button role="menuitem" id="mmView" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M4 12h16M12 7.5l-2 2.2h4zM12 16.5l-2-2.2h4z"/></svg><span id="mmViewTxt">面对面视图</span></button>
         <div id="mmSession">
           <hr>
@@ -1748,6 +1754,7 @@ body.has-page{background:var(--bg)}
     if(!mm.hidden){ closeMoreMenu(); return; }
     const hasContent=recActive() || entries.length>0;
     $("mmSession").hidden=!hasContent; $("mmRename").hidden=!S;
+    drawMmTwo();
     $("mmView").hidden=!(rt.two && recActive()); $("mmViewTxt").textContent=f2fOn?"切换到列表视图":"切换到面对面视图";
     mm.hidden=false; $("moreBtn").setAttribute("aria-expanded","true");
   }
@@ -1756,6 +1763,18 @@ body.has-page{background:var(--bg)}
   document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeMoreMenu(); });
   $("mmRecords").onclick=()=>openPage("records");
   $("mmSettings").onclick=()=>openPage("settings");
+  // 「⋯」菜单里的双语互译开关（和设置 → 翻译模式是同一个设置）
+  function drawMmTwo(){
+    const on=twoCfg(); $("mmTwo").setAttribute("aria-checked",String(on));
+    $("mmTwoSub").textContent=on ? langName(settings.langA)+" ⇄ "+langName(settings.langB) : "关闭（单向翻译）";
+  }
+  $("mmTwo").onclick=()=>{
+    const on=!twoCfg(); settings.transMode=on?"two":"one"; saveSettings(); applySettings(); drawMmTwo(); closeMoreMenu();
+    let msg=on ? "已开启双语互译："+langName(settings.langA)+" ⇄ "+langName(settings.langB) : "已切回单向翻译";
+    if(on && settings.engine!=="soniox") msg="双语互译需要 Soniox：请到设置里把识别引擎改为 Soniox";
+    else if(recActive()) msg+="（下次录音生效）";
+    toast(msg);
+  };
   $("mmView").onclick=()=>{ closeMoreMenu(); f2fOn=!f2fOn; f2fApply(); };
   $("mmCopy").onclick=()=>{ closeMoreMenu(); copyAll(); };
   $("mmExport").onclick=()=>{ closeMoreMenu(); exportTxt(); };
