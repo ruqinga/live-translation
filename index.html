@@ -509,6 +509,25 @@ body.has-page{background:var(--bg)}
 .sync-ic svg{width:18px;height:18px}
 .si-synced{color:var(--ok)} .si-pending{color:var(--accent)} .si-conflict{color:var(--rec-ink)}
 .card{position:relative}
+
+/* 双语互译：语言选择行、面对面视图 */
+.li.pair{display:flex;align-items:center;gap:8px;padding:10px 16px}
+.pbtn2{flex:1;min-width:0;padding:10px 8px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-size:16px;font-weight:600;text-align:center}
+.swapbtn{flex:none;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--panel);color:var(--accent);font-size:20px;line-height:1}
+#livePane.f2f-on #feed,#livePane.f2f-on #speak,#livePane.f2f-on #toLatest{display:none}
+#livePane.f2f-on .f2f{display:flex}
+.f2f{flex:1;min-height:0;flex-direction:column;gap:8px;padding:0 var(--s2) var(--s1)}
+.f2f[hidden]{display:none!important}
+.f2f-half{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:16px;background:var(--panel);overflow:hidden}
+.f2f-half.top{transform:rotate(180deg)}
+.f2f-tag{position:absolute;top:8px;left:12px;z-index:1;font-size:12px;font-weight:600;color:var(--muted);background:var(--panel);padding:2px 8px;border-radius:10px;border:1px solid var(--line)}
+.f2f-list{flex:1;overflow-y:auto;padding:36px 16px 12px;overscroll-behavior:contain;display:flex;flex-direction:column}
+.f2f-list .it{margin:0 0 14px;flex:none}
+.f2f-list .it .t{font-size:calc(var(--fs)*1.05);line-height:1.4;color:var(--muted);overflow-wrap:anywhere}
+.f2f-list .it .o{font-size:12px;line-height:1.35;color:var(--muted);opacity:.75;margin-top:3px;overflow-wrap:anywhere}
+.f2f-list .it:last-child .t{font-size:calc(var(--fs)*1.7);color:var(--ink);font-weight:600}
+.f2f-list .it.live{opacity:.6}
+.f2f-list .it.pending .t{opacity:.5}
 </style>
 </head>
 <body>
@@ -538,6 +557,10 @@ body.has-page{background:var(--bg)}
 
       <div class="livepane" id="livePane">
         <main id="feed" aria-live="polite"></main>
+        <div class="f2f" id="f2f" hidden>
+          <div class="f2f-half top" id="f2fTop"><span class="f2f-tag" id="f2fTopTag"></span><div class="f2f-list" id="f2fTopList"></div></div>
+          <div class="f2f-half bot" id="f2fBot"><span class="f2f-tag" id="f2fBotTag"></span><div class="f2f-list" id="f2fBotList"></div></div>
+        </div>
         <button class="tolatest" id="toLatest" hidden>↓ 回到最新</button>
         <div class="hint" id="hint" role="status"></div>
         <div class="speak" id="speak" aria-live="off">
@@ -567,6 +590,7 @@ body.has-page{background:var(--bg)}
       <div class="popover" id="moreMenu" role="menu" hidden>
         <button role="menuitem" id="mmRecords"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>记录</button>
         <button role="menuitem" id="mmSettings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>设置</button>
+        <button role="menuitem" id="mmView" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M4 12h16M12 7.5l-2 2.2h4zM12 16.5l-2-2.2h4z"/></svg><span id="mmViewTxt">面对面视图</span></button>
         <div id="mmSession">
           <hr>
           <button role="menuitem" id="mmRename"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>重命名本次记录</button>
@@ -654,6 +678,24 @@ body.has-page{background:var(--bg)}
       <div class="callout" id="sxWarn" hidden>
         <span>Soniox 的密钥只放在 Cloudflare Worker 里，需要先把连接方式设为「自建中转」。<button class="linkbtn inline" id="goConn">去设置 →</button></span>
       </div>
+      <div class="li col" id="tmRow">
+        <div class="li-h">翻译模式<button class="ibtn" data-info="tmInfo" aria-expanded="false" aria-controls="tmInfo" aria-label="说明">ⓘ</button></div>
+        <div class="segc" id="tmSeg" role="radiogroup" aria-label="翻译模式">
+          <button data-v="one" aria-pressed="true">单向翻译</button>
+          <button data-v="two" aria-pressed="false">双语互译</button>
+        </div>
+      </div>
+      <div class="info" id="tmInfo" hidden>单向翻译：自动识别中文 / 英文 / 西班牙语，译为中文。双语互译：和说另一种语言的人对话，语言 A 的话译成 B，语言 B 的话译成 A，使用 Soniox 的双向翻译；说了这两种以外的语言时只显示原文，不翻译。</div>
+      <div class="callout" id="twWarn" hidden>双语互译需要 Soniox，当前识别引擎不支持，无法开始录音。请把上面的「识别引擎」改为 Soniox。</div>
+      <div id="twBox" hidden>
+        <div class="li pair" id="twPair">
+          <button class="pbtn2" id="langABtn" aria-haspopup="dialog" aria-label="语言 A"></button>
+          <button class="swapbtn" id="langSwap" aria-label="交换语言 A 和 B">⇄</button>
+          <button class="pbtn2" id="langBBtn" aria-haspopup="dialog" aria-label="语言 B"></button>
+        </div>
+        <div class="li tog" id="faceRow"><span class="li-t">面对面视图<button class="ibtn" data-info="faceInfo" aria-expanded="false" aria-controls="faceInfo" aria-label="说明">ⓘ</button></span><button class="sw" id="faceMode" role="switch" aria-checked="false" aria-label="面对面视图"></button></div>
+        <div class="info" id="faceInfo" hidden>开启后，录音时字幕区分成上下两半：上半部分旋转 180°，给坐在对面的人看，只显示译成语言 B 的内容；下半部分只显示译成语言 A 的内容。每句附小字原文，最新一句放大。录音中可在「⋯」菜单里临时切换，不影响这里的默认值。</div>
+      </div>
       <div class="li tog" id="diarizeRow"><span class="li-t">说话人分离<button class="ibtn" data-info="diarizeInfo" aria-expanded="false" aria-controls="diarizeInfo" aria-label="说明">ⓘ</button></span><button class="sw" id="diarize" role="switch" aria-checked="true" aria-label="说话人分离"></button></div>
       <div class="info" id="diarizeInfo" hidden>区分不同的说话人，字幕前显示彩色圆点和名称；同一场出现两位及以上说话人时才显示，可在记录详情里改名。</div>
       <button class="li" id="accentRow" aria-haspopup="dialog"><span class="li-t">说话人的口音</span><span class="li-v" id="accentVal"></span><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></button>
@@ -702,6 +744,7 @@ body.has-page{background:var(--bg)}
       <div class="li tog" id="refineRow"><span class="li-t">翻译精修<button class="ibtn" data-info="refineInfo" aria-expanded="false" aria-controls="refineInfo" aria-label="说明">ⓘ</button></span><button class="sw" id="refine" role="switch" aria-checked="true" aria-label="翻译精修"></button></div>
       <div class="info" id="refineInfo" hidden></div>
       <button class="li" id="refineModelRow" aria-haspopup="dialog"><span class="li-t" id="refineModelLbl">精修模型</span><span class="li-v" id="refineModelVal"></span><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></button>
+      <button class="li" id="sumLangRow" aria-haspopup="dialog"><span class="li-t">摘要语言</span><span class="li-v" id="sumLangVal"></span><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></button>
       <button class="li" id="sumModelRow" aria-haspopup="dialog"><span class="li-t">摘要模型</span><span class="li-v" id="sumModelVal"></span><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></button>
     </div>
 
@@ -922,10 +965,25 @@ body.has-page{background:var(--bg)}
 
   let listening=false, liveEl=null, wakeLock=null, sumWatch=null;
   const pageStack=[];            // 已打开的页面（记录 / 设置），从主页推入
+  // 本次录音实际使用的翻译模式（开始或续录时从设置 / 记录里取，录音中改设置不影响正在进行的会话）
+  const rt={two:false, a:"zh", b:"es"};
+  const twoCfg=()=>settings.transMode==="two";
+  function rtSnapshot(row){
+    if(row){ rt.two=row.mode==="two"; rt.a=row.langA||settings.langA; rt.b=row.langB||settings.langB; }
+    else{ rt.two=twoCfg(); rt.a=settings.langA; rt.b=settings.langB; }
+  }
+  const natName=l=>(LANG_BY[l]&&LANG_BY[l].nat)||String(l).toUpperCase();
   const entries=[]; const queue=[]; let busy=false; let seq=0; let stickToBottom=true;
 
   // 设置项。v3 起三个设置改名（值不变）：provider→llm（大语言模型服务商）、route→connection（连接方式）、model→refineModel（精修/翻译模型）
-  const settings={connection:"direct", relayUrl:"", relayToken:"", llm:"anthropic", lastFolder:null, saveAudio:true, tagPresets:["重点","作业","考试","没听懂"], sumModel:"", apiKey:"", dgKey:"", engine:"soniox", diarize:true, refine:true, autoFallback:true, refineModel:"claude-haiku-4-5-20251001", zhMode:"off", afterEnd:"home", lang:"en-US", mode:"both", size:22, glossary:"", theme:"auto", debug:false};
+  // ---------- 语言表（双语互译、摘要语言共用）：c=Soniox 语言代码，n=中文名，nat=本语言写法（面对面视图的小标签用） ----------
+  const LANGS=[["zh","中文","中文"],["en","英语","English"],["es","西班牙语","Español"],["fr","法语","Français"],["de","德语","Deutsch"],["it","意大利语","Italiano"],["pt","葡萄牙语","Português"],["ja","日语","日本語"],["ko","韩语","한국어"],["ru","俄语","Русский"],["ar","阿拉伯语","العربية"],["hi","印地语","हिन्दी"],["vi","越南语","Tiếng Việt"],["th","泰语","ไทย"],["id","印度尼西亚语","Bahasa Indonesia"],["tr","土耳其语","Türkçe"],["nl","荷兰语","Nederlands"],["pl","波兰语","Polski"],["uk","乌克兰语","Українська"]].map(([c,n,nat])=>({c,n,nat}));
+  const LANG_BY=Object.fromEntries(LANGS.map(l=>[l.c,l]));
+  const LANG_PILL={zh:"中"}, LANG_NAME={en:"英文"};
+  const normLang=l=>{ l=String(l||"").toLowerCase().slice(0,2); return l||"en"; };
+  const langPill=l=>LANG_PILL[l]||String(l||"EN").toUpperCase();
+  const langName=l=>LANG_NAME[l]||(LANG_BY[l]&&LANG_BY[l].n)||String(l).toUpperCase();
+  const settings={connection:"direct", relayUrl:"", relayToken:"", llm:"anthropic", lastFolder:null, saveAudio:true, tagPresets:["重点","作业","考试","没听懂"], sumModel:"", apiKey:"", dgKey:"", engine:"soniox", diarize:true, refine:true, autoFallback:true, refineModel:"claude-haiku-4-5-20251001", zhMode:"off", transMode:"one", langA:"zh", langB:"es", faceMode:false, sumLang:"zh", afterEnd:"home", lang:"en-US", mode:"both", size:22, glossary:"", theme:"auto", debug:false};
   const LEGACY_KEYS={provider:"llm", route:"connection", model:"refineModel"};
   // 旧键名 → 新键名：新键已存在时以新键为准；迁移后立即写回，旧键删除
   function migrateSettings(saved){
@@ -1000,6 +1058,15 @@ body.has-page{background:var(--bg)}
     document.documentElement.style.setProperty("--fs", settings.size+"px");
     document.body.classList.toggle("zh-only", settings.mode==="zh");
     setSeg("modeSeg","mode",settings.mode); setSeg("themeSeg","v",settings.theme); setSeg("zhSeg","v",settings.zhMode==="en"?"en":"off"); setSeg("afterSeg","v",settings.afterEnd==="detail"?"detail":"home");
+    // 翻译模式：双语互译时显示语言 A/B 和面对面视图，隐藏单向翻译专用的「中文内容」
+    const two=twoCfg();
+    if(settings.langA===settings.langB){ settings.langB=settings.langA==="es"?"zh":"es"; saveSettings(); }
+    setSeg("tmSeg","v",two?"two":"one");
+    $("twBox").hidden=!two; $("twWarn").hidden=!(two && !soniox);
+    $("zhRow").hidden=two; if(two) $("zhInfo").hidden=true;
+    $("langABtn").textContent=langName(settings.langA); $("langBBtn").textContent=langName(settings.langB);
+    setSwitch("faceMode",!!settings.faceMode);
+    $("sumLangVal").textContent=langName(settings.sumLang||"zh");
     $("dbgWrap").hidden=!settings.debug;
     applyTheme();
     try{ applyUi(); }catch(e){}   // 启动时会话状态还没初始化，忽略
@@ -1140,7 +1207,8 @@ body.has-page{background:var(--bg)}
     const d=new Date(), p=n=>String(n).padStart(2,"0");
     const row={id:Date.now(), title:p(d.getMonth()+1)+"月"+p(d.getDate())+"日 "+p(d.getHours())+":"+p(d.getMinutes()),
       created:Date.now(), ended:null, dur:0, tags:[], summary:"", summaryAt:null, audioMime:null, parts:[], engine, titleEdited:false, titleAuto:false,
-      folderId:validFolderId(settings.lastFolder), deletedAt:null};
+      folderId:validFolderId(settings.lastFolder), deletedAt:null, mode:rt.two?"two":"one"};
+    if(rt.two){ row.langA=rt.a; row.langB=rt.b; }
     S={id:row.id, row, t0:performance.now(), gapMs:0, intAt:null, intT:0, segN:0, nSeg:0, titled:false, closing:false, ending:false, chunkIdx:0, writes:[], mrDones:[], mr:null, needPrompt:false};
     pendingMark=false; noRecords=false; if(!listening) setHint("");
     dbPut("sessions",row).catch(dbFail);
@@ -1583,6 +1651,7 @@ body.has-page{background:var(--bg)}
     if(!mm.hidden){ closeMoreMenu(); return; }
     const hasContent=recActive() || entries.length>0;
     $("mmSession").hidden=!hasContent; $("mmRename").hidden=!S;
+    $("mmView").hidden=!(rt.two && recActive()); $("mmViewTxt").textContent=f2fOn?"切换到列表视图":"切换到面对面视图";
     mm.hidden=false; $("moreBtn").setAttribute("aria-expanded","true");
   }
   $("moreBtn").onclick=e=>{ e.stopPropagation(); toggleMoreMenu(); };
@@ -1590,6 +1659,7 @@ body.has-page{background:var(--bg)}
   document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeMoreMenu(); });
   $("mmRecords").onclick=()=>openPage("records");
   $("mmSettings").onclick=()=>openPage("settings");
+  $("mmView").onclick=()=>{ closeMoreMenu(); f2fOn=!f2fOn; f2fApply(); };
   $("mmCopy").onclick=()=>{ closeMoreMenu(); copyAll(); };
   $("mmExport").onclick=()=>{ closeMoreMenu(); exportTxt(); };
   $("mmClear").onclick=()=>{ closeMoreMenu(); clearScreen(); };
@@ -2039,7 +2109,7 @@ body.has-page{background:var(--bg)}
     freePlayer(); det=null; pane("recHome"); recRefresh();
   }
   $("detBack").onclick=closeDetail;
-  function drawDetSub(){ if(det) $("detSub").textContent="📁 "+folderName(det.row.folderId==null?null:det.row.folderId); }
+  function drawDetSub(){ if(det) $("detSub").textContent="📁 "+folderName(det.row.folderId==null?null:det.row.folderId)+(det.row.mode==="two"?" · 双语互译 "+langName(det.row.langA||"zh")+" ⇄ "+langName(det.row.langB||"es"):""); }
   function renameDetail(){
     if(!det) return; const n=prompt("记录标题",det.row.title); if(!n||!n.trim()) return;
     det.row.title=n.trim(); det.row.titleEdited=true; $("detTitle").textContent=det.row.title;
@@ -2308,6 +2378,12 @@ body.has-page{background:var(--bg)}
     +"要求：时间点一律写成 [mm:ss] 或 [h:mm:ss]，并且必须来自原文的时间戳；转写可能有识别错误，请结合上下文与“场景与术语”合理纠正；不要编造转写里没有的内容。";
   const PART_SYS="你是一名英文课程、讲座、会议的学习助理。下面是一段较长录音转写的其中一部分（每行以 [mm:ss] 时间戳开头）。请用简体中文整理这一部分的笔记：按主题分条，保留大致时间点 [mm:ss]；列出出现的关键术语（英文+中文解释）；列出作业、待办、截止日期；不要编造，不要写总结性的开头结尾。";
   const sumReady=()=>translateReady();
+  // 摘要语言（设置里选，默认中文）：非中文时在提示末尾改写输出语言，“标题：”这个前缀保持不变以便解析
+  function sumSys(sys){
+    const l=settings.sumLang||"zh"; if(l==="zh") return sys;
+    const n=langName(l);
+    return sys+"\n\n【输出语言】上面所有“用简体中文输出”的要求改为：用"+n+"输出。摘要正文、各章节标题（如“一句话概括”“主要内容”等请翻译成"+n+"）、标题内容、术语解释都使用"+n+"；只有“标题：”这个行首前缀保持原样不翻译，时间点格式 [mm:ss] 不变，引用的原话仍保留原文。";
+  }
 
   async function readSSE(res,onEvent){
     const reader=res.body.getReader(), dec=new TextDecoder(); let buf="";
@@ -2357,10 +2433,12 @@ body.has-page{background:var(--bg)}
   }
   async function summarize(row,segs,st){
     const sp=spShow(row,segs);
-    const lg=g=>{ const l=g.language||"en"; return l==="en" ? "" : "（"+langName(l)+"）"; };
+    const two=row.mode==="two";
+    const lg=g=>{ const l=g.language||"en"; return (l==="en" && !two) ? "" : "（"+langName(l)+"）"; };
+    const modeNote=two ? "【对话模式】双语互译："+langName(row.langA||"zh")+" ⇄ "+langName(row.langB||"es")+"，每行标注了原文语言；这是两个人用不同语言的对话。" : "";
     const line=g=>"["+fmtT(g.start)+"] "+lg(g)+(sp&&g.speaker!=null&&g.speaker!==""?spName(row,g.speaker)+"：":"")+(g.en||"");
     const lines=segs.map(line);
-    const head=[];
+    const head=[]; if(modeNote) head.push(modeNote);
     if((row.tags||[]).length) head.push("【会话标签（主题提示）】\n"+row.tags.join("、"));
     const gl=(settings.glossary||"").trim(); if(gl) head.push("【场景与术语】\n"+gl);
     const tagged=segs.filter(g=>(g.tags||[]).length).slice(0,300).map(g=>"["+fmtT(g.start)+"] ["+g.tags.join("、")+"] "+lg(g)+(sp&&g.speaker!=null&&g.speaker!==""?spName(row,g.speaker)+"：":"")+(g.en||""));
@@ -2368,7 +2446,7 @@ body.has-page{background:var(--bg)}
     const ctx=head.join("\n\n");
     const total=lines.join("\n").length;
     const onText=t=>{ st.text=splitTitle(t).body; st.progress=""; sumRender(row.id); };
-    if(total<=SUM_LIMIT) return llmStream(SUM_SYS, ctx+"\n\n【完整英文转写】\n"+lines.join("\n"), 4096, onText);
+    if(total<=SUM_LIMIT) return llmStream(sumSys(SUM_SYS), ctx+"\n\n"+(row.mode==="two"?"【完整转写】":"【完整英文转写】")+"\n"+lines.join("\n"), 4096, onText);
     // 长会话：先分段各自整理，再合并成最终摘要
     const chunks=[]; let cur=[], n=0;
     lines.forEach(l=>{ if(n+l.length>SUM_CHUNK && cur.length){ chunks.push(cur.join("\n")); cur=[]; n=0; } cur.push(l); n+=l.length+1; });
@@ -2376,10 +2454,10 @@ body.has-page{background:var(--bg)}
     const partials=[];
     for(let i=0;i<chunks.length;i++){
       st.progress="转写较长，正在分段整理（"+(i+1)+"/"+chunks.length+"）…"; st.text=""; sumRender(row.id);
-      partials.push(await llmStream(PART_SYS,"【第 "+(i+1)+"/"+chunks.length+" 段转写】\n"+chunks[i],2048));
+      partials.push(await llmStream(sumSys(PART_SYS),"【第 "+(i+1)+"/"+chunks.length+" 段转写】\n"+chunks[i],2048));
     }
     st.progress="正在合并生成最终摘要…"; sumRender(row.id);
-    return llmStream(SUM_SYS+"\n\n注意：用户提供的是分段整理好的笔记而不是原始转写，请合并去重后按上面的结构输出，时间点沿用笔记里的 [mm:ss]。",
+    return llmStream(sumSys(SUM_SYS)+"\n\n注意：用户提供的是分段整理好的笔记而不是原始转写，请合并去重后按上面的结构输出，时间点沿用笔记里的 [mm:ss]。",
       ctx+"\n\n【分段笔记】\n"+partials.map((p,i)=>"—— 第 "+(i+1)+" 段 ——\n"+p).join("\n\n"), 4096, onText);
   }
   function queueSummary(id){
@@ -2514,8 +2592,9 @@ body.has-page{background:var(--bg)}
     out.push("# "+row.title, "");
     out.push("- 日期："+d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate())+" "+p2(d.getHours())+":"+p2(d.getMinutes()));
     out.push("- 时长："+fmtT(row.dur||0));
+    if(row.mode==="two") out.push("- 模式：双语互译（"+langName(row.langA||"zh")+" ⇄ "+langName(row.langB||"es")+"）");
     if((row.tags||[]).length) out.push("- 标签："+row.tags.map(t=>"#"+t.replace(/\s+/g,"_")).join(" "));
-    out.push("", "## 摘要", "", row.summary ? row.summary : "（还没有生成摘要）", "", "## 全文（中英对照）", "");
+    out.push("", "## 摘要", "", row.summary ? row.summary : "（还没有生成摘要）", "", row.mode==="two" ? "## 全文（原文与译文）" : "## 全文（中英对照）", "");
     const sp=spShow(row,segs);
     segs.forEach(g=>{
       if(g.kind==="break"){ out.push("*"+g.en+"*", ""); return; }
@@ -2582,6 +2661,7 @@ body.has-page{background:var(--bg)}
         tags:strs(x.tags), summary:typeof x.summary==="string"?x.summary:"", summaryAt:x.summaryAt==null?null:num(x.summaryAt,null),
         audioMime:old?old.audioMime:null, parts:old?old.parts:[], engine:["browser","soniox"].includes(x.engine)?x.engine:"deepgram",
         titleEdited:!!x.titleEdited, titleAuto:!!x.titleAuto,
+        mode:x.mode==="two"?"two":"one", langA:/^[a-z]{2}$/.test(x.langA||"")?x.langA:undefined, langB:/^[a-z]{2}$/.test(x.langB||"")?x.langB:undefined,
         speakerNames:(x.speakerNames && typeof x.speakerNames==="object" && !Array.isArray(x.speakerNames)) ? Object.fromEntries(Object.entries(x.speakerNames).filter(([k,v])=>typeof v==="string"&&v.trim()).map(([k,v])=>[String(k).slice(0,20),v.trim().slice(0,20)])) : undefined,
         folderId:(x.folderId!=null && folderById(+x.folderId)) ? +x.folderId : null, deletedAt:x.deletedAt==null?null:num(x.deletedAt,null)};
       const segs=(Array.isArray(x.segments)?x.segments:[]).map((g,i)=>({
@@ -2589,6 +2669,7 @@ body.has-page{background:var(--bg)}
         tags:strs(g&&g.tags), kind:(g&&g.kind)==="break"?"break":"seg"}));
       segs.forEach((g,i)=>{ const o=x.segments[i]; if(o && o.speaker!=null && o.speaker!=="") g.speaker=String(o.speaker).slice(0,20); if(typeof (o&&o.rawEn)==="string") g.rawEn=o.rawEn; if(g.kind==="seg") g.language=/^[a-z]{2}$/i.test((o&&o.language)||"") ? String(o.language).toLowerCase() : "en"; });
       if(!row.speakerNames) delete row.speakerNames;
+      if(row.mode!=="two"){ delete row.langA; delete row.langB; }
       try{
         await dbTx(["sessions","segments"],"readwrite",t=>{
           t.objectStore("sessions").put(row);
@@ -2660,8 +2741,9 @@ body.has-page{background:var(--bg)}
     if(e.speaker!=null && S && S.id===e.sid && spShow(S.row,entries.filter(x=>x.sid===S.id).concat([e]))) slot.appendChild(spEl(S.row,e.speaker));
     attachLongPress(div,()=>entryMenu(e));
     feed.appendChild(div); scrollDown();
+    f2fItem(e);
   }
-  function setZh(e){ if(!e.el) return; e.el.className="zh"; e.el.textContent=e.zh; if(e.row) e.row.classList.add("tr-done"); scrollDown(); }
+  function setZh(e){ f2fItem(e); if(!e.el) return; e.el.className="zh"; e.el.textContent=e.zh; if(e.row) e.row.classList.add("tr-done"); scrollDown(); }
   function setError(e,msg){
     const z=e.el; if(!z) return; z.className="zh error"; z.textContent=msg;
     const b=document.createElement("button"); b.className="retry"; b.textContent="重试";
@@ -2670,15 +2752,43 @@ body.has-page{background:var(--bg)}
   }
   // 「正在说」卡片：固定在字幕列表下方，随识别实时更新；一句确定后清空，内容落入上方的普通卡片
   const spEn=$("spEn"), spZh=$("spZh");
-  function showLive(text,zh){
+  function showLive(text,zh,lang){
     liveEl=(text||zh)?$("speak"):null;
     spEn.textContent=text||""; spZh.textContent=zh||""; spZh.hidden=!zh;     // 引擎自带翻译时也实时显示译文
+    if(rt.two) f2fLive(text,zh,lang);
   }
+  // ---------- 面对面视图（双语互译）：上半部分旋转 180°，只显示译成语言 B 的内容；下半部分只显示译成语言 A 的内容 ----------
+  let f2fOn=false;
+  const f2fShown=()=>rt.two && f2fOn && (listening || !!S);
+  function f2fApply(){
+    const on=f2fShown(), pane=$("livePane");
+    pane.classList.toggle("f2f-on",on); $("f2f").hidden=!on;
+    $("f2fTopTag").textContent=natName(rt.b); $("f2fBotTag").textContent=natName(rt.a);
+    if(on){ f2fScroll(); scrollDown(); }
+  }
+  const f2fScroll=()=>{ ["f2fTopList","f2fBotList"].forEach(id=>{ const b=$(id); b.scrollTop=b.scrollHeight; }); };
+  function f2fMkItem(t,o,cls){
+    const it=document.createElement("div"); it.className="it"+(cls?" "+cls:"");
+    const a=document.createElement("div"); a.className="t"; a.textContent=t; const b=document.createElement("div"); b.className="o"; b.textContent=o;
+    it.append(a,b); return {it,a,b};
+  }
+  // 一句字幕：语言 A 的话译成了 B → 上半部分；语言 B 的话译成了 A → 下半部分
+  function f2fItem(e){
+    if(!rt.two || !e.tgt || (e.language!==rt.a && e.language!==rt.b)) return;
+    const box=$(e.language===rt.a?"f2fTopList":"f2fBotList");
+    if(!e.f2f){ e.f2f=f2fMkItem("","",""); }
+    e.f2f.a.textContent=e.zh||"…"; e.f2f.b.textContent=e.en||""; e.f2f.it.classList.toggle("pending",!e.zh);
+    if(e.f2f.it.parentNode!==box) box.appendChild(e.f2f.it);
+    box.scrollTop=box.scrollHeight;
+  }
+  function f2fLive(text,zh,lang){
+    document.querySelectorAll(".f2f-list .it.live").forEach(x=>x.remove());
+    lang=lang||null; if(!(text||zh) || (lang!==rt.a && lang!==rt.b)) return;
+    const box=$(lang===rt.a?"f2fTopList":"f2fBotList"), m=f2fMkItem(zh||"…",text||"","live");
+    box.appendChild(m.it); box.scrollTop=box.scrollHeight;
+  }
+  function f2fReset(){ ["f2fTopList","f2fBotList"].forEach(id=>{ $(id).textContent=""; }); entries.forEach(x=>{ x.f2f=null; }); }
   // ---------- 语言（中文 / 英文 / 西班牙语自动识别）----------
-  const LANG_PILL={zh:"中", en:"EN", es:"ES"}, LANG_NAME={zh:"中文", en:"英文", es:"西班牙语"};
-  const normLang=l=>{ l=String(l||"").toLowerCase().slice(0,2); return l||"en"; };
-  const langPill=l=>LANG_PILL[l]||String(l||"EN").toUpperCase();
-  const langName=l=>LANG_NAME[l]||String(l).toUpperCase();
   // 打字输入没有引擎帮忙识别语言：按汉字 / 西语特征字符与常见词粗略判断
   function detectLang(t){
     t=String(t||"");
@@ -2691,7 +2801,8 @@ body.has-page{background:var(--bg)}
     return es>en && es>=2 ? "es" : "en";
   }
   // 译文方向：英文 / 西语 → 中文；中文 → 按设置「中文内容」译为英文，或不翻译
-  const tgtOf=lang=>lang==="zh" ? (settings.zhMode==="en" ? "en" : null) : "zh";
+  // 双语互译：A 译为 B，B 译为 A，其他语言不翻译
+  const tgtOf=lang=>rt.two ? (lang===rt.a ? rt.b : lang===rt.b ? rt.a : null) : lang==="zh" ? (settings.zhMode==="en" ? "en" : null) : "zh";
   
   // extra：{translation, speaker, language}。引擎自带译文（Soniox）时直接显示，不再排进 Claude 翻译队列
   function commit(text,start,end,extra){
@@ -2699,8 +2810,9 @@ body.has-page{background:var(--bg)}
     const language=normLang(extra && extra.language || "en");
     let tr=extra && extra.translation ? String(extra.translation).trim() : "";
     // 中文句子：Soniox 不需要翻译成中文，返回的「译文」（通常与原文相同）一律不显示
-    if(language==="zh") tr="";
+    if(!rt.two && language==="zh") tr="";
     const tgt=tgtOf(language);
+    if(!tgt) tr="";
     const e={id:++seq, en:text, zh:tr, language, tgt, status:(tr||!tgt)?"done":"waiting", tags:[]};
     if(tr) e.zhSrc="engine";
     if(!tgt) e.noTr=true;                  // 不需要译文的卡片：只显示原文一行
@@ -2717,7 +2829,7 @@ body.has-page{background:var(--bg)}
     if(S && e.speaker!=null && prevSp<2 && spIds(entries.filter(x=>x.sid===S.id)).length>=2) refreshLiveSpeakers();
     if(tr){
       setZh(e);
-      if(settings.refine!==false && useRelay() && translateReady() && S && language!=="zh") refineEntry(e);
+      if(settings.refine!==false && useRelay() && translateReady() && S && (rt.two || language!=="zh")) refineEntry(e);
     }else if(tgt){ queue.push(e); pump(); }
   }
 
@@ -2727,14 +2839,16 @@ body.has-page{background:var(--bg)}
   // 失败、解析不了、超过 8 秒一律静默放弃，保持原样。
   const REFINE_SYS="你是一名多语种（中文、英文、西班牙语）课程、讲座、会议的字幕校对员。用户给出语音识别的【原文】（会说明原文语言）和机器翻译的【Soniox 译文】（简体中文），以及【前文】和【场景与术语】。请校对：1）修正原文里明显的识别错误（同音词、专有名词、术语，参考前文和术语表），没有把握就不要改，原文必须保持原来的语言；2）让中文译文准确、通顺、口语化，术语译法与术语表一致。不要增删原文没有的内容。严格按下面两行格式输出，不要解释：\n原文：（校对后的原文，没有修改就原样照抄）\n译文：（校对后的中文）";
   const REFINE_MS=8000;
+  // 目标语言不是中文（双语互译里的 B→A 等方向）时用的校对提示：原文、目标语言写明，术语表两个方向都适用
+  const REFINE_SYS_X="你是一名多语种课程、讲座、会议、对话的字幕校对员。用户给出语音识别的【原文】（会说明原文语言）和机器翻译的【Soniox 译文】（会说明目标语言），以及【前文】和【场景与术语】（术语表在两个翻译方向上都适用）。请校对：1）修正原文里明显的识别错误（同音词、专有名词、术语，参考前文和术语表），没有把握就不要改，原文必须保持原来的语言；2）让译文准确、通顺、口语化，必须使用目标语言，术语译法与术语表一致。不要增删原文没有的内容。严格按下面两行格式输出，不要解释：\n原文：（校对后的原文，没有修改就原样照抄）\n译文：（校对后的译文，目标语言）";
   let refineTail=Promise.resolve();
   function refineEntry(e){
     const prev=prevCtx(e);
     const g=(settings.glossary||"").trim();
-    const user=(prev?"【前文】\n"+prev+"\n\n":"")+(g?"【场景与术语】\n"+g+"\n\n":"")+"【原文语言】"+langName(e.language)+"\n【原文】\n"+e.en+"\n\n【Soniox 译文】\n"+e.zh;
+    const user=(prev?"【前文】\n"+prev+"\n\n":"")+(g?"【场景与术语】\n"+g+"\n\n":"")+"【原文语言】"+langName(e.language)+"\n【目标语言】"+langName(e.tgt||"zh")+"\n【原文】\n"+e.en+"\n\n【Soniox 译文】\n"+e.zh;
     const t0=performance.now();
     const req=Promise.race([
-      llmStream(REFINE_SYS,user,600,null,{model:settings.refineModel,path:"/translate"}),
+      llmStream((e.tgt&&e.tgt!=="zh")?REFINE_SYS_X:REFINE_SYS,user,600,null,{model:settings.refineModel,path:"/translate"}),
       new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")),REFINE_MS))
     ]).then(t=>{ const r=parseRefine(t); dbg("精修 "+Math.round(performance.now()-t0)+"ms "+(r?"完成":"无法解析")); return r; },err=>{ dbg("精修放弃："+((err&&err.message)||err)); return null; });
     const mine=refineTail.then(()=>req).then(r=>{ if(r) applyRefine(e,r); }).catch(()=>{});
@@ -2752,7 +2866,7 @@ body.has-page{background:var(--bg)}
     if(r.en && r.en!==e.en && r.en.length>=e.en.length*0.6 && r.en.length<=e.en.length*1.6){ e.rawEn=e.rawEn||e.en; e.en=r.en; changed=true; }
     if(r.zh!==e.zh){ e.zh=r.zh; changed=true; }
     if(!changed) return;
-    e.refined=true; segSave(e);
+    e.refined=true; segSave(e); f2fItem(e);
     if(e.row && e.row.isConnected){
       const enEl=e.row.querySelector(".en"); if(enEl) enEl.textContent=e.en;
       e.el.textContent=e.zh; e.el.classList.add("refresh"); setTimeout(()=>e.el&&e.el.classList.remove("refresh"),700);
@@ -2769,17 +2883,20 @@ body.has-page{background:var(--bg)}
 
   // 前文上下文：同一翻译方向的最近 3 句（「原文 / 译文」成对）
   function prevCtx(e){
-    const a=e.language==="zh"?"ZH":e.language==="es"?"ES":"EN", b=e.tgt==="en"?"EN":"ZH";
+    const a=String(e.language||"en").toUpperCase(), b=String(e.tgt||"zh").toUpperCase();
     return entries.filter(x=>x.status==="done" && x.id<e.id && x.tgt===e.tgt && x.zh).slice(-3).map(x=>a+": "+x.en+"\n"+b+": "+x.zh).join("\n");
+  }
+  function trSystem(e){
+    if(e.tgt==="en" && e.language==="zh") return "你是一名专业的中译英同声传译员。把用户给出的【待翻译】中文翻译成自然、口语化、通顺的英文。只输出英文译文本身，不要解释、不要引号、不要保留中文。语音识别结果可能有错字或缺标点，请根据上下文合理理解后翻译。";
+    if(!e.tgt || e.tgt==="zh") return "你是一名专业的同声传译员。把用户给出的【待翻译】"+langName(e.language)+"翻译成自然、口语化、通顺的简体中文。只输出中文译文本身，不要解释、不要引号、不要保留原文。语音识别结果可能有错字或缺标点，请根据上下文合理理解后翻译。人名、品牌名如无通用中文译名可保留原文。";
+    const t=langName(e.tgt);
+    return "你是一名专业的同声传译员。把用户给出的【待翻译】"+langName(e.language)+"翻译成自然、口语化、通顺的"+t+"。只输出"+t+"译文本身，不要解释、不要引号、不要保留原文。语音识别结果可能有错字或缺标点，请根据上下文合理理解后翻译。人名、品牌名如无通用译名可保留原文。";
   }
   async function translate(e){
     if(!translateReady()){ e.status="failed"; setError(e,useRelay()?"还没填中转地址或访问口令":"还没填 API 密钥"); showBanner(useRelay()?'请到底部的「设置」页，填入中转地址和访问口令。':'请到底部的「设置」页，填入 Claude API 密钥。'); return; }
     const prev=prevCtx(e);
     const g=(settings.glossary||"").trim();
-    const system=(e.tgt==="en"
-      ? "你是一名专业的中译英同声传译员。把用户给出的【待翻译】中文翻译成自然、口语化、通顺的英文。只输出英文译文本身，不要解释、不要引号、不要保留中文。语音识别结果可能有错字或缺标点，请根据上下文合理理解后翻译。"
-      : "你是一名专业的同声传译员。把用户给出的【待翻译】"+langName(e.language)+"翻译成自然、口语化、通顺的简体中文。只输出中文译文本身，不要解释、不要引号、不要保留原文。语音识别结果可能有错字或缺标点，请根据上下文合理理解后翻译。人名、品牌名如无通用中文译名可保留原文。")
-      + (g ? "\n\n场景与术语要求：\n"+g : "");
+    const system=trSystem(e) + (g ? "\n\n场景与术语要求：\n"+g : "");
     const user=(prev ? "【前文，仅供参考上下文，不要翻译】\n"+prev+"\n\n" : "") + "【待翻译】\n"+e.en;
 
     const relay=useRelay();
@@ -2867,6 +2984,7 @@ body.has-page{background:var(--bg)}
   }
   function summaryLine(){
     const sx=settings.engine==="soniox";
+    if(twoCfg()) return langName(settings.langA)+" ⇄ "+langName(settings.langB)+" · "+(ENGINE_NAMES[settings.engine]||"")+" · "+folderName(settings.lastFolder);
     const langs=sx ? "中 / 英 / 西" : "英", to=sx ? (settings.zhMode==="en" ? "中文 / 英文" : "中文") : "中文";
     return langs+" → "+to+" · "+(ENGINE_NAMES[settings.engine]||"")+" · "+folderName(settings.lastFolder);
   }
@@ -3159,7 +3277,8 @@ registerProcessor("pcm16",PCM16);`;
   // ----- Soniox 适配器（实时转录 + 内置实时翻译 + 说话人分离） -----
   // 接口（以官方文档/SDK 为准）：wss://stt-rt.soniox.com/transcribe-websocket
   //   连接后先发一条 JSON 配置：api_key（Worker 签发的临时密钥）、model（stt-rt-v5）、audio_format=pcm_s16le、sample_rate=16000、
-  //   num_channels=1、language_hints=["en"]、enable_endpoint_detection、enable_speaker_diarization、context、translation={type:"one_way",target_language:"zh"}；
+  //   num_channels=1、language_hints、enable_language_identification、enable_endpoint_detection、enable_speaker_diarization、context、
+  //   translation={type:"one_way",target_language:"zh"}（单向翻译）或 {type:"two_way",language_a,language_b}（双语互译，language_hints 只放 A、B）；
   //   然后发二进制音频帧；结束时发一个空字符串，服务端返回剩余结果和 finished:true。
   // 返回：{tokens:[{text,start_ms,end_ms,is_final,speaker,translation_status:"original"|"translation"|"none"}], finished}
   //   - 最终 token 只下发一次；非最终 token 每条消息整体替换。特殊 token：<end>（端点）、<fin>。
@@ -3195,7 +3314,8 @@ registerProcessor("pcm16",PCM16);`;
     }
     config(){
       const c={api_key:this.authInfo.key, model:this.model(), audio_format:"pcm_s16le", sample_rate:PCM_RATE, num_channels:1,
-        language_hints:SX_LANGS, enable_language_identification:true, enable_endpoint_detection:true, translation:{type:"one_way", target_language:"zh"}};
+        language_hints:rt.two?[rt.a,rt.b]:SX_LANGS, enable_language_identification:true, enable_endpoint_detection:true,
+        translation:rt.two ? {type:"two_way", language_a:rt.a, language_b:rt.b} : {type:"one_way", target_language:"zh"}};
       if(settings.diarize!==false) c.enable_speaker_diarization=true;
       const ctx=this.opts.context && this.opts.context(); if(ctx) c.context=ctx;
       return c;
@@ -3222,10 +3342,12 @@ registerProcessor("pcm16",PCM16);`;
     origText(){ return this.toks.filter(t=>this.isOrig(t)).map(t=>t.text).join("").trim(); }
     // 一句话的边界只出现在“原文块+译文块”配对完成之后：下一个原文 token 到来时才可能切，保证原文和译文不错位
     unitLang(){ const t=this.toks.find(t=>this.isOrig(t) && t.language); return t?normLang(t.language):null; }
+    // 这种语言的原文后面不会跟译文块：单向翻译里的中文；双语互译里 A、B 以外的语言
+    noTrBlock(l){ return l!=null && (rt.two ? (l!==rt.a && l!==rt.b) : l==="zh"); }
     cutBefore(next){
       const o=this.toks.filter(t=>this.isOrig(t)); if(!o.length) return false;
       const text=o.map(t=>t.text).join("").trim();
-      const zh=this.unitLang()==="zh";
+      const zh=["zh","ja","ko"].includes(this.unitLang());
       const words=zh ? Math.round(text.length/1.8) : text.split(/\s+/).filter(Boolean).length;   // 中文没有空格：约 1.8 个字算一个词
       const span=(o[o.length-1].end_ms||0)-(o[0].start_ms||0);
       if(next.speaker!=null && o[0].speaker!=null && next.speaker!==o[0].speaker) return true;   // 换人说话
@@ -3240,7 +3362,7 @@ registerProcessor("pcm16",PCM16);`;
         const ul=this.unitLang();
         if(this.toks.length && ul && t.language && normLang(t.language)!==ul) this.commitPending();
         // 中文没有译文块，不会出现 lastKind==="t"，同样按边界规则切
-        else if((this.lastKind==="t" || ul==="zh") && this.cutBefore(t)) this.commitPending();
+        else if((this.lastKind==="t" || this.noTrBlock(ul)) && this.cutBefore(t)) this.commitPending();
         this.lastKind="o";
       }else this.lastKind="t";
       this.toks.push(t);
@@ -3251,7 +3373,7 @@ registerProcessor("pcm16",PCM16);`;
       clearTimeout(this.timer); this.timer=null;
       if(!this.toks.length) return;
       let delay=null;
-      if(this.lastKind==="t" || this.unitLang()==="zh") delay=this.endSeen ? 600 : (SENT_END.test(this.origText()) ? 1200 : 4000);   // 中文没有译文，不用等
+      if(this.lastKind==="t" || this.noTrBlock(this.unitLang())) delay=this.endSeen ? 600 : (SENT_END.test(this.origText()) ? 1200 : 4000);   // 中文没有译文，不用等
       else if(this.endSeen) delay=2500;                 // 端点已到但译文还没来：多等一会儿
       if(delay==null) return;
       if(this.nonfinal.length) delay=Math.max(delay,8000);   // 还有没定稿的内容在变，别急着提交
@@ -3269,8 +3391,8 @@ registerProcessor("pcm16",PCM16);`;
       this.h.onFinal({text, translation:zh, language:lang, startSec:ts(first.start_ms), endSec:ts(last.end_ms), speaker:first.speaker!=null?String(first.speaker):null});
     }
     preview(){
-      const all=this.toks.concat(this.nonfinal);
-      this.h.onPartial(all.filter(t=>this.isOrig(t)).map(t=>t.text).join("").trim(), all.filter(t=>!this.isOrig(t)).map(t=>t.text).join("").trim());
+      const all=this.toks.concat(this.nonfinal), o=all.filter(t=>this.isOrig(t)), lt=o.find(t=>t.language);
+      this.h.onPartial(o.map(t=>t.text).join("").trim(), all.filter(t=>!this.isOrig(t)).map(t=>t.text).join("").trim(), lt?normLang(lt.language):null);
     }
     hasPending(){ return this.toks.length>0 || this.nonfinal.length>0; }
     flush(){ this.toks=this.toks.concat(this.nonfinal); this.nonfinal=[]; this.commitPending(); }   // 关闭或出错时，没定稿的也送出去，不丢
@@ -3344,7 +3466,7 @@ registerProcessor("pcm16",PCM16);`;
   const fmt=s=>String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
   const engineHandlers={
     now:()=>nowT()||0,
-    onPartial:(t,z)=>showLive(t,z),
+    onPartial:(t,z,l)=>showLive(t,z,l),
     onFinal:r=>{ commit(r.text,r.startSec,r.endSec,{translation:r.translation,speaker:r.speaker,language:r.language}); showLive(""); },
     onStatus:st=>{
       engState=st.state; dbg("引擎状态："+st.state+(st.retries?"（重连 "+st.retries+"/3）":""));
@@ -3358,14 +3480,15 @@ registerProcessor("pcm16",PCM16);`;
       dbg("引擎错误："+String(msg).replace(/<[^>]+>/g," "));
       if(tryFallback(msg)) return;
       const why=fellBack && activeEngine==="deepgram" && fallbackWhy;
-      stop(); showBanner(why ? "Soniox 出错："+why+(/[。！？.!?]$/.test(why)?"":"。")+"<br>备用引擎 Deepgram 也没连上："+msg : msg);
+      stop(); if(rt.two){ showBanner("双语互译需要 Soniox，当前无法使用（不会自动切换到备用引擎）："+msg); return; }
+      showBanner(why ? "Soniox 出错："+why+(/[。！？.!?]$/.test(why)?"":"。")+"<br>备用引擎 Deepgram 也没连上："+msg : msg);
     },
     onClosed:()=>{ if(S && S.closing) sessEnd(); }
   };
   // 主引擎（Soniox）连不上 / 密钥或余额出错 / 重连 3 次仍失败时，自动改用 Deepgram：
   // 同一个会话、同一条时间轴，麦克风采集与录音不中断；字幕里插一条分隔线，翻译改由 Claude 完成。
   function tryFallback(msg){
-    if(activeEngine!=="soniox" || fellBack || !listening || !cap || settings.autoFallback===false || !dgReady() || !ENGINES.deepgram) return false;
+    if(rt.two || activeEngine!=="soniox" || fellBack || !listening || !cap || settings.autoFallback===false || !dgReady() || !ENGINES.deepgram) return false;
     fellBack=true; fallbackWhy=msg; dbg("切换备用引擎 Deepgram");
     const old=eng; if(old) old.abort();      // 把没确定的那句先送出，再丢弃旧连接
     activeEngine="deepgram"; engState="connecting";
@@ -3489,6 +3612,12 @@ registerProcessor("pcm16",PCM16);`;
       await sessEnd();
     }
     const resuming = !!(S && S.intAt!=null && !S.closing && ENGINES[S.row.engine]);
+    rtSnapshot(resuming ? S.row : null);
+    if(rt.two && (resuming ? S.row.engine : settings.engine)!=="soniox"){
+      showBanner("双语互译需要 Soniox，当前无法使用。请到设置里把识别引擎改为 Soniox，或把翻译模式改回「单向翻译」。"); return;
+    }
+    if(!resuming){ f2fOn=!!settings.faceMode; f2fReset(); }
+    f2fApply();
     activeEngine = resuming ? S.row.engine : settings.engine; fellBack=false;
     listening=true; applyUi(); setHint(""); $("sumChip").hidden=true; clearInterval(sumWatch);
     acquireWake();
@@ -3536,7 +3665,12 @@ registerProcessor("pcm16",PCM16);`;
   $("toggleType").onclick=()=>{ typeLayer.hidden ? openType() : closeType(); };
   $("typeBackdrop").onclick=closeType;
   // 打字内容同样自动识别语言（中文 / 英文 / 西班牙语），再按设置翻译
-  function sendTyped(){ const v=$("typeInput").value; if(v.trim()){ commit(v,null,null,{language:detectLang(v)}); $("typeInput").value=""; closeType(); } }
+  // 双语互译：打字内容归到 A 或 B（识别不出时：A、B 里有中文就按「没有汉字 → 非中文那一边」，否则算 A）
+  function typedLang(v){
+    const d=detectLang(v); if(!rt.two || d===rt.a || d===rt.b) return d;
+    if(rt.a==="zh") return rt.b; if(rt.b==="zh") return rt.a; return rt.a;
+  }
+  function sendTyped(){ const v=$("typeInput").value; if(v.trim()){ commit(v,null,null,{language:typedLang(v)}); $("typeInput").value=""; closeType(); } }
   $("typeSend").onclick=sendTyped;
   $("typeInput").addEventListener("keydown",e=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); sendTyped(); } else if(e.key==="Escape") closeType(); });
 
@@ -3547,12 +3681,12 @@ registerProcessor("pcm16",PCM16);`;
     if(!sumReady()){ openPage("settings"); toast(useRelay()?"请先填写中转地址和访问口令":"请先填写 Claude API 密钥"); return; }
     const mine=S ? entries.filter(e=>e.sid===S.id) : [];
     if(mine.length<2){ toast("内容还太少，多录一会儿再试"); return; }
-    const lines=mine.map(e=>"["+fmtT(e.start)+"] "+(e.language&&e.language!=="en"?"（"+langName(e.language)+"）":"")+e.en).join("\n");
+    const lines=mine.map(e=>"["+fmtT(e.start)+"] "+(e.language&&(e.language!=="en"||rt.two)?"（"+langName(e.language)+"）":"")+e.en).join("\n");
     const head=[]; const gl=(settings.glossary||"").trim(); if(gl) head.push("【场景与术语】\n"+gl);
     const my=++aiRun, body=$("aiBody"), err=$("aiErr");
     body.textContent="正在生成…"; err.hidden=true; if(!$("aiDlg").open) $("aiDlg").showModal();
     try{
-      await llmStream(STAGE_SYS,head.concat(["【到目前为止的转写】\n"+lines]).join("\n\n"),1500,t=>{ if(my===aiRun) renderMd(body,t); });
+      await llmStream(sumSys(STAGE_SYS),head.concat(["【到目前为止的转写】\n"+lines]).join("\n\n"),1500,t=>{ if(my===aiRun) renderMd(body,t); });
     }catch(e){ if(my===aiRun){ body.textContent=""; err.hidden=false; err.textContent="生成失败："+((e&&e.message)||"未知错误"); } }
   };
   $("aiClose").onclick=()=>{ aiRun++; $("aiDlg").close(); };
@@ -3572,7 +3706,7 @@ registerProcessor("pcm16",PCM16);`;
   function clearScreen(){
     if(!entries.length) return;
     if(!confirm("确定清空当前屏幕上的字幕？「记录」里已保存的内容不会被删除。")) return;
-    entries.length=0; queue.length=0; feed.innerHTML=""; showLive(""); stickToBottom=true; updateToLatest(); toast("已清空");
+    entries.length=0; queue.length=0; feed.innerHTML=""; f2fReset(); showLive(""); stickToBottom=true; updateToLatest(); toast("已清空");
   }
 
   // ---------- OneDrive 同步 ----------
@@ -3584,7 +3718,7 @@ registerProcessor("pcm16",PCM16);`;
   // 登录由 Worker 代管（刷新令牌只在 KV 里）；页面向 Worker 要短期访问令牌，直接调用 Microsoft Graph 读写文件。
   const GRAPH="https://graph.microsoft.com/v1.0", AROOT=GRAPH+"/me/drive/special/approot";
   const OD_SCHEMA=1, OD_CHUNK=320*1024*10, OD_PULL_MS=5*60*1000;
-  const OD_SETTING_KEYS=["engine","diarize","refine","autoFallback","zhMode","afterEnd","lang","mode","glossary","llm","refineModel","sumModel"];   // 同步的设置（不含任何密钥、口令、连接地址和本机偏好）
+  const OD_SETTING_KEYS=["engine","diarize","refine","autoFallback","zhMode","transMode","langA","langB","sumLang","afterEnd","lang","mode","glossary","llm","refineModel","sumModel"];   // 同步的设置（不含任何密钥、口令、连接地址和本机偏好）
   const odSleep=ms=>new Promise(r=>setTimeout(r,ms));
   let odCache=null;
   function odLS(){ if(!odCache){ try{ odCache=JSON.parse(localStorage.getItem("lt-sync")||"{}")||{}; }catch(e){ odCache={}; } } return odCache; }
@@ -4172,6 +4306,16 @@ registerProcessor("pcm16",PCM16);`;
     settings.connection=b.dataset.v; saveSettings(); applySettings(); hideBanner(); checkEngine();
   });
   document.querySelectorAll("#themeSeg button").forEach(b=>b.onclick=()=>{ settings.theme=b.dataset.v; saveSettings(); applySettings(); });
+  document.querySelectorAll("#tmSeg button").forEach(b=>b.onclick=()=>{ settings.transMode=b.dataset.v==="two"?"two":"one"; saveSettings(); applySettings(); });
+  const pickLang=(title,cur,other,set)=>openChoice(title,LANGS.map(l=>({v:l.c,t:l.n,sub:l.nat})),cur,v=>{
+    if(v===other) set(cur,true);          // 选了另一边已经在用的语言：两边对调，保证 A ≠ B
+    else set(v);
+  });
+  $("langABtn").onclick=()=>pickLang("语言 A",settings.langA,settings.langB,(v,swap)=>{ if(swap){ settings.langA=settings.langB; settings.langB=v; } else settings.langA=v; saveSettings(); applySettings(); });
+  $("langBBtn").onclick=()=>pickLang("语言 B",settings.langB,settings.langA,(v,swap)=>{ if(swap){ settings.langB=settings.langA; settings.langA=v; } else settings.langB=v; saveSettings(); applySettings(); });
+  $("langSwap").onclick=()=>{ const t=settings.langA; settings.langA=settings.langB; settings.langB=t; saveSettings(); applySettings(); };
+  bindSwitch("faceMode","faceMode");
+  $("sumLangRow").onclick=()=>openChoice("摘要语言",LANGS.map(l=>({v:l.c,t:l.n,sub:l.nat})),settings.sumLang||"zh",v=>{ settings.sumLang=v; saveSettings(); applySettings(); });
   document.querySelectorAll("#zhSeg button").forEach(b=>b.onclick=()=>{ settings.zhMode=b.dataset.v; saveSettings(); applySettings(); });
   document.querySelectorAll("#afterSeg button").forEach(b=>b.onclick=()=>{ settings.afterEnd=b.dataset.v; saveSettings(); applySettings(); });
   document.querySelectorAll("#modeSeg button").forEach(b=>b.onclick=()=>{ settings.mode=b.dataset.mode; saveSettings(); applySettings(); });
