@@ -3158,7 +3158,8 @@ registerProcessor("pcm16",PCM16);`;
 
   // ----- Soniox 适配器（实时转录 + 内置实时翻译 + 说话人分离） -----
   // 接口（以官方文档/SDK 为准）：wss://stt-rt.soniox.com/transcribe-websocket
-  //   连接后先发一条 JSON 配置：api_key（Worker 签发的临时密钥）、model（stt-rt-v5）、audio_format=pcm_s16le、sample_rate=16000、
+  //   鉴权：浏览器里用 WebSocket 子协议传密钥——new WebSocket(url,["soniox-api-key", 临时密钥])（Soniox 不再接受放在首条消息里的 api_key，2027-01-15 后会返回 401）。
+  //   连接后先发一条 JSON 配置：model（stt-rt-v5）、audio_format=pcm_s16le、sample_rate=16000、
   //   num_channels=1、language_hints=["en"]、enable_endpoint_detection、enable_speaker_diarization、context、translation={type:"one_way",target_language:"zh"}；
   //   然后发二进制音频帧；结束时发一个空字符串，服务端返回剩余结果和 finished:true。
   // 返回：{tokens:[{text,start_ms,end_ms,is_final,speaker,translation_status:"original"|"translation"|"none"}], finished}
@@ -3191,10 +3192,10 @@ registerProcessor("pcm16",PCM16);`;
         throw err;
       }
       const j=await r.json(); if(!j.token){ this.lastFail="token"; throw new Error("relay-bad"); }
-      return {url:"wss://stt-rt.soniox.com/transcribe-websocket", key:j.token};
+      return {url:"wss://stt-rt.soniox.com/transcribe-websocket", protocols:["soniox-api-key",j.token]};
     }
     config(){
-      const c={api_key:this.authInfo.key, model:this.model(), audio_format:"pcm_s16le", sample_rate:PCM_RATE, num_channels:1,
+      const c={model:this.model(), audio_format:"pcm_s16le", sample_rate:PCM_RATE, num_channels:1,
         language_hints:SX_LANGS, enable_language_identification:true, enable_endpoint_detection:true, translation:{type:"one_way", target_language:"zh"}};
       if(settings.diarize!==false) c.enable_speaker_diarization=true;
       const ctx=this.opts.context && this.opts.context(); if(ctx) c.context=ctx;
