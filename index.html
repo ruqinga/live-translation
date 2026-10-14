@@ -576,6 +576,32 @@ body.has-page{background:var(--bg)}
 .vitem{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;font-size:14px;line-height:1.5}
 .vw{display:flex;align-items:baseline;gap:6px}.vw b{font-size:17px;font-family:var(--font-en)}.vp{color:var(--muted);font-size:13px;flex:1}
 .vdel{border:0;background:none;color:var(--rec-ink);font-size:13px}.vsrc{display:block;margin-top:6px;border:0;background:none;padding:0;color:var(--accent);font-size:13px;text-align:left}
+
+/* 目录 */
+.seekwrap{position:relative;flex:1;min-width:0;display:flex;align-items:center}.seekwrap #pSeek{width:100%}
+.seekmarks{position:absolute;left:0;right:0;top:0;bottom:0;pointer-events:none;margin:0 8px}
+.seekmarks i{position:absolute;top:50%;width:2px;height:14px;margin:-7px 0 0 -1px;background:var(--rec);opacity:.75;border-radius:1px}
+.seektip{position:absolute;bottom:100%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:3px 9px;border-radius:8px;font-size:12px;white-space:nowrap;max-width:78vw;overflow:hidden;text-overflow:ellipsis;pointer-events:none;z-index:3}
+.outbox{margin:8px var(--s2);background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.out-head{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;border:0;background:none;padding:12px 14px;text-align:left;font-size:15px;font-weight:600}
+.out-hl{display:flex;flex-direction:column;min-width:0}.out-now{font-size:13px;font-weight:400;color:var(--accent);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.out-hc{color:var(--muted);transition:transform .2s}.outbox.open .out-hc{transform:rotate(90deg)}
+.out-body{padding:0 12px 12px}
+.out-tools{display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap}.out-ed{font-size:12px;color:var(--warn-ink);background:var(--warn-bg);border-radius:6px;padding:1px 7px}
+.out-empty{color:var(--muted);font-size:14px;padding:8px 2px;line-height:1.5}
+.out-ch{border-top:1px solid var(--line)}.out-ch:first-child{border-top:0}
+.out-ch.cur>.out-row{background:var(--accent-soft)}
+.out-row{display:flex;align-items:center;gap:10px;padding:9px 6px;border-radius:8px;cursor:pointer;-webkit-touch-callout:none}
+.out-tm{font-family:var(--font-en);font-variant-numeric:tabular-nums;font-size:13px;color:var(--accent);min-width:46px}
+.out-tt{flex:1;min-width:0;font-size:15px;line-height:1.4;overflow-wrap:anywhere}
+.out-chev{border:0;background:none;color:var(--muted);font-size:16px;padding:4px 8px;transition:transform .2s}.out-chev[aria-expanded="true"]{transform:rotate(90deg)}
+.out-note{margin:0 6px 6px 62px;font-size:13px;color:var(--muted);line-height:1.5}
+.out-sub{margin-left:20px}.out-sub .out-tt{font-size:14px;color:var(--ink2)}.out-sub.cur{background:var(--accent-soft)}
+.chap-div{display:flex;align-items:center;gap:10px;margin:14px 0 4px;padding:8px 10px;border-radius:10px;background:var(--fill);cursor:pointer;-webkit-touch-callout:none}
+.chap-div .out-tt{font-weight:600}.chap-chev{color:var(--muted);transition:transform .2s}.chap-div.folded .chap-chev{transform:rotate(-90deg)}
+.fold{display:none!important}
+.lchap{display:flex;gap:10px;align-items:center;margin:10px 0 0;padding:6px 10px;border-radius:10px;background:var(--fill);font-size:14px;font-weight:600;cursor:pointer}
+.card .cn{font-size:12px;color:var(--faint);margin-top:2px}
 </style>
 </head>
 <body>
@@ -690,7 +716,7 @@ body.has-page{background:var(--bg)}
         <div class="p-row">
           <button id="pPlay" aria-label="播放">▶</button>
           <button class="pbtn" id="pBack15" aria-label="后退15秒">↺15</button>
-          <input type="range" id="pSeek" min="0" max="0" step="0.1" value="0" aria-label="进度">
+          <div class="seekwrap"><input type="range" id="pSeek" min="0" max="0" step="0.1" value="0" aria-label="进度"><div class="seekmarks" id="seekMarks"></div><div class="seektip" id="seekTip" hidden></div></div>
         </div>
         <div class="p-row"><span id="pTime">00:00 / 00:00</span>
           <span style="flex:1"></span>
@@ -698,6 +724,14 @@ body.has-page{background:var(--bg)}
         </div>
         <div class="p-note" id="pNote" hidden></div>
         <audio id="plAudio" preload="metadata" playsinline hidden></audio>
+      </div>
+      <div class="outbox" id="detOutline">
+        <button class="out-head" id="outHead" aria-expanded="false" aria-controls="outBody"><span class="out-hl"><span id="outTitle">目录</span><span class="out-now" id="outNow" hidden></span></span><span class="out-hc">▸</span></button>
+        <div class="out-body" id="outBody" hidden>
+          <div class="out-tools"><button class="pbtn" id="outAll">全部展开</button><button class="pbtn" id="outNone">全部收起</button><span class="out-ed" id="outEd" hidden>已编辑</span><span style="flex:1"></span><button class="pbtn" id="outGen">生成目录</button></div>
+          <div class="sum-err" id="outErr" hidden></div>
+          <div id="outList"></div>
+        </div>
       </div>
       <div class="det-sub" id="detSub"></div>
       <div class="det-tags" id="detTags"></div>
@@ -986,6 +1020,7 @@ body.has-page{background:var(--bg)}
       <button data-exp="audio">录音文件<small id="expAudioNote"></small></button>
       <button data-exp="srt">字幕 SRT<small>中英双语</small></button>
       <button data-exp="md">笔记 Markdown<small>标题、标签、摘要、带时间戳的双语全文</small></button>
+      <button data-exp="chap">复制章节列表<small>每行「00:00 标题」，和视频平台的章节格式一致</small></button>
       <button data-exp="json">完整备份 JSON<small>字幕、标签、摘要，不含音频</small></button>
     </div>
     <button class="done alt" id="expClose">取消</button>
@@ -1812,8 +1847,9 @@ body.has-page{background:var(--bg)}
       if((r.tags||[]).length){ const tl=document.createElement("div"); tl.className="tline"; r.tags.forEach(x=>tl.appendChild(tagChip(x))); c.appendChild(tl); }
       const sm=plainFirstLine(r.summary);
       if(sm){ const e=document.createElement("div"); e.className="cs"; e.textContent=sm; c.appendChild(e); }
+      if(outHas(r)){ const e=document.createElement("div"); e.className="cn"; e.textContent=outChaps(r).length+" 个章节"; c.appendChild(e); }
       const h=hits.get(r.id);
-      if(h){ const e=document.createElement("div"); e.className="hit"; e.textContent="["+fmtT(h.start)+"] "+(h.en||"")+(h.zh?"  "+h.zh:""); c.appendChild(e); }
+      if(h){ const chh=outChapterAt(r,h.start); const e=document.createElement("div"); e.className="hit"; e.textContent="["+fmtT(h.start)+"] "+(h.en||"")+(h.zh?"  "+h.zh:"")+(chh?"  · 章节："+chh.t:""); c.appendChild(e); }
       c.onclick=()=>{
         if(Date.now()-(wrap._swiped||0)<300 || Date.now()-(c._lp||0)<700) return;
         if(openSwipe){ closeSwipe(); return; }
@@ -2165,14 +2201,15 @@ body.has-page{background:var(--bg)}
     freePlayer(); learnReset();
     det={row, segs:sortSegs(segs), segRows:[], active:-1};
     pane("recDetail"); $("detTitle").textContent=row.title; drawDetSub();
-    drawDetTags(); renderDetList(); drawSum(); applyDetMode();
+    OUT_ST.open=false; OUT_ST.expand.clear(); det.collapsed=new Set();
+    drawDetTags(); renderDetList(); drawSum(); drawOutline(); applyDetMode();
     loadPlayer(row).then(()=>{ if(opts.seek!=null && det && det.row.id===id){ seekTo(opts.seek,!!opts.play); hiliteAt(opts.seek,true); } });
     if(opts.seek!=null) hiliteAt(opts.seek,true);
   }
   async function reloadDetail(){
     if(!det) return; const id=det.row.id;
     try{ det.row=await dbGet("sessions",id)||det.row; det.segs=sortSegs(await dbBySid("segments",id)); }catch(e){ return; }
-    drawDetTags(); renderDetList(); drawSum(); if(LN.mode==="learn") renderLearn();
+    drawDetTags(); renderDetList(); drawSum(); drawOutline(); drawSeekMarks(); if(LN.mode==="learn") renderLearn();
   }
   function closeDetail(){
     freePlayer(); learnReset(); det=null; pane("recHome"); recRefresh();
@@ -2241,8 +2278,10 @@ body.has-page{background:var(--bg)}
   function renderDetList(){
     const box=$("detList"); box.textContent=""; det.segRows=[]; det.active=-1;
     if(!det.segs.length){ const d=document.createElement("div"); d.className="rec-note"; d.textContent="这条记录还没有字幕。"; box.appendChild(d); return; }
+    const chaps=outChaps(det.row); let ci=0, curCh=null; det.foldEls=[]; det.collapsed=det.collapsed||new Set();
     det.segs.forEach(g=>{
-      if(g.kind==="break"){ const d=document.createElement("div"); d.className="divider"; d.textContent=g.en; box.appendChild(d); return; }
+      while(ci<chaps.length && g.start>=chaps[ci].s-0.01){ curCh=chaps[ci].s; box.appendChild(chapDivider(chaps[ci])); ci++; }     // 章节开始的位置插入分隔标题
+      if(g.kind==="break"){ const d=document.createElement("div"); d.className="divider"; d.textContent=g.en; box.appendChild(d); det.foldEls.push({el:d,ch:curCh}); return; }
       const row=document.createElement("div"); row.className="dseg";
       const tm=document.createElement("span"); tm.className="dt"; tm.textContent=fmtT(g.start);
       const tx=document.createElement("div"); tx.className="dtx";
@@ -2262,9 +2301,12 @@ body.has-page{background:var(--bg)}
       const edit=()=>openTagMenu("给这句加标签",g.tags||[],tags=>{ g.tags=tags; draw(); dbPut("segments",g).catch(dbFail); });
       draw();
       row.onclick=()=>{ if(Date.now()-(row._lp||0)<700) return; seekTo(g.start,true); };
-      attachLongPress(row,edit);
-      box.appendChild(row); det.segRows.push({g,el:row});
+      attachLongPress(row,()=>openMenu("这一句",[
+        {label:"加标签…",fn:edit},
+        {label:outItems(det.row).some(x=>Math.abs(x.s-g.start)<0.01)?"重命名这个章节":"从这里开始新章节",fn:()=>outInsertAt(g)}]));
+      box.appendChild(row); det.segRows.push({g,el:row,ch:curCh}); det.foldEls.push({el:row,ch:curCh});
     });
+    applyFold();
   }
   function hiliteAt(T,force){
     if(!det) return;
@@ -2272,7 +2314,8 @@ body.has-page{background:var(--bg)}
     let a=-1; for(let i=0;i<det.segRows.length;i++){ if(det.segRows[i].g.start<=T+0.25) a=i; else break; }
     if(a===det.active) return;
     const box=$("records"), prev=det.active>=0 ? det.segRows[det.active] : null, next=a>=0 ? det.segRows[a] : null;
-    const anchor=next ? next.el : (prev ? prev.el : null);
+    const vis=x=>!!x && x.offsetParent!==null;                       // 所在章节折叠了：行是隐藏的，不滚动
+    const anchor=vis(next&&next.el) ? next.el : (vis(prev&&prev.el) ? prev.el : null);
     const startTop=anchor ? anchor.getBoundingClientRect().top : 0;
     if(prev) prev.el.classList.remove("active");
     if(next) next.el.classList.add("active");
@@ -2285,6 +2328,293 @@ body.has-page{background:var(--bg)}
     stabilize(anchor,box,startTop,toTop,force?0:360);
   }
 
+  // ---------- 目录（带时间点的分级大纲）----------
+  // row.outline = {v:1, at, lang, edited, short, items:[{s:开始秒数, t:标题, lv:1章节|2小节, n:一句话要点（只有章节有）}]}
+  //   items 按时间排序，第一项一定是章节；小节属于它前面最近的章节（所以删除章节 = 内容并入上一章节，降级 / 升级只改 lv）。
+  //   s 取自真实字幕句的开始秒数：模型只返回句子编号，由前端换成秒数。short:true 表示记录太短，没有生成。
+  const OUT_MIN_SEGS=20, OUT_MIN_SEC=300, OUT_LIMIT=60000, OUT_CHUNK=50000;
+  const outState={};    // 会话 id → {status:"running"|"error", progress, err}
+  const outItems=row=>row&&row.outline&&Array.isArray(row.outline.items) ? row.outline.items : [];
+  const outChaps=row=>outItems(row).filter(x=>x.lv===1);
+  const outHas=row=>outItems(row).length>0;
+  function outNorm(items){
+    items=items.filter(x=>x && Number.isFinite(+x.s) && x.t).map(x=>({s:+x.s,t:String(x.t),lv:x.lv===2?2:1,n:x.n?String(x.n):undefined}));
+    items.forEach(x=>{ if(x.n===undefined) delete x.n; });
+    items.sort((a,b)=>a.s-b.s||a.lv-b.lv);
+    const out=[]; items.forEach(x=>{ if(out.length && Math.abs(out[out.length-1].s-x.s)<0.01) return; out.push(x); });   // 同一句只留一项
+    if(out.length){ out[0].lv=1; }
+    return out;
+  }
+  // 时间 T 所在的位置：a=最近的一项（章节或小节），c=它所属的章节
+  function outAt(row,T){
+    const it=outItems(row); let a=-1,c=-1;
+    for(let i=0;i<it.length;i++){ if(it[i].s<=T+0.25){ a=i; if(it[i].lv===1) c=i; } else break; }
+    return {a,c};
+  }
+  const outChapterAt=(row,T)=>{ const p=outAt(row,T); return p.c>=0 ? outItems(row)[p.c] : null; };
+  const cut=(v,n)=>Array.from(String(v==null?"":v).trim()).slice(0,n).join("");
+
+  // ----- 生成 -----
+  const outSys=(parts)=>{
+    const lang=langName(settings.sumLang||"zh");
+    return "你是一名课程、讲座、会议笔记的整理助手。用户给出带编号和时间的转写（每行形如 [#编号 mm:ss] 内容）。请为它生成带时间点的目录（分级大纲），只输出一个 JSON 对象，不要任何其他文字。\n\n"
+      +"格式：{\"chapters\":[{\"start\":起始句的编号,\"title\":\"章节标题\",\"note\":\"一句话要点\","+(parts.flat?"":"\"sections\":[{\"start\":起始句的编号,\"title\":\"小节标题\"}]")+"}]}\n\n"
+      +"规则：\n1）最多两级：章节（一级）按话题切分，一般每 5～15 分钟一个，以内容为准，不要机械按时长切；每个章节有标题（不超过 20 个字）、起始句编号、一句话要点。"+(parts.flat?"":"\n2）小节（二级）是章节内具体的知识点或讨论点，有标题（不超过 20 个字）和起始句编号，可以没有，不要为了凑数而硬拆。")+"\n3）start 必须是转写里真实出现的编号（不要写时间），章节和小节整体按编号从小到大排列，不重叠；"+(parts.first?"第一个章节从这一段的第一句开始。":"第一个章节从这一段的第一句开始。")+"\n4）标题和要点一律用"+lang+"书写，简洁，不加编号和引号；转写可能有识别错误，请结合上下文和“场景与术语”合理理解。\n"+(parts.part?"5）这是一段更长录音的第 "+parts.part+" 部分，只为这一部分生成目录。\n":"");
+  };
+  function outParse(t){
+    t=String(t||"").replace(/```(?:json)?/gi,""); const a=t.indexOf("{"), b=t.lastIndexOf("}");
+    if(a<0||b<=a) throw new Error("模型返回的不是 JSON");
+    let j; try{ j=JSON.parse(t.slice(a,b+1)); }catch(e){ throw new Error("无法解析模型返回的 JSON"); }
+    if(!j || !Array.isArray(j.chapters) || !j.chapters.length) throw new Error("返回的目录是空的");
+    return j.chapters;
+  }
+  // 编号 → 真实的字幕句；编号不存在（越界、不是整数）时找最接近的句子，完全没法理解的丢弃
+  function outPick(v,segs){
+    const n=Math.round(+v); if(!Number.isFinite(n)) return null;
+    return segs[Math.max(1,Math.min(segs.length,n))-1];
+  }
+  function outBuild(chs,segs,flat){
+    const items=[];
+    (chs||[]).slice(0,80).forEach(c=>{
+      const g=outPick(c&&c.start,segs); if(!g || !cut(c.title,20)) return;
+      items.push({s:g.start,t:cut(c.title,20),lv:1,n:cut(c.note,120)||undefined});
+      if(!flat) (Array.isArray(c.sections)?c.sections:[]).slice(0,40).forEach(x=>{ const h=outPick(x&&x.start,segs); if(h && h.start>g.start && cut(x.title,20)) items.push({s:h.start,t:cut(x.title,20),lv:2}); });
+    });
+    const out=outNorm(items);
+    if(out.length && segs.length) out[0].s=Math.min(out[0].s,segs[0].start);            // 第一章从头开始，保证每一句都属于某个章节
+    return out;
+  }
+  async function outGenerate(row,segs,flat,onProgress){
+    const sp=spShow(row,segs), two=row.mode==="two";
+    const lines=segs.map((g,i)=>"[#"+(i+1)+" "+fmtT(g.start)+"] "+((two||(g.language&&g.language!=="en"))?"（"+langName(g.language||"en")+"）":"")+(sp&&g.speaker!=null&&g.speaker!==""?spName(row,g.speaker)+"：":"")+(g.en||""));
+    const head=[]; if((row.tags||[]).length) head.push("【会话标签（主题提示）】\n"+row.tags.join("、"));
+    const gl=(settings.glossary||"").trim(); if(gl) head.push("【场景与术语】\n"+gl);
+    if(row.summary) head.push("【摘要（仅供参考）】\n"+row.summary.slice(0,3000));
+    const ctx=head.join("\n\n");
+    const total=lines.join("\n").length, model=settings.sumModel;
+    if(total<=OUT_LIMIT){
+      const t=await llmStream(outSys({flat,first:true}),(ctx?ctx+"\n\n":"")+"【转写】\n"+lines.join("\n"),3500,null,{model});
+      return outBuild(outParse(t),segs,flat);
+    }
+    // 长记录：先分段各自生成，再合并调整章节边界
+    const chunks=[]; let cur=[],n=0,from=0;
+    lines.forEach((l,i)=>{ if(n+l.length>OUT_CHUNK && cur.length){ chunks.push(cur.join("\n")); cur=[]; n=0; } cur.push(l); n+=l.length+1; });
+    if(cur.length) chunks.push(cur.join("\n"));
+    let all=[];
+    for(let i=0;i<chunks.length;i++){
+      onProgress&&onProgress("记录较长，正在分段生成目录（"+(i+1)+"/"+chunks.length+"）…");
+      const t=await llmStream(outSys({flat,part:(i+1)+"/"+chunks.length}),(ctx?ctx+"\n\n":"")+"【转写（第 "+(i+1)+"/"+chunks.length+" 部分）】\n"+chunks[i],3500,null,{model});
+      all=all.concat(outParse(t));
+    }
+    let merged=all;
+    onProgress&&onProgress("正在合并调整章节边界…");
+    try{
+      const listing=all.map(c=>"章 #"+Math.round(+c.start)+" ["+(outPick(c.start,segs)?fmtT(outPick(c.start,segs).start):"?")+"] "+cut(c.title,20)+(c.note?" — "+cut(c.note,80):"")+((Array.isArray(c.sections)&&!flat)?c.sections.map(x=>"\n  节 #"+Math.round(+x.start)+" ["+(outPick(x.start,segs)?fmtT(outPick(x.start,segs).start):"?")+"] "+cut(x.title,20)).join(""):"")).join("\n");
+      const sys=outSys({flat,first:true}).replace("用户给出带编号和时间的转写（每行形如 [#编号 mm:ss] 内容）。请为它生成","用户给出分段生成的目录草稿（每项带起始句编号和时间）。请合并调整成一份完整的")+"\n6）这是分段生成的草稿：把跨分段边界、话题相同的相邻章节合并，调整过细或过粗的章节；start 只能取草稿里出现过的编号，不要编造；保证章节不重叠、按时间顺序排列。";
+      merged=outParse(await llmStream(sys,(ctx?ctx+"\n\n":"")+"【目录草稿】\n"+listing,3500,null,{model}));
+    }catch(e){ dbg("目录合并失败，直接拼接各段："+((e&&e.message)||e)); merged=all; }
+    return outBuild(merged,segs,flat);
+  }
+  let outTail=Promise.resolve();
+  function queueOutline(id,opts){
+    opts=opts||{};
+    if(outState[id] && outState[id].status==="running") return;
+    const st=outState[id]={status:"running",progress:"正在生成目录…",err:""}; outDraw(id);
+    outTail=outTail.then(async()=>{
+      try{
+        const row=await dbGet("sessions",id); if(!row) throw new Error("记录已不存在");
+        const segs=sortSegs((await dbBySid("segments",id)).filter(g=>g.kind!=="break"&&g.en));
+        if(!segs.length) throw new Error("没有字幕，无法生成目录");
+        const dur=Math.max(row.dur||0,...segs.map(g=>g.end||0)), short=segs.length<OUT_MIN_SEGS || dur<OUT_MIN_SEC;
+        let items=[], isShort=false;
+        if(short && !opts.force) isShort=true;
+        else items=await outGenerate(row,segs,short,p=>{ st.progress=p; outDraw(id); });
+        if(!isShort && !items.length) throw new Error("没能生成有效的目录");
+        const fresh=(await dbGet("sessions",id))||row;
+        fresh.outline={v:1,at:Date.now(),lang:settings.sumLang||"zh",edited:false,short:isShort,items};
+        await dbPut("sessions",fresh);
+        if(S && S.id===id) S.row.outline=fresh.outline;
+        delete outState[id];
+        if(det && det.row.id===id){ det.row.outline=fresh.outline; renderDetList(); drawSeekMarks(); }
+      }catch(e){ st.status="error"; st.err=((e&&e.message)||"未知错误").replace(/^摘要失败/,"请求失败"); }
+      outDraw(id);
+    });
+  }
+
+  // ----- 编辑（都会标记为「已编辑」）-----
+  async function outSave(items,msg){
+    if(!det) return; const id=det.row.id;
+    const cur=(await dbGet("sessions",id))||det.row;
+    cur.outline=Object.assign({v:1,at:Date.now(),lang:settings.sumLang||"zh",short:false},cur.outline||{},{items:outNorm(items),edited:true,short:false});
+    await dbPut("sessions",cur); det.row=cur;
+    renderDetList(); drawOutline(); drawSeekMarks(); if(LN.mode==="learn") renderLearn();
+    if(msg) toast(msg);
+  }
+  function outRename(it){
+    const n=prompt("标题（不超过 20 字）",it.t); if(n==null||!cut(n,20)) return;
+    const items=outItems(det.row).map(x=>x===it?Object.assign({},x,{t:cut(n,20)}):x); outSave(items,"已重命名");
+  }
+  function outDelete(it){
+    const items=outItems(det.row), i=items.indexOf(it);
+    if(it.lv===1 && !items.slice(0,i).some(x=>x.lv===1)){ toast("第一个章节不能删除，可以重命名；想整个重来请用「重新生成目录」"); return; }
+    outSave(items.filter(x=>x!==it),it.lv===1?"已删除，内容并入上一章节":"已删除");
+  }
+  function outLevel(it){
+    const items=outItems(det.row), i=items.indexOf(it);
+    if(it.lv===1){
+      if(!items.slice(0,i).some(x=>x.lv===1)){ toast("第一个章节不能降为小节"); return; }
+      outSave(items.map(x=>x===it?Object.assign({},x,{lv:2,n:undefined}):x),"已降为小节");
+    }else outSave(items.map(x=>x===it?Object.assign({},x,{lv:1}):x),"已升为章节");
+  }
+  function outMenu(it){
+    const items=outItems(det.row), first=it.lv===1 && !items.slice(0,items.indexOf(it)).some(x=>x.lv===1);
+    openMenu((it.lv===1?"章节：":"小节：")+it.t,[
+      {label:"重命名",fn:()=>outRename(it)},
+      {label:it.lv===1?"降级为小节":"升级为章节",note:first?"第一个章节不能降级":"",fn:()=>outLevel(it)},
+      {label:"删除",note:it.lv===1?"内容并入上一章节":"",danger:true,fn:()=>outDelete(it)}]);
+  }
+  // 长按字幕：从这里开始新章节（标题自己填，留空则由模型根据之后的内容起名）
+  async function outInsertAt(g){
+    if(!det) return;
+    const items=outItems(det.row), ex=items.find(x=>Math.abs(x.s-g.start)<0.01);
+    if(ex){ outRename(ex); return; }
+    let title=prompt("新章节的标题（留空则由模型根据之后的内容自动起名）","");
+    if(title==null) return;
+    title=cut(title,20);
+    if(!title){
+      if(!sumReady()){ toast("自动起名需要先在设置里填好密钥或中转地址"); return; }
+      toast("正在起名…");
+      try{
+        const next=items.find(x=>x.s>g.start&&x.lv===1), idx=det.segs.indexOf(g);
+        const text=det.segs.slice(idx).filter(x=>x.kind!=="break"&&(!next||x.start<next.s)).slice(0,40).map(x=>x.en).join(" ").slice(0,3000);
+        const t=await llmStream("你是笔记整理助手。根据下面一段转写，起一个章节标题，不超过 20 个字，用"+langName(settings.sumLang||"zh")+"书写，只输出标题本身，不要引号和标点。",text,64,null,{model:settings.refineModel,path:"/translate"});
+        title=cut(String(t).split("\n")[0].replace(/^[\s"'“”‘’《》「」『』。.!！,，:：]+|[\s"'“”‘’《》「」『』。.!！,，:：]+$/g,""),20);
+      }catch(e){ toast("自动起名失败："+((e&&e.message)||"未知错误")); return; }
+      if(!title){ toast("没能起出名字，请自己填"); return; }
+    }
+    outSave(items.concat([{s:g.start,t:title,lv:1}]),"已插入新章节");
+  }
+
+  // ----- 目录区块 -----
+  const OUT_ST={open:false, expand:new Set()};
+  function outStateText(row){
+    const st=outState[row.id], o=row.outline;
+    if(st && st.status==="running") return "目录 · "+(st.progress||"正在生成…");
+    if(outHas(row)) return "目录 · "+outChaps(row).length+" 个章节";
+    if(o && o.short) return "目录 · 内容较短，无需目录";
+    return "目录 · 还没有目录";
+  }
+  function drawOutline(){
+    if(!det) return; const row=det.row, st=outState[row.id], items=outItems(row), box=$("detOutline");
+    box.hidden=false;
+    $("outTitle").textContent=outStateText(row);
+    $("outHead").setAttribute("aria-expanded",String(OUT_ST.open)); $("outBody").hidden=!OUT_ST.open; box.classList.toggle("open",OUT_ST.open);
+    outNow();
+    if(!OUT_ST.open) return;
+    const err=$("outErr"); err.hidden=!(st&&st.status==="error"); err.textContent=st&&st.status==="error"?"目录生成失败："+st.err:"";
+    const running=!!(st&&st.status==="running");
+    $("outEd").hidden=!(row.outline&&row.outline.edited&&items.length);
+    $("outAll").hidden=!items.length; $("outNone").hidden=!items.length;
+    const gen=$("outGen"); gen.disabled=running;
+    gen.textContent=running?"生成中…":items.length?"重新生成目录":(row.outline&&row.outline.short?"仍然生成":"生成目录");
+    const list=$("outList"); list.textContent="";
+    if(!items.length){
+      const d=document.createElement("div"); d.className="out-empty";
+      d.textContent=running?"":(row.outline&&row.outline.short?"内容较短（少于 5 分钟或 20 句），无需目录。":(sumReady()?"这条记录还没有目录，点「生成目录」按需生成（会用一点大语言模型额度）。":"这条记录还没有目录。请先在设置里填好密钥或中转地址。"));
+      list.appendChild(d); return;
+    }
+    items.forEach((it,i)=>{
+      if(it.lv!==1) return;
+      const subs=[]; for(let j=i+1;j<items.length&&items[j].lv===2;j++) subs.push(items[j]);
+      const wrap=document.createElement("div"); wrap.className="out-ch"; wrap.dataset.s=String(it.s);
+      const row1=document.createElement("div"); row1.className="out-row";
+      const tm=document.createElement("span"); tm.className="out-tm"; tm.textContent=fmtT(it.s);
+      const tt=document.createElement("span"); tt.className="out-tt"; tt.textContent=it.t;
+      const has=!!(it.n||subs.length), open=OUT_ST.expand.has(it.s);
+      const ch=document.createElement("button"); ch.className="out-chev"; ch.textContent="▸"; ch.setAttribute("aria-label","展开或收起"); ch.setAttribute("aria-expanded",String(open)); ch.hidden=!has;
+      ch.onclick=e=>{ e.stopPropagation(); if(OUT_ST.expand.has(it.s)) OUT_ST.expand.delete(it.s); else OUT_ST.expand.add(it.s); drawOutline(); };
+      row1.append(tm,tt,ch); row1.onclick=()=>{ if(Date.now()-(row1._lp||0)<700) return; outGo(it.s); };
+      attachLongPress(row1,()=>outMenu(it));
+      wrap.appendChild(row1);
+      if(open){
+        if(it.n){ const n=document.createElement("div"); n.className="out-note"; n.textContent=it.n; wrap.appendChild(n); }
+        subs.forEach(sb=>{
+          const r2=document.createElement("div"); r2.className="out-row out-sub"; r2.dataset.s=String(sb.s);
+          const t2=document.createElement("span"); t2.className="out-tm"; t2.textContent=fmtT(sb.s);
+          const x2=document.createElement("span"); x2.className="out-tt"; x2.textContent=sb.t;
+          r2.append(t2,x2); r2.onclick=()=>{ if(Date.now()-(r2._lp||0)<700) return; outGo(sb.s); };
+          attachLongPress(r2,()=>outMenu(sb)); wrap.appendChild(r2);
+        });
+      }
+      list.appendChild(wrap);
+    });
+    outMark(det.active>=0&&det.segRows[det.active]?det.segRows[det.active].g.start:0);
+  }
+  function outDraw(id){ if(det && det.row.id===id) drawOutline(); }
+  // 点目录：从该时间开始播放，字幕滚动到对应的句子（所在章节折叠了就先展开）
+  function outGo(s){
+    if(!det) return;
+    const ch=outChapterAt(det.row,s); if(ch && det.collapsed && det.collapsed.has(ch.s)){ det.collapsed.delete(ch.s); applyFold(); }
+    seekTo(s,true);
+    if(LN.mode==="learn"){ const c=LN.cards.find(x=>x.g.start>=s-0.01); if(c) c.el.scrollIntoView({block:"center",behavior:"smooth"}); return; }
+    const r=det.segRows.find(x=>x.g.start>=s-0.01); if(r){ hiliteAt(s,false); r.el.scrollIntoView({block:"center",behavior:"smooth"}); }
+  }
+  // 播放时：高亮当前章节（小节轻微高亮），折叠行显示「正在播放：…」
+  function outMark(T){
+    if(!det) return;
+    const p=outAt(det.row,T), items=outItems(det.row);
+    document.querySelectorAll("#outList .out-ch").forEach(w=>w.classList.toggle("cur",p.c>=0&&+w.dataset.s===items[p.c].s));
+    document.querySelectorAll("#outList .out-sub").forEach(w=>w.classList.toggle("cur",p.a>=0&&items[p.a].lv===2&&+w.dataset.s===items[p.a].s));
+  }
+  function outNow(){
+    const e=$("outNow"); if(!det||!P){ e.textContent=""; return; }
+    const ch=outChapterAt(det.row,curT());
+    e.textContent=(ch && !OUT_ST.open && !au.paused) ? "正在播放："+ch.t : "";
+    e.hidden=!e.textContent;
+  }
+  $("outHead").onclick=()=>{ OUT_ST.open=!OUT_ST.open; drawOutline(); };
+  $("outAll").onclick=()=>{ outChaps(det.row).forEach(c=>OUT_ST.expand.add(c.s)); drawOutline(); };
+  $("outNone").onclick=()=>{ OUT_ST.expand.clear(); drawOutline(); };
+  $("outGen").onclick=()=>{
+    if(!det) return;
+    if(!sumReady()){ openSettings(); toast(useRelay()?"请先填写中转地址和访问口令":"请先填写 Claude API 密钥"); return; }
+    const row=det.row;
+    if(row.outline && row.outline.edited && outHas(row) && !confirm("目录已手动编辑过，重新生成会覆盖这些修改，继续吗？")) return;
+    queueOutline(row.id,{force:true});
+  };
+
+  // ----- 字幕列表里的章节分隔标题：点击折叠 / 展开该章节下的字幕 -----
+  function applyFold(){
+    if(!det) return; const col=det.collapsed||new Set();
+    (det.foldEls||[]).forEach(x=>x.el.classList.toggle("fold",x.ch!=null && col.has(x.ch)));
+    document.querySelectorAll("#detList .chap-div").forEach(d=>{ const c=col.has(+d.dataset.s); d.classList.toggle("folded",c); d.setAttribute("aria-expanded",String(!c)); });
+  }
+  function chapDivider(it){
+    const d=document.createElement("div"); d.className="chap-div"; d.dataset.s=String(it.s); d.setAttribute("role","button");
+    const tm=document.createElement("span"); tm.className="out-tm"; tm.textContent=fmtT(it.s);
+    const tt=document.createElement("span"); tt.className="out-tt"; tt.textContent=it.t;
+    const cv=document.createElement("span"); cv.className="chap-chev"; cv.textContent="▾";
+    d.append(tm,tt,cv);
+    d.onclick=()=>{ if(Date.now()-(d._lp||0)<700) return; det.collapsed=det.collapsed||new Set(); if(det.collapsed.has(it.s)) det.collapsed.delete(it.s); else det.collapsed.add(it.s); applyFold(); };
+    attachLongPress(d,()=>outMenu(it));
+    return d;
+  }
+
+  // ----- 进度条上的章节标记，拖动时显示章节名 -----
+  function drawSeekMarks(){
+    const box=$("seekMarks"); box.textContent=""; if(!det||!P) return;
+    const max=+$("pSeek").max||0; if(!max) return;
+    outChaps(det.row).forEach((c,i)=>{ if(i===0&&c.s<1) return; const m=document.createElement("i"); m.style.left=Math.min(100,c.s/max*100)+"%"; m.title=c.t; box.appendChild(m); });
+  }
+  let tipT=null;
+  function seekTip(T){
+    const tip=$("seekTip"); if(!det||!outHas(det.row)){ tip.hidden=true; return; }
+    const ch=outChapterAt(det.row,T); const max=+$("pSeek").max||1;
+    tip.textContent=fmtT(T)+(ch?" · "+ch.t:""); tip.style.left=Math.max(8,Math.min(92,T/max*100))+"%"; tip.hidden=false;
+    clearTimeout(tipT); tipT=setTimeout(()=>{ tip.hidden=true; },1400);
+  }
+  $("pSeek").addEventListener("input",e=>seekTip(+e.target.value));
+
   // ---------- 学习模式（记录详情 → 学习）与生词本 ----------
   // 对已保存记录里的外语句子，按「我的水平」逐句检查语法 / 表达、讲解词汇和语法点；结果存在 row.learn（随 OneDrive 同步），不重复收费。
   //   row.learn = {v:1, lang, speaker:"all"|说话人id, level, model, at, res:{[segId]:{i:[问题],v:[词汇],g:[语法点]}}, fail:[{ids,msg}]}
@@ -2296,7 +2626,9 @@ body.has-page{background:var(--bg)}
   // 估算用的参考价（美元 / 百万 token，输入、输出），只用来给个大概数
   const PRICES=[[/haiku/i,[1,5]],[/sonnet/i,[3,15]],[/opus/i,[5,25]],[/deepseek/i,[0.3,1.2]],[/gpt-4o-mini/i,[0.15,0.6]],[/gpt-4o/i,[2.5,10]]];
   const learnLangs=segs=>{ const c={}; segs.forEach(g=>{ if(g.kind!=="break" && g.en && (g.language||"en")!=="zh"){ const l=g.language||"en"; c[l]=(c[l]||0)+1; } }); return c; };
-  const learnCands=(segs,lang,sp)=>segs.filter(g=>g.kind!=="break" && g.en && (g.language||"en")===lang && (sp==="all" || String(g.speaker)===String(sp)));
+  // chs：只分析这些章节（开始秒数的数组），空 = 全部
+  const inChs=(g,chs)=>{ if(!chs||!chs.length||!det) return true; const c=outChapterAt(det.row,g.start); return !!c && chs.includes(c.s); };
+  const learnCands=(segs,lang,sp,chs)=>segs.filter(g=>g.kind!=="break" && g.en && (g.language||"en")===lang && (sp==="all" || String(g.speaker)===String(sp)) && inChs(g,chs));
   const learnOf=row=>row&&row.learn&&row.learn.res ? row.learn : null;
   function applyDetMode(){
     const learn=!!det && LN.mode==="learn";
@@ -2422,7 +2754,7 @@ body.has-page{background:var(--bg)}
     const segs=det.segs, counts=learnLangs(segs), langs=Object.keys(counts).sort((a,b)=>counts[b]-counts[a]);
     if(!langs.length){ box.appendChild(mk("div","rec-note","这条记录里没有外语（非中文）的句子，没有可以学习的内容。")); return; }
     const old=learnOf(det.row)||{};
-    const st=LN.setup=LN.setup||{lang:(old.lang&&counts[old.lang])?old.lang:langs[0], sp:old.speaker||"all"};
+    const st=LN.setup=LN.setup||{lang:(old.lang&&counts[old.lang])?old.lang:langs[0], sp:old.speaker||"all", chs:(old.chs||[]).slice()};
     if(!counts[st.lang]) st.lang=langs[0];
     const card=mk("div","lsetup");
     card.appendChild(mk("h3",null,again?"重新分析":"学习模式"));
@@ -2434,13 +2766,20 @@ body.has-page{background:var(--bg)}
       chips(c2,[["all","全部"]].concat(sps.map(i=>[String(i),spName(det.row,i)+"（"+cl.filter(g=>String(g.speaker)===String(i)).length+" 句）"])),st.sp,v=>{ st.sp=v; renderLearn(); });
       g2.appendChild(c2); g2.appendChild(mk("small",null,"想检查自己说的外语，就只选自己。")); card.appendChild(g2);
     }
+    const chl=outChaps(det.row);
+    if(chl.length>=2){
+      const g4=mk("div","lrow"); g4.appendChild(mk("b",null,"分析哪些章节")); const c4=mk("div","lchips");
+      const all=mk("button","lchip","全部章节"); all.setAttribute("aria-pressed",String(!st.chs.length)); all.onclick=()=>{ st.chs=[]; renderLearn(); }; c4.appendChild(all);
+      chl.forEach(c=>{ const b=mk("button","lchip",fmtT(c.s)+" "+c.t); b.setAttribute("aria-pressed",String(st.chs.includes(c.s))); b.onclick=()=>{ st.chs=st.chs.includes(c.s)?st.chs.filter(x=>x!==c.s):st.chs.concat([c.s]); renderLearn(); }; c4.appendChild(b); });
+      g4.appendChild(c4); g4.appendChild(mk("small",null,"可多选；不选 = 全部。只分析选中章节里的句子。")); card.appendChild(g4);
+    }
     const g3=mk("div","lrow"); g3.appendChild(mk("b",null,"我的水平")); const c3=mk("div","lchips"); chips(c3,LEVELS.map(l=>[l,l]),settings.level,v=>{ settings.level=v; saveSettings(); applySettings(); renderLearn(); }); g3.appendChild(c3); g3.appendChild(mk("small",null,"决定讲哪些词汇和语法，太简单的不讲；保存在设置里。")); card.appendChild(g3);
-    const cands=learnCands(segs,st.lang,st.sp), est=learnEstimate(cands);
+    const cands=learnCands(segs,st.lang,st.sp,st.chs), est=learnEstimate(cands);
     card.appendChild(mk("p","lnote","将分析 "+cands.length+" 句，分 "+est.batches+" 批；预计用 "+fmtTok(est.inTok+est.outTok)+" token"+(est.usd!=null?"，约 US$"+est.usd.toFixed(est.usd<0.1?3:2):"")+"（按「"+modelLabel(sumList(),settings.sumModel)+"」估算，仅供参考）。可随时停止，已完成的部分会保留。"));
     const go=lbtn("开始分析",()=>{
       if(!sumReady()){ toast("请先在设置里填好密钥或中转地址"); return; }
       if(!cands.length){ toast("没有符合条件的句子"); return; }
-      const scope={lang:st.lang, speaker:st.sp, level:settings.level, res:{}, fail:[]};
+      const scope={lang:st.lang, speaker:st.sp, level:settings.level, chs:st.chs.slice(), res:{}, fail:[]};
       LN.setup=null; LN.redo=false; learnRun(cands.map(g=>g.id),{scope});
     },"pbtn primary"); go.disabled=!cands.length; card.appendChild(go);
     if(again) card.appendChild(lbtn("取消",()=>{ LN.setup=null; LN.redo=false; renderLearn(); }));
@@ -2459,11 +2798,11 @@ body.has-page{background:var(--bg)}
     return {n,g,e,v};
   }
   function renderLearnResult(box,lr){
-    const run=LN.run, segs=det.segs, all=learnCands(segs,lr.lang,lr.speaker||"all"), res=lr.res||{};
+    const run=LN.run, segs=det.segs, all=learnCands(segs,lr.lang,lr.speaker||"all",lr.chs), res=lr.res||{};
     const ids=all.map(g=>g.id), st=learnStats(res,ids), undone=all.filter(g=>!(g.id in res));
     // 顶部：统计、进度、操作
     const head=mk("div","lhead");
-    head.appendChild(mk("div","lstat","分析了 "+st.n+" / "+all.length+" 句（"+langName(lr.lang)+"，"+lr.level+(lr.speaker&&lr.speaker!=="all"?"，仅 "+spName(det.row,lr.speaker):"")+"）· 语法错误 "+st.g+" 处 · 表达问题 "+st.e+" 处 · 词汇 "+st.v+" 个"));
+    head.appendChild(mk("div","lstat","分析了 "+st.n+" / "+all.length+" 句（"+langName(lr.lang)+"，"+lr.level+(lr.speaker&&lr.speaker!=="all"?"，仅 "+spName(det.row,lr.speaker):"")+((lr.chs&&lr.chs.length)?"，"+lr.chs.length+" 个章节":"")+"）· 语法错误 "+st.g+" 处 · 表达问题 "+st.e+" 处 · 词汇 "+st.v+" 个"));
     if(run){
       const bar=mk("div","lprog"); const fill=mk("i"); fill.style.width=(run.total?Math.round(run.done/run.total*100):0)+"%"; bar.appendChild(fill); head.appendChild(bar);
       const row=mk("div","lact"); row.appendChild(mk("span",null,"正在分析：已分析 "+run.done+" / 共 "+run.total+" 句"+(run.stop?"（正在停止，当前这批完成后停下）":"")));
@@ -2494,11 +2833,13 @@ body.has-page{background:var(--bg)}
     box.appendChild(fb);
     // 列表
     const list=mk("div","llist"); LN.cards=[]; LN.active=-1;
-    let shown=0;
+    let shown=0, lastCh=null;
     all.forEach(g=>{
       if(LN.sp!=="all" && String(g.speaker)!==String(LN.sp)) return;
       const r=res[g.id]; const hasErr=!!(r&&(r.i||[]).some(x=>x.k==="g"||x.k==="n")), hasVoc=!!(r&&(r.v||[]).length);
       if(LN.filter==="err" && !hasErr) return; if(LN.filter==="voc" && !hasVoc) return;
+      const chp=outChapterAt(det.row,g.start);
+      if(chp && chp.s!==lastCh){ lastCh=chp.s; const dv=mk("div","lchap"); dv.append(mk("span","out-tm",fmtT(chp.s)),mk("span",null,chp.t)); dv.onclick=()=>seekTo(chp.s,true); list.appendChild(dv); }
       list.appendChild(learnCard(g,r)); shown++;
     });
     if(!shown) list.appendChild(mk("div","rec-note",all.length&&!st.n?"还没有分析结果。":"没有符合筛选条件的句子。"));
@@ -2648,6 +2989,7 @@ body.has-page{background:var(--bg)}
       my.parts.push({n:pt.n, offset:pt.offset, dur:Math.max(0,end-pt.offset), url:URL.createObjectURL(new Blob(list.map(c=>c.blob),{type:row.audioMime||"audio/webm"}))});
     });
     $("pSeek").max=my.dur; $("pSeek").disabled=!my.parts.length; $("pPlay").disabled=!my.parts.length; $("pBack15").disabled=!my.parts.length;
+    drawSeekMarks();
     // 录音在 OneDrive、本机没有：点播放（或点句子）时才下载
     if(!my.parts.length && OD.enabled && (row.audioFiles||[]).length){
       my.remote=true; const n=$("pNote"); n.hidden=false; n.textContent="☁ 录音在 OneDrive 上，点播放时下载到本机（约 "+mb((row.audioFiles||[]).reduce((a,f)=>a+(f.size||0),0))+"）。";
@@ -2700,7 +3042,7 @@ body.has-page{background:var(--bg)}
     $("pTime").textContent=fmtT(T)+" / "+fmtT(P.dur);
     if(document.activeElement!==$("pSeek")) $("pSeek").value=T;
     $("pPlay").textContent=au.paused?"▶":"⏸"; $("pPlay").setAttribute("aria-label",au.paused?"播放":"暂停");
-    hiliteAt(T,false);
+    hiliteAt(T,false); if(det){ outMark(T); outNow(); }
   }
   au.addEventListener("timeupdate",updatePlayerUI);
   au.addEventListener("play",updatePlayerUI); au.addEventListener("pause",updatePlayerUI);
@@ -2890,6 +3232,7 @@ body.has-page{background:var(--bg)}
           if(det && det.row.id===id) det.row=fresh;
           if(sp.title) await applyAutoTitle(id,sp.title);
           toast("「"+((det&&det.row.id===id)?det.row.title:fresh.title)+"」的摘要已生成");
+          if(!outHas(fresh) && !(fresh.outline&&fresh.outline.short) && sumReady()) queueOutline(id,{});      // 紧接着生成目录（没有目录才生成，不覆盖已有的）
         }catch(e){ st.status="error"; st.err=(e&&e.message)||"未知错误"; }
         sumRender(id);
       }
@@ -3002,9 +3345,11 @@ body.has-page{background:var(--bg)}
     out.push("- 时长："+fmtT(row.dur||0));
     if(row.mode==="two") out.push("- 模式：双语互译（"+langName(row.langA||"zh")+" ⇄ "+langName(row.langB||"es")+"）");
     if((row.tags||[]).length) out.push("- 标签："+row.tags.map(t=>"#"+t.replace(/\s+/g,"_")).join(" "));
+    if(outHas(row)){ out.push("", "## 目录", ""); outItems(row).forEach(x=>out.push((x.lv===2?"  ":"")+"- ["+fmtT(x.s)+"] "+x.t+(x.lv===1&&x.n?" — "+x.n:""))); }
     out.push("", "## 摘要", "", row.summary ? row.summary : "（还没有生成摘要）", "", row.mode==="two" ? "## 全文（原文与译文）" : "## 全文（中英对照）", "");
-    const sp=spShow(row,segs);
+    const sp=spShow(row,segs), oi=outItems(row); let oc=0;
     segs.forEach(g=>{
+      while(oc<oi.length && g.start>=oi[oc].s-0.01){ out.push((oi[oc].lv===1?"### ":"#### ")+"["+fmtT(oi[oc].s)+"] "+oi[oc].t, ""); oc++; }     // 正文按章节加小标题
       if(g.kind==="break"){ out.push("*"+g.en+"*", ""); return; }
       out.push("**["+fmtT(g.start)+"]** "+"（"+langPill(g.language||"en")+"）"+(sp&&g.speaker!=null&&g.speaker!==""?"**"+spName(row,g.speaker)+"**：":"")+(g.en||"")+((g.tags||[]).length?"  "+g.tags.map(t=>"#"+t.replace(/\s+/g,"_")).join(" "):""));
       if(g.zh) out.push("> "+g.zh);
@@ -3017,6 +3362,8 @@ body.has-page{background:var(--bg)}
     return Object.assign({},row,{segments:segs});
   }
   // 备份 v2：带文件夹。all=true 导出全部文件夹，否则只带这些会话用到的文件夹
+  // 章节列表：每行「00:00 标题」（和视频平台的章节格式一致，第一行固定从 00:00 开始）
+  const chapterList=row=>outChaps(row).map((c,i)=>(i===0?"00:00":fmtT(c.s))+" "+c.t).join("\n");
   const backupBlob=(list,all)=>new Blob([JSON.stringify({app:"live-translation",version:2,exported:new Date().toISOString(),
     folders:folders.filter(f=>all||list.some(x=>x.folderId===f.id)), sessions:list},null,1)],{type:"application/json"});
   const stamp=()=>{ const d=new Date(); return d.getFullYear()+p2(d.getMonth()+1)+p2(d.getDate())+"-"+p2(d.getHours())+p2(d.getMinutes()); };
@@ -3035,6 +3382,7 @@ body.has-page{background:var(--bg)}
       if(kind==="audio") await exportAudio(row);
       else if(kind==="srt") await deliver([{blob:new Blob([buildSrt(sortSegs(await dbBySid("segments",row.id)),row)],{type:"text/plain;charset=utf-8"}), name:safeName(row.title)+".srt"}]);
       else if(kind==="md") await deliver([{blob:new Blob([buildMd(row,sortSegs(await dbBySid("segments",row.id)))],{type:"text/plain;charset=utf-8"}), name:safeName(row.title)+".md"}]);
+      else if(kind==="chap"){ if(!outHas(row)){ toast("这条记录还没有目录"); return; } await copyText(chapterList(row),"已复制章节列表"); }
       else await deliver([{blob:backupBlob([await bundle(row.id)]), name:safeName(row.title)+"-备份.json"}]);
     }catch(e){ toast("导出失败："+((e&&e.message)||"未知错误")); }
   });
@@ -3069,6 +3417,8 @@ body.has-page{background:var(--bg)}
         tags:strs(x.tags), summary:typeof x.summary==="string"?x.summary:"", summaryAt:x.summaryAt==null?null:num(x.summaryAt,null),
         audioMime:old?old.audioMime:null, parts:old?old.parts:[], engine:["browser","soniox"].includes(x.engine)?x.engine:"deepgram",
         titleEdited:!!x.titleEdited, titleAuto:!!x.titleAuto,
+        outline:(x.outline && typeof x.outline==="object" && Array.isArray(x.outline.items)) ? {v:1,at:num(x.outline.at,Date.now()),lang:String(x.outline.lang||"zh").slice(0,5),edited:!!x.outline.edited,short:!!x.outline.short,
+          items:outNorm(x.outline.items.map(i=>({s:num(i&&i.s,NaN),t:cut(i&&i.t,20),lv:i&&i.lv===2?2:1,n:i&&i.n?cut(i.n,120):undefined})))} : undefined,
         learn:(x.learn && typeof x.learn==="object" && x.learn.res && typeof x.learn.res==="object") ? x.learn : undefined,
         mode:x.mode==="two"?"two":"one", langA:/^[a-z]{2}$/.test(x.langA||"")?x.langA:undefined, langB:/^[a-z]{2}$/.test(x.langB||"")?x.langB:undefined,
         speakerNames:(x.speakerNames && typeof x.speakerNames==="object" && !Array.isArray(x.speakerNames)) ? Object.fromEntries(Object.entries(x.speakerNames).filter(([k,v])=>typeof v==="string"&&v.trim()).map(([k,v])=>[String(k).slice(0,20),v.trim().slice(0,20)])) : undefined,
@@ -3079,7 +3429,7 @@ body.has-page{background:var(--bg)}
       segs.forEach((g,i)=>{ const o=x.segments[i]; if(o && o.speaker!=null && o.speaker!=="") g.speaker=String(o.speaker).slice(0,20); if(typeof (o&&o.rawEn)==="string") g.rawEn=o.rawEn; if(g.kind==="seg") g.language=/^[a-z]{2}$/i.test((o&&o.language)||"") ? String(o.language).toLowerCase() : "en"; });
       if(!row.speakerNames) delete row.speakerNames;
       if(row.mode!=="two"){ delete row.langA; delete row.langB; }
-      if(!row.learn) delete row.learn;
+      if(!row.learn) delete row.learn; if(!row.outline) delete row.outline;
       try{
         await dbTx(["sessions","segments"],"readwrite",t=>{
           t.objectStore("sessions").put(row);
@@ -4127,10 +4477,10 @@ registerProcessor("pcm16",PCM16);`;
   //   readable/<文件夹>/<日期 标题>/notes.md、subtitles.srt   给人直接看的，只写不读
   //   _meta/folders.json、tags.json、settings.json            文件夹、标签预设、非敏感设置（绝不含密钥或口令）
   //   _meta/vocabulary.json                                  生词本（按词合并，含删除标记）
-  //   schemaVersion 2：记录里新增 session.learn（学习模式的分析结果）；版本 1 的记录照常读取
+  //   schemaVersion 2：记录里新增 session.learn（学习模式的分析结果）；3：新增 session.outline（目录）；旧版本的记录照常读取
   // 登录由 Worker 代管（刷新令牌只在 KV 里）；页面向 Worker 要短期访问令牌，直接调用 Microsoft Graph 读写文件。
   const GRAPH="https://graph.microsoft.com/v1.0", AROOT=GRAPH+"/me/drive/special/approot";
-  const OD_SCHEMA=2, OD_CHUNK=320*1024*10, OD_PULL_MS=5*60*1000;
+  const OD_SCHEMA=3, OD_CHUNK=320*1024*10, OD_PULL_MS=5*60*1000;
   const OD_SETTING_KEYS=["engine","diarize","refine","autoFallback","zhMode","transMode","langA","langB","sumLang","level","afterEnd","lang","mode","glossary","llm","refineModel","sumModel"];   // 同步的设置（不含任何密钥、口令、连接地址和本机偏好）
   const odSleep=ms=>new Promise(r=>setTimeout(r,ms));
   let odCache=null;

@@ -70,4 +70,4 @@ _meta/vocabulary.json                                          生词本（按�
 
 ## 数据格式版本
 
-`schemaVersion` 现在是 **2**：记录里新增 `session.learn`（学习模式分析结果）、`session.mode / langA / langB`（翻译模式），新增 `_meta/vocabulary.json`。版本 1 的旧记录照常读取（没有这些字段就当作没有分析、单向翻译）；较旧的页面遇到版本 2 的记录会提示刷新页面更新应用，不会误写。
+`schemaVersion` 现在是 **3**（2 加了学习模式 / 生词本，3 加了目录 `session.outline`）：记录里新增 `session.learn`（学习模式分析结果）、`session.mode / langA / langB`（翻译模式），新增 `_meta/vocabulary.json`。旧版本的记录照常读取（没有这些字段就当作没有分析、没有目录、单向翻译）；较旧的页面遇到版本 2 的记录会提示刷新页面更新应用，不会误写。
