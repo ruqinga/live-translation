@@ -528,6 +528,54 @@ body.has-page{background:var(--bg)}
 .f2f-list .it:last-child .t{font-size:calc(var(--fs)*1.7);color:var(--ink);font-weight:600}
 .f2f-list .it.live{opacity:.6}
 .f2f-list .it.pending .t{opacity:.5}
+
+/* 学习模式、生词本 */
+:root{--orange:#C77700}
+:root[data-theme="dark"]{--orange:#FFB454}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--orange:#FFB454}}
+.det-mode{margin:4px var(--s2) 8px}
+#learnPane{padding:0 var(--s2) var(--s3)}
+.lsetup{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;margin:8px 0}
+.lsetup h3{margin:0 0 8px;font-size:18px}
+.lnote{margin:8px 0;font-size:14px;line-height:1.55;color:var(--muted)}
+.lrow{margin:12px 0}.lrow b{display:block;margin-bottom:6px;font-size:15px}.lrow small{display:block;color:var(--muted);margin-top:4px;font-size:13px}
+.lchips{display:flex;flex-wrap:wrap;gap:6px}
+.lchip{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:6px 12px;font-size:14px;min-height:34px;color:var(--ink2)}
+.lchip[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
+.pbtn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.pbtn.danger{color:var(--rec-ink);border-color:var(--rec)}
+.lhead{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;margin:8px 0}
+.lstat{font-size:14px;line-height:1.5;color:var(--ink2)}
+.lact{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;font-size:14px}
+.lprog{height:6px;border-radius:3px;background:var(--fill);margin-top:10px;overflow:hidden}.lprog i{display:block;height:100%;background:var(--accent);transition:width .3s}
+.lfail{display:flex;gap:8px;align-items:center;margin-top:8px;font-size:13px;color:var(--rec-ink)}
+.lfilter{display:flex;flex-direction:column;gap:8px;margin:8px 0}
+.llist{display:flex;flex-direction:column;gap:10px}
+.lcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;cursor:pointer;scroll-margin:120px}
+.lcard.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.lhd{display:flex;align-items:center;gap:8px;margin-bottom:6px}.lhd .dt{font-family:var(--font-en);font-size:13px;color:var(--accent)}.lhd .grow{flex:1}
+.loopbtn{border:1px solid var(--line);background:none;border-radius:999px;font-size:12px;padding:3px 10px;color:var(--muted)}
+.loopbtn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
+.ltext{font-family:var(--font-en);font-size:18px;line-height:1.5;color:var(--ink);overflow-wrap:anywhere}
+.lzh{margin-top:4px;font-size:14px;color:var(--muted)}
+.wv{text-decoration:underline wavy;text-underline-offset:4px;text-decoration-thickness:1.5px}
+.wv-g{text-decoration-color:var(--rec)}.wv-n{text-decoration-color:var(--orange)}.wv-a,.wv-c{text-decoration:underline dotted;text-decoration-color:var(--faint);text-underline-offset:4px}
+.liss{display:flex;gap:8px;margin-top:8px;font-size:14px;line-height:1.5}
+.lbadge{flex:none;align-self:flex-start;font-size:12px;font-weight:700;border-radius:6px;padding:1px 7px;margin-top:2px;background:var(--fill);color:var(--muted)}
+.liss.k-g .lbadge{background:var(--rec);color:#fff}.liss.k-n .lbadge{background:var(--orange);color:#fff}
+.lfix{font-family:var(--font-en);color:var(--ink);font-weight:600}.lwhy{color:var(--muted);font-size:13px;margin-top:2px}
+.lcaps{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.lcap{border:1px solid var(--line);background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:4px 12px;font-size:14px;font-family:var(--font-en)}
+.lcap[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.lvdet{margin-top:8px;padding:10px;border-radius:10px;background:var(--fill);font-size:14px;line-height:1.55}.lvh{font-weight:700;font-family:var(--font-en);margin-bottom:2px}.lvdet .pbtn{margin-top:8px}
+.lgram{margin-top:8px;padding:8px 10px;border-radius:10px;border:1px solid var(--line);font-size:13px;line-height:1.5;color:var(--ink2)}
+.vc-search{padding:0 var(--s2);margin:4px 0 8px}.vc-search input{width:100%}
+.det-title small{font-size:13px;color:var(--muted);font-weight:400}
+#vcList{padding:0 var(--s2) var(--s3)}
+.vgroup{font-size:15px;margin:14px 0 6px;color:var(--muted)}
+.vitem{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;font-size:14px;line-height:1.5}
+.vw{display:flex;align-items:baseline;gap:6px}.vw b{font-size:17px;font-family:var(--font-en)}.vp{color:var(--muted);font-size:13px;flex:1}
+.vdel{border:0;background:none;color:var(--rec-ink);font-size:13px}.vsrc{display:block;margin-top:6px;border:0;background:none;padding:0;color:var(--accent);font-size:13px;text-align:left}
 </style>
 </head>
 <body>
@@ -637,6 +685,7 @@ body.has-page{background:var(--bg)}
         <button id="detExport">导出</button>
         <button id="detMore">更多</button>
       </div>
+      <div class="segc det-mode" id="detModeSeg" role="radiogroup" aria-label="显示模式"><button data-v="sub" aria-pressed="true">字幕</button><button data-v="learn" aria-pressed="false">学习</button></div>
       <div class="player" id="player">
         <div class="p-row">
           <button id="pPlay" aria-label="播放">▶</button>
@@ -658,6 +707,12 @@ body.has-page{background:var(--bg)}
         <div class="md" id="sumBody"></div>
       </div>
       <div id="detList"></div>
+      <div id="learnPane" hidden></div>
+    </div>
+    <div id="recVocab" hidden>
+      <div class="det-top"><button id="vcBack">← 记录</button><div class="det-title">生词本 <small id="vcCount"></small></div><button id="vcExport">导出 CSV</button></div>
+      <div class="rec-searchrow vc-search"><input type="search" id="vcSearch" placeholder="搜索单词、释义、出处" autocomplete="off" aria-label="搜索生词"></div>
+      <div id="vcList"></div>
     </div>
   <div id="selBar">
     <button id="selAll">全选</button>
@@ -778,6 +833,12 @@ body.has-page{background:var(--bg)}
           <button data-v="dark" aria-pressed="false">深色</button>
         </div>
       </div>
+    </div>
+
+    <h2 class="gt">学习</h2>
+    <div class="group">
+      <button class="li" id="levelRow" aria-haspopup="dialog"><span class="li-t">我的水平</span><span class="li-v" id="levelVal"></span><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></button>
+      <button class="li" id="vocabRow"><span class="li-t">生词本</span><span class="li-v" id="vocabVal"></span><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></button>
     </div>
 
     <h2 class="gt">存储与同步</h2>
@@ -983,7 +1044,7 @@ body.has-page{background:var(--bg)}
   const normLang=l=>{ l=String(l||"").toLowerCase().slice(0,2); return l||"en"; };
   const langPill=l=>LANG_PILL[l]||String(l||"EN").toUpperCase();
   const langName=l=>LANG_NAME[l]||(LANG_BY[l]&&LANG_BY[l].n)||String(l).toUpperCase();
-  const settings={connection:"direct", relayUrl:"", relayToken:"", llm:"anthropic", lastFolder:null, saveAudio:true, tagPresets:["重点","作业","考试","没听懂"], sumModel:"", apiKey:"", dgKey:"", engine:"soniox", diarize:true, refine:true, autoFallback:true, refineModel:"claude-haiku-4-5-20251001", zhMode:"off", transMode:"one", langA:"zh", langB:"es", faceMode:false, sumLang:"zh", afterEnd:"home", lang:"en-US", mode:"both", size:22, glossary:"", theme:"auto", debug:false};
+  const settings={connection:"direct", relayUrl:"", relayToken:"", llm:"anthropic", lastFolder:null, saveAudio:true, tagPresets:["重点","作业","考试","没听懂"], sumModel:"", apiKey:"", dgKey:"", engine:"soniox", diarize:true, refine:true, autoFallback:true, refineModel:"claude-haiku-4-5-20251001", zhMode:"off", transMode:"one", langA:"zh", langB:"es", faceMode:false, sumLang:"zh", level:"B1", afterEnd:"home", lang:"en-US", mode:"both", size:22, glossary:"", theme:"auto", debug:false};
   const LEGACY_KEYS={provider:"llm", route:"connection", model:"refineModel"};
   // 旧键名 → 新键名：新键已存在时以新键为准；迁移后立即写回，旧键删除
   function migrateSettings(saved){
@@ -1067,6 +1128,7 @@ body.has-page{background:var(--bg)}
     $("langABtn").textContent=langName(settings.langA); $("langBBtn").textContent=langName(settings.langB);
     setSwitch("faceMode",!!settings.faceMode);
     $("sumLangVal").textContent=langName(settings.sumLang||"zh");
+    $("levelVal").textContent=settings.level||"B1"; try{ drawVocabCount(); }catch(e){}
     $("dbgWrap").hidden=!settings.debug;
     applyTheme();
     try{ applyUi(); }catch(e){}   // 启动时会话状态还没初始化，忽略
@@ -1618,8 +1680,8 @@ body.has-page{background:var(--bg)}
     suppressPop=true; history.go(-k);                 // 让浏览器历史和页面栈保持一致（只会触发一次 popstate，忽略它）
   }
   const closeAllPages=()=>closePagesTo(0);
-  function subpane(){ return !$("recTrash").hidden ? "trash" : !$("recTags").hidden ? "tags" : !$("recDetail").hidden ? "detail" : null; }
-  function subBack(){ const n=subpane(); if(n==="trash") $("trBack").click(); else if(n==="tags") $("tvBack").click(); else if(n==="detail") $("detBack").click(); }
+  function subpane(){ return !$("recTrash").hidden ? "trash" : !$("recTags").hidden ? "tags" : !$("recDetail").hidden ? "detail" : !$("recVocab").hidden ? "vocab" : null; }
+  function subBack(){ const n=subpane(); if(n==="trash") $("trBack").click(); else if(n==="tags") $("tvBack").click(); else if(n==="detail") $("detBack").click(); else if(n==="vocab") $("vcBack").click(); }
   function navBack(){
     if(!pageStack.length) return;
     if(pageStack[pageStack.length-1]==="records" && subpane()){ subBack(); return; }   // 记录详情 → 记录列表 → 主页
@@ -1669,7 +1731,7 @@ body.has-page{background:var(--bg)}
     S.row.title=n.trim().slice(0,100); S.row.titleEdited=true; sessSave(); toast("已重命名");
   };
   $("idleSum").onclick=()=>openPage("settings");
-  function pane(name){ ["recHome","recTags","recTrash","recDetail"].forEach(n=>{ $(n).hidden=(n!==name); }); $("records").scrollTop=0; }
+  function pane(name){ ["recHome","recTags","recTrash","recDetail","recVocab"].forEach(n=>{ $(n).hidden=(n!==name); }); $("records").scrollTop=0; }
   async function loadRecData(){
     const rows=await dbAll("sessions"), gs=await dbAll("segments");
     rd.rows=rows.filter(r=>r.deletedAt==null); rd.trash=rows.filter(r=>r.deletedAt!=null); rd.segs=new Map();
@@ -1690,7 +1752,7 @@ body.has-page{background:var(--bg)}
   }
   function recRefresh(){
     if($("recHome") && !$("recHome").hidden && !rd.rows.length) recSkeleton();
-    loadRecData().then(()=>{ if(!$("recTags").hidden) renderTagView(); else if(!$("recTrash").hidden) renderTrash(); else if(!$("recDetail").hidden) return; else{ pane("recHome"); renderHome(); } })
+    loadRecData().then(()=>{ if(!$("recTags").hidden) renderTagView(); else if(!$("recTrash").hidden) renderTrash(); else if(!$("recDetail").hidden) return; else if(!$("recVocab").hidden) renderVocab(); else{ pane("recHome"); renderHome(); } })
       .catch(()=>{ $("recItems").textContent="这个浏览器不能使用本地存储，无法查看记录。"; });
   }
   function filterChips(box,names,sel,multi,onPick,counts){
@@ -1777,7 +1839,14 @@ body.has-page{background:var(--bg)}
   // 排序：标题栏「…」，或长按「全部」胶囊；默认最新优先
   const SORTS=[{v:"new",t:"最新优先"},{v:"old",t:"最早优先"},{v:"long",t:"时长最长"}];
   const openSortMenu=()=>openChoice("排序方式",SORTS,rf.sort,v=>{ rf.sort=v; renderHome(); });
-  $("recMore").onclick=openSortMenu;
+  $("recMore").onclick=()=>{
+    $("menuTitle").textContent="更多"; const box=$("menuList"); box.textContent="";
+    const add=(label,fn,note)=>{ const b=document.createElement("button"); b.textContent=label; if(note){ const sm=document.createElement("small"); sm.textContent=note; b.appendChild(sm); } b.onclick=()=>{ $("menuDlg").close(); fn(); }; box.appendChild(b); };
+    add("排序方式",openSortMenu,(SORTS.find(x=>x.v===rf.sort)||{}).t);
+    add("生词本",gotoVocab,vocLive().length?vocLive().length+" 个词":"还没有收藏");
+    $("menuDlg").showModal();
+  };
+  $("recMore").setAttribute("aria-label","更多");
   const trashLabel=()=>"最近删除"+(rd.trash.length?"（"+rd.trash.length+"）":"");
   async function gotoTrash(){ await purgeExpired(); try{ await loadRecData(); }catch(e){} pane("recTrash"); renderTrash(); }
   $("selTrash").onclick=gotoTrash;
@@ -2093,20 +2162,20 @@ body.has-page{background:var(--bg)}
     let row, segs;
     try{ row=await dbGet("sessions",id); segs=await dbBySid("segments",id); }catch(e){ toast("打开失败"); return; }
     if(!row){ toast("这条记录已不存在"); return; }
-    freePlayer();
+    freePlayer(); learnReset();
     det={row, segs:sortSegs(segs), segRows:[], active:-1};
     pane("recDetail"); $("detTitle").textContent=row.title; drawDetSub();
-    drawDetTags(); renderDetList(); drawSum();
-    loadPlayer(row).then(()=>{ if(opts.seek!=null && det && det.row.id===id){ seekTo(opts.seek,false); hiliteAt(opts.seek,true); } });
+    drawDetTags(); renderDetList(); drawSum(); applyDetMode();
+    loadPlayer(row).then(()=>{ if(opts.seek!=null && det && det.row.id===id){ seekTo(opts.seek,!!opts.play); hiliteAt(opts.seek,true); } });
     if(opts.seek!=null) hiliteAt(opts.seek,true);
   }
   async function reloadDetail(){
     if(!det) return; const id=det.row.id;
     try{ det.row=await dbGet("sessions",id)||det.row; det.segs=sortSegs(await dbBySid("segments",id)); }catch(e){ return; }
-    drawDetTags(); renderDetList(); drawSum();
+    drawDetTags(); renderDetList(); drawSum(); if(LN.mode==="learn") renderLearn();
   }
   function closeDetail(){
-    freePlayer(); det=null; pane("recHome"); recRefresh();
+    freePlayer(); learnReset(); det=null; pane("recHome"); recRefresh();
   }
   $("detBack").onclick=closeDetail;
   function drawDetSub(){ if(det) $("detSub").textContent="📁 "+folderName(det.row.folderId==null?null:det.row.folderId)+(det.row.mode==="two"?" · 双语互译 "+langName(det.row.langA||"zh")+" ⇄ "+langName(det.row.langB||"es"):""); }
@@ -2199,6 +2268,7 @@ body.has-page{background:var(--bg)}
   }
   function hiliteAt(T,force){
     if(!det) return;
+    if(LN.mode==="learn"){ learnHilite(T,force); return; }
     let a=-1; for(let i=0;i<det.segRows.length;i++){ if(det.segRows[i].g.start<=T+0.25) a=i; else break; }
     if(a===det.active) return;
     const box=$("records"), prev=det.active>=0 ? det.segRows[det.active] : null, next=a>=0 ? det.segRows[a] : null;
@@ -2213,6 +2283,344 @@ body.has-page{background:var(--bg)}
     let toTop=null;
     if(auto && next){ const r=box.getBoundingClientRect(); toTop=r.top+r.height*0.35; }   // 高亮句放在屏幕偏上 1/3 处
     stabilize(anchor,box,startTop,toTop,force?0:360);
+  }
+
+  // ---------- 学习模式（记录详情 → 学习）与生词本 ----------
+  // 对已保存记录里的外语句子，按「我的水平」逐句检查语法 / 表达、讲解词汇和语法点；结果存在 row.learn（随 OneDrive 同步），不重复收费。
+  //   row.learn = {v:1, lang, speaker:"all"|说话人id, level, model, at, res:{[segId]:{i:[问题],v:[词汇],g:[语法点]}}, fail:[{ids,msg}]}
+  //   问题 i：{k:"g"语法|"n"表达|"c"口语|"a"识别, f:原文片段, x:修改后的句子/更地道的说法/推测原话, y:原因或说明}
+  //   词汇 v：{w,p词性,g中文释义,m本句含义,e例句,l原形,c变位}；语法点 g：{n名称,t说明}
+  //   res 里空对象 {} 表示分析过、没有可讲的内容（也记下来，下次不再分析）
+  const LEVELS=["A2","B1","B2","C1"], LEARN_BATCH=20, LEARN_CTX=3;
+  const LN={mode:"sub", run:null, filter:"all", sp:"all", cards:[], active:-1, loop:null, loopT:null, setup:null};
+  // 估算用的参考价（美元 / 百万 token，输入、输出），只用来给个大概数
+  const PRICES=[[/haiku/i,[1,5]],[/sonnet/i,[3,15]],[/opus/i,[5,25]],[/deepseek/i,[0.3,1.2]],[/gpt-4o-mini/i,[0.15,0.6]],[/gpt-4o/i,[2.5,10]]];
+  const learnLangs=segs=>{ const c={}; segs.forEach(g=>{ if(g.kind!=="break" && g.en && (g.language||"en")!=="zh"){ const l=g.language||"en"; c[l]=(c[l]||0)+1; } }); return c; };
+  const learnCands=(segs,lang,sp)=>segs.filter(g=>g.kind!=="break" && g.en && (g.language||"en")===lang && (sp==="all" || String(g.speaker)===String(sp)));
+  const learnOf=row=>row&&row.learn&&row.learn.res ? row.learn : null;
+  function applyDetMode(){
+    const learn=!!det && LN.mode==="learn";
+    document.querySelectorAll("#detModeSeg button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===(learn?"learn":"sub"))));
+    $("detSum").style.display=learn?"none":""; $("detList").hidden=learn; $("learnPane").hidden=!learn;
+    if(learn) renderLearn(); else learnStopLoop();
+  }
+  document.querySelectorAll("#detModeSeg button").forEach(b=>b.onclick=()=>{ if(!det) return; LN.mode=b.dataset.v==="learn"?"learn":"sub"; applyDetMode(); });
+  function learnReset(){ if(LN.run) LN.run.stop=true; LN.mode="sub"; LN.run=null; LN.redo=false; LN.filter="all"; LN.sp="all"; LN.setup=null; LN.cards=[]; LN.active=-1; learnStopLoop(); }
+
+  // ----- 单句循环 -----
+  function learnStopLoop(){ LN.loop=null; clearInterval(LN.loopT); LN.loopT=null; document.querySelectorAll(".lcard .loopbtn[aria-pressed=true]").forEach(b=>b.setAttribute("aria-pressed","false")); }
+  function learnLoop(g,btn){
+    if(LN.loop && LN.loop.g===g){ learnStopLoop(); return; }
+    learnStopLoop();
+    const i=det.segs.indexOf(g), nx=det.segs.slice(i+1).find(x=>x.kind!=="break"&&x.start>g.start);
+    const end=(g.end>g.start+0.3)?g.end:(nx?nx.start:g.start+4);
+    LN.loop={g,start:g.start,end:end+0.12}; btn.setAttribute("aria-pressed","true");
+    seekTo(g.start,true);
+    LN.loopT=setInterval(()=>{ if(!LN.loop||!P||au.paused) return; const T=curT(); if(T>=LN.loop.end||T<LN.loop.start-0.6) seekTo(LN.loop.start,true); },80);
+  }
+  function learnHilite(T,force){
+    let a=-1; for(let i=0;i<LN.cards.length;i++){ if(LN.cards[i].g.start<=T+0.25) a=i; else break; }
+    if(a===LN.active && !force) return;
+    if(LN.active>=0 && LN.cards[LN.active]) LN.cards[LN.active].el.classList.remove("active");
+    LN.active=a; if(a<0) return; const el=LN.cards[a].el; el.classList.add("active");
+    if((force || (!au.paused && Date.now()>userScrollUntil)) && el.scrollIntoView) el.scrollIntoView({block:"center",behavior:"smooth"});
+  }
+
+  // ----- 分析：请求与结果解析 -----
+  const learnSys=(lang,level)=>"你是一名外语老师，帮一位中文母语的学习者学习"+langName(lang)+"。用户给出一段录音转写里的若干句"+langName(lang)+"（带编号，转写来自语音识别，可能有识别错误；还有前后文仅供参考）。学习者水平：CEFR "+level+"。请逐句分析，所有解释一律用简体中文，只输出一个 JSON 对象，不要任何其他文字。\n\n"
+    +"格式：{\"items\":[{\"id\":编号,\"issues\":[{\"type\":\"grammar|expression|colloquial|asr\",\"frag\":\"原文中的相关片段（必须是原句里逐字出现的）\",\"fix\":\"…\",\"why\":\"…\"}],\"vocab\":[{\"word\":\"\",\"lemma\":\"原形\",\"pos\":\"词性\",\"gloss\":\"中文释义\",\"meaning\":\"在本句中的意思\",\"example\":\"一个简短例句（"+langName(lang)+"）\",\"conj\":\"动词变位（时态、人称），没有则留空\"}],\"grammar\":[{\"name\":\"语法点名称\",\"note\":\"一两句说明\"}]}]}\n\n"
+    +"规则：\n1）issues 的类型：grammar=语法错误（frag 是错误片段，fix 是修改后的完整句子，why 是简短原因）；expression=语法没错但母语者不这样说（fix 给出更地道的说法完整句子，why 简述）；colloquial=口语中正常的现象，如省略、重复、口头禅、半截话（frag 是该片段，why 简述，它不是错误）；asr=明显是语音识别听错，如同音词（frag 是听错的片段，fix 是推测的原话，why 简述）。口语现象和识别错误都不是说话人的语法错误，不要归入 grammar。拿不准是否错误时，不要报 grammar。\n"
+    +"2）vocab：只挑对 "+level+" 水平值得学习的词和固定短语，每句 0～4 个，太简单的词不要讲；"+(lang==="es"?"西班牙语动词必须给出原形（lemma）并在 conj 里写明变位（时态、人称、式）。":"如果是动词或有变位的词，conj 写明形式（如过去式），没有就留空。")+"\n"
+    +"3）grammar：本句中值得讲解的语法点，每句 0～2 个，名称加一两句说明；太基础的不讲。\n"
+    +"4）没有问题、也没有可学内容的句子可以不出现在 items 里，或给空数组。不要编造不存在的片段。";
+  function learnParse(t){
+    t=String(t||"").replace(/```(?:json)?/gi,""); const a=t.indexOf("{"), b=t.lastIndexOf("}");
+    if(a<0||b<=a) throw new Error("模型返回的不是 JSON");
+    let j; try{ j=JSON.parse(t.slice(a,b+1)); }catch(e){ throw new Error("无法解析模型返回的 JSON"); }
+    if(!j || !Array.isArray(j.items)) throw new Error("返回的 JSON 缺少 items");
+    return j.items;
+  }
+  const cs=(v,n)=>typeof v==="string" ? v.trim().slice(0,n||300) : "";
+  function learnClean(it,text){
+    const o={}, K={grammar:"g",expression:"n",colloquial:"c",asr:"a"};
+    const iss=(Array.isArray(it.issues)?it.issues:[]).slice(0,4).map(x=>({k:K[x&&x.type], f:cs(x&&x.frag,120), x:cs(x&&x.fix,300), y:cs(x&&x.why,300)})).filter(x=>x.k && (x.x||x.y||x.f));
+    iss.forEach(x=>{ if(x.f && !text.toLowerCase().includes(x.f.toLowerCase())) x.f=""; });          // 片段必须真的在原句里，否则不画下划线
+    const voc=(Array.isArray(it.vocab)?it.vocab:[]).slice(0,4).map(x=>({w:cs(x&&x.word,60), p:cs(x&&x.pos,20), g:cs(x&&x.gloss,120), m:cs(x&&x.meaning,160), e:cs(x&&x.example,200), l:cs(x&&x.lemma,60), c:cs(x&&x.conj,80)})).filter(x=>x.w&&x.g);
+    const gr=(Array.isArray(it.grammar)?it.grammar:[]).slice(0,2).map(x=>({n:cs(x&&x.name,60), t:cs(x&&x.note,300)})).filter(x=>x.n);
+    if(iss.length) o.i=iss; if(voc.length) o.v=voc; if(gr.length) o.g=gr;
+    return o;
+  }
+  // 一批：ids 是要分析的句子（按时间顺序），附带前后各几句作上下文
+  async function learnBatch(row,segs,ids,lang,level){
+    const real=segs.filter(g=>g.kind!=="break"), pos=new Map(real.map((g,i)=>[g.id,i]));
+    const items=ids.map(id=>real[pos.get(id)]).filter(Boolean); if(!items.length) return {};
+    const f=pos.get(items[0].id), l=pos.get(items[items.length-1].id);
+    const sp=spShow(row,real), line=g=>(sp&&g.speaker!=null&&g.speaker!==""?spName(row,g.speaker)+"：":"")+g.en;
+    const before=real.slice(Math.max(0,f-LEARN_CTX),f).map(g=>"（前文）"+line(g)), after=real.slice(l+1,l+1+LEARN_CTX).map(g=>"（后文）"+line(g));
+    const gl=(settings.glossary||"").trim();
+    const user=(gl?"【场景与术语】\n"+gl+"\n\n":"")+"【要分析的句子】\n"+items.map((g,i)=>"["+(i+1)+"] "+line(g)).join("\n")+(before.length||after.length?"\n\n【上下文，仅供参考，不要分析】\n"+before.concat(after).join("\n"):"");
+    const out=await llmStream(learnSys(lang,level),user,3500,null,{model:settings.sumModel});
+    const got=learnParse(out), res={};
+    items.forEach(g=>{ res[g.id]={}; });
+    got.forEach(it=>{ const g=items[(+it.id||0)-1]; if(g) res[g.id]=learnClean(it,g.en); });
+    return res;
+  }
+  function learnEstimate(cands){
+    const chars=cands.reduce((a,g)=>a+(g.en||"").length,0), n=cands.length, batches=Math.ceil(n/LEARN_BATCH);
+    const inTok=Math.round(chars/3.2+n*14+batches*(900+LEARN_CTX*2*25)), outTok=n*130;
+    const pr=(PRICES.find(p=>p[0].test(settings.sumModel||""))||[])[1];
+    return {inTok,outTok,usd:pr?(inTok*pr[0]+outTok*pr[1])/1e6:null,batches};
+  }
+  const fmtTok=n=>n>=10000?(n/10000).toFixed(1)+" 万":String(n);
+  async function learnSave(id,lr){
+    const cur=await dbGet("sessions",id); if(!cur) return;
+    cur.learn=lr; await dbPut("sessions",cur);
+    if(det && det.row.id===id) det.row.learn=lr;
+  }
+  // 运行：ids 为要分析的句子；按批请求，每批完成就保存；可随时停止，已完成的部分保留
+  async function learnRun(ids,opts){
+    if(!det || LN.run) return; opts=opts||{};
+    const row=det.row, id=row.id, segs=det.segs, lr=Object.assign({v:1,res:{},fail:[]},learnOf(row)||{}, opts.scope||{});
+    lr.res=Object.assign({},lr.res); lr.fail=(lr.fail||[]).slice();
+    if(opts.scope){ lr.model=settings.sumModel; }
+    const run=LN.run={stop:false,done:0,total:ids.length,err:"",lr};
+    renderLearn();
+    for(let i=0;i<ids.length && !run.stop;i+=LEARN_BATCH){
+      const part=ids.slice(i,i+LEARN_BATCH);
+      try{
+        const res=await learnBatch(row,segs,part,lr.lang,lr.level);
+        Object.assign(lr.res,res); lr.fail=lr.fail.filter(f=>!f.ids.some(x=>part.includes(x)));
+        lr.at=Date.now(); run.done+=part.length;
+        await learnSave(id,lr);
+      }catch(e){
+        const msg=(e&&e.message)||"未知错误";
+        lr.fail=lr.fail.filter(f=>!f.ids.some(x=>part.includes(x))); lr.fail.push({ids:part,msg});
+        run.err=msg; run.done+=part.length;
+        await learnSave(id,lr).catch(()=>{});
+      }
+      if(det && det.row.id===id && LN.mode==="learn") renderLearn();
+    }
+    if(LN.run===run) LN.run=null;
+    if(det && det.row.id===id && LN.mode==="learn") renderLearn();
+  }
+
+  // ----- 界面 -----
+  const mk=(tag,cls,txt)=>{ const d=document.createElement(tag); if(cls) d.className=cls; if(txt!=null) d.textContent=txt; return d; };
+  function lbtn(txt,fn,cls){ const b=mk("button",cls||"pbtn",txt); b.onclick=fn; return b; }
+  function renderLearn(){
+    const box=$("learnPane"); if(!det||!box) return; const row=det.row, lr=learnOf(row);
+    const top=box.scrollTop; box.textContent="";
+    if(!sumReady()){ box.appendChild(mk("div","rec-note","学习模式需要先在设置里填好大语言模型的密钥或中转地址。")); }
+    if(!lr && !LN.run){ renderLearnSetup(box); return; }
+    renderLearnResult(box,lr||(LN.run&&LN.run.lr)||{res:{},lang:"en",level:settings.level,fail:[]});
+    box.scrollTop=top;
+  }
+  function chips(box,items,cur,cb){
+    items.forEach(([v,t])=>{ const b=mk("button","lchip",t); b.setAttribute("aria-pressed",String(v===cur)); b.onclick=()=>cb(v); box.appendChild(b); });
+  }
+  function renderLearnSetup(box,again){
+    const segs=det.segs, counts=learnLangs(segs), langs=Object.keys(counts).sort((a,b)=>counts[b]-counts[a]);
+    if(!langs.length){ box.appendChild(mk("div","rec-note","这条记录里没有外语（非中文）的句子，没有可以学习的内容。")); return; }
+    const old=learnOf(det.row)||{};
+    const st=LN.setup=LN.setup||{lang:(old.lang&&counts[old.lang])?old.lang:langs[0], sp:old.speaker||"all"};
+    if(!counts[st.lang]) st.lang=langs[0];
+    const card=mk("div","lsetup");
+    card.appendChild(mk("h3",null,again?"重新分析":"学习模式"));
+    card.appendChild(mk("p","lnote","对这条记录里的外语句子逐句分析：检查语法错误和不自然的表达，挑出值得学的词汇和语法点，所有解释用中文。口语现象（省略、重复、口头禅）和语音识别听错的地方不算语法错误。结果会保存在这条记录里，下次打开直接显示，不会重复收费。"));
+    const g1=mk("div","lrow"); g1.appendChild(mk("b",null,"学习的语言")); const c1=mk("div","lchips"); chips(c1,langs.map(l=>[l,langName(l)+"（"+counts[l]+" 句）"]),st.lang,v=>{ st.lang=v; st.sp="all"; renderLearn(); }); g1.appendChild(c1); card.appendChild(g1);
+    const cl=learnCands(segs,st.lang,"all"), sps=spIds(cl);
+    if(sps.length>=2 || (sps.length===1 && det.row.speakerNames)){
+      const g2=mk("div","lrow"); g2.appendChild(mk("b",null,"分析哪些说话人")); const c2=mk("div","lchips");
+      chips(c2,[["all","全部"]].concat(sps.map(i=>[String(i),spName(det.row,i)+"（"+cl.filter(g=>String(g.speaker)===String(i)).length+" 句）"])),st.sp,v=>{ st.sp=v; renderLearn(); });
+      g2.appendChild(c2); g2.appendChild(mk("small",null,"想检查自己说的外语，就只选自己。")); card.appendChild(g2);
+    }
+    const g3=mk("div","lrow"); g3.appendChild(mk("b",null,"我的水平")); const c3=mk("div","lchips"); chips(c3,LEVELS.map(l=>[l,l]),settings.level,v=>{ settings.level=v; saveSettings(); applySettings(); renderLearn(); }); g3.appendChild(c3); g3.appendChild(mk("small",null,"决定讲哪些词汇和语法，太简单的不讲；保存在设置里。")); card.appendChild(g3);
+    const cands=learnCands(segs,st.lang,st.sp), est=learnEstimate(cands);
+    card.appendChild(mk("p","lnote","将分析 "+cands.length+" 句，分 "+est.batches+" 批；预计用 "+fmtTok(est.inTok+est.outTok)+" token"+(est.usd!=null?"，约 US$"+est.usd.toFixed(est.usd<0.1?3:2):"")+"（按「"+modelLabel(sumList(),settings.sumModel)+"」估算，仅供参考）。可随时停止，已完成的部分会保留。"));
+    const go=lbtn("开始分析",()=>{
+      if(!sumReady()){ toast("请先在设置里填好密钥或中转地址"); return; }
+      if(!cands.length){ toast("没有符合条件的句子"); return; }
+      const scope={lang:st.lang, speaker:st.sp, level:settings.level, res:{}, fail:[]};
+      LN.setup=null; LN.redo=false; learnRun(cands.map(g=>g.id),{scope});
+    },"pbtn primary"); go.disabled=!cands.length; card.appendChild(go);
+    if(again) card.appendChild(lbtn("取消",()=>{ LN.setup=null; LN.redo=false; renderLearn(); }));
+    box.appendChild(card);
+  }
+  function wavy(text,issues){
+    const rs=[]; issues.forEach(x=>{ if((x.k==="g"||x.k==="n"||x.k==="a"||x.k==="c") && x.f){ const i=text.toLowerCase().indexOf(x.f.toLowerCase()); if(i>=0) rs.push({a:i,b:i+x.f.length,k:x.k}); } });
+    rs.sort((p,q)=>p.a-q.a); const out=[]; let pos=0;
+    rs.forEach(r=>{ if(r.a<pos) return; if(r.a>pos) out.push(document.createTextNode(text.slice(pos,r.a))); out.push(mk("span","wv wv-"+r.k,text.slice(r.a,r.b))); pos=r.b; });
+    if(pos<text.length) out.push(document.createTextNode(text.slice(pos)));
+    return out;
+  }
+  const ISS_LABEL={g:"语法",n:"表达",c:"口语",a:"可能识别有误"};
+  function learnStats(res,ids){
+    let n=0,g=0,e=0,v=0; ids.forEach(id=>{ const r=res[id]; if(!r) return; n++; (r.i||[]).forEach(x=>{ if(x.k==="g") g++; else if(x.k==="n") e++; }); v+=(r.v||[]).length; });
+    return {n,g,e,v};
+  }
+  function renderLearnResult(box,lr){
+    const run=LN.run, segs=det.segs, all=learnCands(segs,lr.lang,lr.speaker||"all"), res=lr.res||{};
+    const ids=all.map(g=>g.id), st=learnStats(res,ids), undone=all.filter(g=>!(g.id in res));
+    // 顶部：统计、进度、操作
+    const head=mk("div","lhead");
+    head.appendChild(mk("div","lstat","分析了 "+st.n+" / "+all.length+" 句（"+langName(lr.lang)+"，"+lr.level+(lr.speaker&&lr.speaker!=="all"?"，仅 "+spName(det.row,lr.speaker):"")+"）· 语法错误 "+st.g+" 处 · 表达问题 "+st.e+" 处 · 词汇 "+st.v+" 个"));
+    if(run){
+      const bar=mk("div","lprog"); const fill=mk("i"); fill.style.width=(run.total?Math.round(run.done/run.total*100):0)+"%"; bar.appendChild(fill); head.appendChild(bar);
+      const row=mk("div","lact"); row.appendChild(mk("span",null,"正在分析：已分析 "+run.done+" / 共 "+run.total+" 句"+(run.stop?"（正在停止，当前这批完成后停下）":"")));
+      if(!run.stop) row.appendChild(lbtn("停止",()=>{ run.stop=true; renderLearn(); },"pbtn danger"));
+      head.appendChild(row);
+    }else{
+      const act=mk("div","lact");
+      if(undone.length){
+        const est=learnEstimate(undone);
+        act.appendChild(lbtn("继续分析（剩 "+undone.length+" 句，约 "+fmtTok(est.inTok+est.outTok)+" token"+(est.usd!=null?"，约 US$"+est.usd.toFixed(est.usd<0.1?3:2):"")+"）",()=>learnRun(undone.map(g=>g.id)),"pbtn primary"));
+      }
+      act.appendChild(lbtn("重新分析",()=>{ LN.redo=true; LN.setup=null; renderLearn(); }));
+      head.appendChild(act);
+    }
+    (lr.fail||[]).forEach(f=>{
+      const r=mk("div","lfail"); r.appendChild(mk("span",null,"有一批（"+f.ids.length+" 句）失败："+f.msg));
+      if(!run) r.appendChild(lbtn("重试",()=>learnRun(f.ids.filter(id=>!(id in res)),{}),"pbtn"));
+      head.appendChild(r);
+    });
+    box.appendChild(head);
+    if(LN.redo && !run){ const w=mk("div"); renderLearnSetup(w,true); box.appendChild(w); }
+    // 筛选
+    const fb=mk("div","lfilter"), seg=mk("div","segc");
+    [["all","全部"],["err","只看有错误的"],["voc","只看有新词的"]].forEach(([v,t])=>{ const b=mk("button",null,t); b.setAttribute("aria-pressed",String(LN.filter===v)); b.onclick=()=>{ LN.filter=v; renderLearn(); }; seg.appendChild(b); });
+    fb.appendChild(seg);
+    const sps=spIds(all);
+    if(sps.length>=2){ const c=mk("div","lchips"); chips(c,[["all","所有人"]].concat(sps.map(i=>[String(i),spName(det.row,i)])),LN.sp,v=>{ LN.sp=v; renderLearn(); }); fb.appendChild(c); }
+    box.appendChild(fb);
+    // 列表
+    const list=mk("div","llist"); LN.cards=[]; LN.active=-1;
+    let shown=0;
+    all.forEach(g=>{
+      if(LN.sp!=="all" && String(g.speaker)!==String(LN.sp)) return;
+      const r=res[g.id]; const hasErr=!!(r&&(r.i||[]).some(x=>x.k==="g"||x.k==="n")), hasVoc=!!(r&&(r.v||[]).length);
+      if(LN.filter==="err" && !hasErr) return; if(LN.filter==="voc" && !hasVoc) return;
+      list.appendChild(learnCard(g,r)); shown++;
+    });
+    if(!shown) list.appendChild(mk("div","rec-note",all.length&&!st.n?"还没有分析结果。":"没有符合筛选条件的句子。"));
+    box.appendChild(list);
+  }
+  function learnCard(g,r){
+    const card=mk("div","lcard"); card.dataset.t=String(g.start);
+    const hd=mk("div","lhd"); hd.appendChild(mk("span","dt",fmtT(g.start)));
+    if(g.speaker!=null && g.speaker!=="" && spShow(det.row,det.segs)) hd.appendChild(spEl(det.row,g.speaker));
+    hd.appendChild(mk("span","grow"));
+    const lp=mk("button","loopbtn","🔁 单句循环"); lp.setAttribute("aria-pressed",String(!!(LN.loop&&LN.loop.g&&LN.loop.g.id===g.id)));
+    lp.onclick=e=>{ e.stopPropagation(); learnLoop(g,lp); }; hd.appendChild(lp);
+    card.appendChild(hd);
+    const tx=mk("div","ltext"); wavy(g.en,(r&&r.i)||[]).forEach(n=>tx.appendChild(n)); card.appendChild(tx);
+    if(g.zh) card.appendChild(mk("div","lzh",g.zh));
+    if(r){
+      (r.i||[]).forEach(x=>{
+        const d=mk("div","liss k-"+x.k), lab=mk("span","lbadge",ISS_LABEL[x.k]); d.appendChild(lab);
+        const body=mk("div","lbody");
+        if(x.k==="g"||x.k==="n"){ if(x.x) body.appendChild(mk("div","lfix","→ "+x.x)); if(x.y) body.appendChild(mk("div","lwhy",x.y)); }
+        else if(x.k==="c"){ body.appendChild(mk("div","lwhy","口语，非错误"+(x.y?"："+x.y:""))); }
+        else { body.appendChild(mk("div","lwhy",(x.x?"推测原话：「"+x.x+"」":"")+(x.y?(x.x?"。":"")+x.y:""))); }
+        d.appendChild(body); card.appendChild(d);
+      });
+      if((r.v||[]).length){
+        const caps=mk("div","lcaps"), detail=mk("div","lvdet"); detail.hidden=true; let cur=null;
+        r.v.forEach((v,i)=>{
+          const b=mk("button","lcap",v.w); b.onclick=e=>{ e.stopPropagation(); if(cur===i){ detail.hidden=true; cur=null; b.setAttribute("aria-pressed","false"); return; }
+            cur=i; caps.querySelectorAll(".lcap").forEach(x=>x.setAttribute("aria-pressed","false")); b.setAttribute("aria-pressed","true"); drawVocabDetail(detail,v,g); detail.hidden=false; };
+          caps.appendChild(b);
+        });
+        card.appendChild(caps); card.appendChild(detail);
+      }
+      (r.g||[]).forEach(x=>{ const c=mk("div","lgram"); c.appendChild(mk("b",null,x.n)); if(x.t) c.appendChild(mk("span",null," — "+x.t)); card.appendChild(c); });
+    }
+    card.onclick=e=>{ if(e.target.closest("button")) return; seekTo(g.start,true); };
+    LN.cards.push({g,el:card}); return card;
+  }
+  function drawVocabDetail(box,v,g){
+    box.textContent="";
+    box.appendChild(mk("div","lvh",v.w+(v.p?"  · "+v.p:"")+(v.l&&v.l.toLowerCase()!==v.w.toLowerCase()?"  （原形 "+v.l+"）":"")));
+    box.appendChild(mk("div",null,v.g));
+    if(v.c) box.appendChild(mk("div","lwhy","变位："+v.c));
+    if(v.m) box.appendChild(mk("div","lwhy","本句中：“"+v.m+"”"));
+    if(v.e) box.appendChild(mk("div","lwhy","例：“"+v.e+"”"));
+    const id=vocId(det.row.learn&&det.row.learn.lang||g.language||"en",v), on=!!vocFind(id);
+    const star=lbtn(on?"★ 已收藏":"☆ 收藏",()=>{ const now=vocToggle(v,g); star.textContent=now?"★ 已收藏":"☆ 收藏"; toast(now?"已加入生词本":"已从生词本移除"); },"pbtn");
+    box.appendChild(star);
+  }
+
+  // ----- 生词本（localStorage "lt-vocab"，随 OneDrive 同步到 _meta/vocabulary.json） -----
+  //   每个词：{id:语言|原形, lang, w, p, g, m, e, c, sid, segId, start, title, at:收藏时间, upd:最后修改时间, del?:删除时间（墓碑，用来同步删除）}
+  let vocab=[]; try{ const a=JSON.parse(localStorage.getItem("lt-vocab")||"[]"); if(Array.isArray(a)) vocab=a.filter(x=>x&&x.id); }catch(e){}
+  const vocLive=()=>vocab.filter(w=>!w.del);
+  const vocId=(lang,v)=>lang+"|"+String(v.l||v.w).toLowerCase();
+  const vocFind=id=>vocab.find(w=>w.id===id && !w.del);
+  function vocSave(dirty){
+    const cut=Date.now()-180*86400000; vocab=vocab.filter(w=>!w.del||w.del>cut);
+    try{ localStorage.setItem("lt-vocab",JSON.stringify(vocab)); }catch(e){ toast("生词本保存失败（存储空间不足？）"); }
+    if(dirty){ try{ odMetaDirty("vocab"); odKick(); }catch(e){} }
+    try{ drawVocabCount(); }catch(e){}
+  }
+  function vocToggle(v,g){
+    const lang=(det.row.learn&&det.row.learn.lang)||g.language||"en", id=vocId(lang,v), now=Date.now(), ex=vocab.find(w=>w.id===id);
+    if(ex && !ex.del){ ex.del=now; ex.upd=now; vocSave(true); return false; }
+    const w={id,lang,w:v.w,p:v.p,g:v.g,m:v.m,e:v.e,c:v.c,sid:det.row.id,segId:g.id,start:g.start,title:det.row.title,at:now,upd:now};
+    if(ex) Object.assign(ex,w,{del:undefined}), delete ex.del; else vocab.push(w);
+    vocSave(true); return true;
+  }
+  const drawVocabCount=()=>{ const n=vocLive().length; const e=$("vocabVal"); if(e) e.textContent=n?n+" 个词":"空"; };
+  const VQ={q:""};
+  function renderVocab(){
+    const box=$("vcList"); box.textContent="";
+    const q=VQ.q.trim().toLowerCase();
+    const list=vocLive().filter(w=>!q||[w.w,w.g,w.m,w.e,w.title].some(x=>String(x||"").toLowerCase().includes(q)));
+    $("vcCount").textContent=vocLive().length+" 个词";
+    if(!list.length){ box.appendChild(mk("div","rec-note",vocLive().length?"没有匹配的词。":"生词本还是空的。在记录详情 → 学习里，点词汇胶囊展开后可以「☆ 收藏」。")); return; }
+    const by={}; list.forEach(w=>{ (by[w.lang]=by[w.lang]||[]).push(w); });
+    Object.keys(by).sort((a,b)=>by[b].length-by[a].length).forEach(l=>{
+      box.appendChild(mk("h3","vgroup",langName(l)+"（"+by[l].length+"）"));
+      by[l].sort((a,b)=>b.at-a.at).forEach(w=>{
+        const c=mk("div","vitem"); const t=mk("div","vw"); t.appendChild(mk("b",null,w.w)); if(w.p) t.appendChild(mk("span","vp"," "+w.p));
+        const del=mk("button","vdel","删除"); del.onclick=()=>{ if(!confirm("从生词本删除「"+w.w+"」？")) return; w.del=Date.now(); w.upd=w.del; vocSave(true); renderVocab(); }; t.appendChild(del);
+        c.appendChild(t); c.appendChild(mk("div",null,w.g));
+        if(w.c) c.appendChild(mk("div","lwhy","变位："+w.c)); if(w.m) c.appendChild(mk("div","lwhy","本句中：“"+w.m+"”")); if(w.e) c.appendChild(mk("div","lwhy","例：“"+w.e+"”"));
+        const d=new Date(w.at), src=mk("button","vsrc","📍 "+(w.title||"记录")+" · "+fmtT(w.start||0)+" · 收藏于 "+d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate()));
+        src.onclick=()=>openVocabSource(w); c.appendChild(src); box.appendChild(c);
+      });
+    });
+  }
+  async function openVocabSource(w){
+    let row=null; try{ row=await dbGet("sessions",w.sid); }catch(e){}
+    if(!row || row.deletedAt!=null){ toast("这条记录已不存在"); return; }
+    await openDetail(w.sid,{seek:w.start,play:true});
+  }
+  async function gotoVocab(){
+    openPage("records");
+    try{ await loadRecData(); }catch(e){}
+    pane("recVocab"); VQ.q=""; $("vcSearch").value=""; renderVocab();
+  }
+  $("vcBack").onclick=()=>{ pane("recHome"); recRefresh(); };
+  $("vcSearch").oninput=e=>{ VQ.q=e.target.value; renderVocab(); };
+  $("vcExport").onclick=async()=>{
+    const list=vocLive().sort((a,b)=>a.lang===b.lang?b.at-a.at:a.lang.localeCompare(b.lang));
+    if(!list.length){ toast("生词本是空的"); return; }
+    const q=x=>'"'+String(x==null?"":x).replace(/"/g,'""')+'"';
+    const rows=[["单词","释义","词性","本句含义","例句","变位","语言","出处","时间点","收藏时间"]].concat(list.map(w=>[w.w,w.g,w.p,w.m,w.e,w.c,langName(w.lang),w.title,fmtT(w.start||0),new Date(w.at).toISOString().slice(0,10)]));
+    const csv="﻿"+rows.map(r=>r.map(q).join(",")).join("\r\n")+"\r\n";
+    await deliver([{blob:new Blob([csv],{type:"text/csv;charset=utf-8"}), name:"生词本-"+new Date().toISOString().slice(0,10)+".csv"}]);
+  };
+  $("vocabRow").onclick=()=>gotoVocab();
+  $("levelRow").onclick=()=>openChoice("我的水平",LEVELS.map(l=>({v:l,t:l,sub:{A2:"初级",B1:"中级",B2:"中高级",C1:"高级"}[l]})),settings.level,v=>{ settings.level=v; saveSettings(); applySettings(); });
+  // OneDrive 合并：按 id 取较新的一份（含墓碑）；返回本机是否有云端没有的更新
+  function vocMerge(j){
+    const rem=(Array.isArray(j&&j.words)?j.words:[]).filter(x=>x&&typeof x.id==="string"&&typeof x.w==="string"), by=new Map(vocab.map(w=>[w.id,w]));
+    let changed=false, push=false; const rids=new Set();
+    rem.forEach(r=>{ rids.add(r.id); const l=by.get(r.id);
+      if(!l || (r.upd||0)>(l.upd||0)){ by.set(r.id,{id:r.id,lang:String(r.lang||"en").slice(0,5),w:r.w.slice(0,60),p:cs(r.p,20),g:cs(r.g,120),m:cs(r.m,160),e:cs(r.e,200),c:cs(r.c,80),sid:+r.sid||0,segId:String(r.segId||""),start:+r.start||0,title:cs(r.title,100),at:+r.at||0,upd:+r.upd||0,del:r.del?+r.del:undefined}); changed=true; }
+      else if((r.upd||0)<(l.upd||0)) push=true; });
+    if(vocab.some(w=>!rids.has(w.id))) push=true;
+    if(changed){ vocab=[...by.values()]; vocSave(false); }
+    return push;
   }
 
   // ---------- Player（多段音频按时间轴拼接播放） ----------
@@ -2661,6 +3069,7 @@ body.has-page{background:var(--bg)}
         tags:strs(x.tags), summary:typeof x.summary==="string"?x.summary:"", summaryAt:x.summaryAt==null?null:num(x.summaryAt,null),
         audioMime:old?old.audioMime:null, parts:old?old.parts:[], engine:["browser","soniox"].includes(x.engine)?x.engine:"deepgram",
         titleEdited:!!x.titleEdited, titleAuto:!!x.titleAuto,
+        learn:(x.learn && typeof x.learn==="object" && x.learn.res && typeof x.learn.res==="object") ? x.learn : undefined,
         mode:x.mode==="two"?"two":"one", langA:/^[a-z]{2}$/.test(x.langA||"")?x.langA:undefined, langB:/^[a-z]{2}$/.test(x.langB||"")?x.langB:undefined,
         speakerNames:(x.speakerNames && typeof x.speakerNames==="object" && !Array.isArray(x.speakerNames)) ? Object.fromEntries(Object.entries(x.speakerNames).filter(([k,v])=>typeof v==="string"&&v.trim()).map(([k,v])=>[String(k).slice(0,20),v.trim().slice(0,20)])) : undefined,
         folderId:(x.folderId!=null && folderById(+x.folderId)) ? +x.folderId : null, deletedAt:x.deletedAt==null?null:num(x.deletedAt,null)};
@@ -2670,6 +3079,7 @@ body.has-page{background:var(--bg)}
       segs.forEach((g,i)=>{ const o=x.segments[i]; if(o && o.speaker!=null && o.speaker!=="") g.speaker=String(o.speaker).slice(0,20); if(typeof (o&&o.rawEn)==="string") g.rawEn=o.rawEn; if(g.kind==="seg") g.language=/^[a-z]{2}$/i.test((o&&o.language)||"") ? String(o.language).toLowerCase() : "en"; });
       if(!row.speakerNames) delete row.speakerNames;
       if(row.mode!=="two"){ delete row.langA; delete row.langB; }
+      if(!row.learn) delete row.learn;
       try{
         await dbTx(["sessions","segments"],"readwrite",t=>{
           t.objectStore("sessions").put(row);
@@ -3716,10 +4126,12 @@ registerProcessor("pcm16",PCM16);`;
   //   sessions/<id>/audio.webm|m4a   录音（多段续录时是 audio-p1.webm、audio-p2.webm…）
   //   readable/<文件夹>/<日期 标题>/notes.md、subtitles.srt   给人直接看的，只写不读
   //   _meta/folders.json、tags.json、settings.json            文件夹、标签预设、非敏感设置（绝不含密钥或口令）
+  //   _meta/vocabulary.json                                  生词本（按词合并，含删除标记）
+  //   schemaVersion 2：记录里新增 session.learn（学习模式的分析结果）；版本 1 的记录照常读取
   // 登录由 Worker 代管（刷新令牌只在 KV 里）；页面向 Worker 要短期访问令牌，直接调用 Microsoft Graph 读写文件。
   const GRAPH="https://graph.microsoft.com/v1.0", AROOT=GRAPH+"/me/drive/special/approot";
-  const OD_SCHEMA=1, OD_CHUNK=320*1024*10, OD_PULL_MS=5*60*1000;
-  const OD_SETTING_KEYS=["engine","diarize","refine","autoFallback","zhMode","transMode","langA","langB","sumLang","afterEnd","lang","mode","glossary","llm","refineModel","sumModel"];   // 同步的设置（不含任何密钥、口令、连接地址和本机偏好）
+  const OD_SCHEMA=2, OD_CHUNK=320*1024*10, OD_PULL_MS=5*60*1000;
+  const OD_SETTING_KEYS=["engine","diarize","refine","autoFallback","zhMode","transMode","langA","langB","sumLang","level","afterEnd","lang","mode","glossary","llm","refineModel","sumModel"];   // 同步的设置（不含任何密钥、口令、连接地址和本机偏好）
   const odSleep=ms=>new Promise(r=>setTimeout(r,ms));
   let odCache=null;
   function odLS(){ if(!odCache){ try{ odCache=JSON.parse(localStorage.getItem("lt-sync")||"{}")||{}; }catch(e){ odCache={}; } } return odCache; }
@@ -3918,6 +4330,7 @@ registerProcessor("pcm16",PCM16);`;
     }
     if(m.tags){ await odPut("_meta/tags.json",new Blob([JSON.stringify({schemaVersion:OD_SCHEMA,updatedAt:ls.tagsAt||Date.now(),presets:settings.tagPresets||[]})],{type:"application/json"}),"application/json"); m.tags=false; }
     if(m.settings){ await odPut("_meta/settings.json",new Blob([JSON.stringify({schemaVersion:OD_SCHEMA,updatedAt:ls.setAt||Date.now(),settings:odSettingsSubset()})],{type:"application/json"}),"application/json"); m.settings=false; }
+    if(m.vocab){ await odPut("_meta/vocabulary.json",new Blob([JSON.stringify({schemaVersion:OD_SCHEMA,updatedAt:Date.now(),words:vocab})],{type:"application/json"}),"application/json"); m.vocab=false; }
     ls.meta=m; odSave();
   }
   async function pushAll(){
@@ -3995,6 +4408,8 @@ registerProcessor("pcm16",PCM16);`;
       if((j.updatedAt||0)>(ls.tagsAt||0) && Array.isArray(j.presets)){
         settings.tagPresets=j.presets.filter(x=>typeof x==="string").slice(0,50); ls.tagsAt=j.updatedAt; ls.lastTags=JSON.stringify(settings.tagPresets); odSave(); saveSettings(); try{ drawTagMgr(); }catch(e){}
       }else if((j.updatedAt||0)<(ls.tagsAt||0)) odMetaDirty("tags");
+    }else if(name==="vocabulary.json"){
+      if(vocMerge(j)) odMetaDirty("vocab");
     }else if(name==="settings.json"){
       if((j.updatedAt||0)>(ls.setAt||0) && j.settings && typeof j.settings==="object"){
         OD_SETTING_KEYS.forEach(k=>{ if(k in j.settings && typeof j.settings[k]===typeof settings[k]) settings[k]=j.settings[k]; });
@@ -4013,14 +4428,14 @@ registerProcessor("pcm16",PCM16);`;
     const pp=decodeURIComponent((it.parentReference&&it.parentReference.path)||"");         // 个别账号会带路径：有就用
     if(pp){ const m1=/\/sessions\/([^\/]+)$/.exec(pp); if(m1){ pname=m1[1]; gname="sessions"; } else if(/\/_meta$/.test(pp)) pname="_meta"; }
     if(gname==="sessions" && name==="record.json") return {kind:"rec",id:it.id,sid:pname,etag:it.eTag};
-    if(pname==="_meta" && /^(folders|tags|settings)\.json$/.test(name)) return {kind:"meta",id:it.id,name};
+    if(pname==="_meta" && /^(folders|tags|settings|vocabulary)\.json$/.test(name)) return {kind:"meta",id:it.id,name};
     return null;
   }
   async function odApply(list){
     const ls=odLS(); ls.items=ls.items||{};
     const metas=list.filter(x=>x.kind==="meta"), recs=list.filter(x=>x.kind==="rec"), gone=list.filter(x=>x.kind==="gone");
     for(const g of gone){ delete ls.items[g.id]; await odRemoteGone(+g.sid); }
-    for(const m of ["folders.json","tags.json","settings.json"]){            // 先合并文件夹，会话里的 folderId 才有对应
+    for(const m of ["folders.json","tags.json","settings.json","vocabulary.json"]){            // 先合并文件夹，会话里的 folderId 才有对应
       const it=metas.find(x=>x.name===m); if(!it) continue;
       const j=await odJson("_meta/"+m); if(j) await odMergeMeta(m,j);
     }
@@ -4065,7 +4480,7 @@ registerProcessor("pcm16",PCM16);`;
     const gone=Object.keys(ls.etags).filter(k=>/^\d+$/.test(k) && !seen.has(k)).map(k=>{ delete ls.etags[k]; return {kind:"gone",id:"scan:"+k,sid:k}; });
     gone.forEach(g=>{ (ls.items=ls.items||{})[g.id]={k:"rec",sid:g.sid}; });
     const metas=[]; const mr=await gx(itemUrl("_meta")+":/children?$select=id,name,eTag");
-    if(mr.ok){ for(const c of ((await mr.json()).value||[])){ if(/^(folders|tags|settings)\.json$/.test(c.name) && (ls.metaEtags||(ls.metaEtags={}))[c.name]!==c.eTag){ metas.push({kind:"meta",id:c.id,name:c.name}); ls.metaEtags[c.name]=c.eTag; } } }
+    if(mr.ok){ for(const c of ((await mr.json()).value||[])){ if(/^(folders|tags|settings|vocabulary)\.json$/.test(c.name) && (ls.metaEtags||(ls.metaEtags={}))[c.name]!==c.eTag){ metas.push({kind:"meta",id:c.id,name:c.name}); ls.metaEtags[c.name]=c.eTag; } } }
     await odApply(metas.concat(recs,gone));
   }
 
@@ -4153,7 +4568,7 @@ registerProcessor("pcm16",PCM16);`;
       if(!OD.logged && OD.enabled){ odDisable(false); }
     }catch(e){ OD.err="连不上中转（网络问题）"; OD.netErr=true; }
   }
-  function odEnable(){ const ls=odLS(); ls.enabled=true; if(!ls.first) ls.meta={folders:true,tags:true,settings:true}; odSave(); OD.enabled=true; OD.state="idle"; OD.needLogin=false; }
+  function odEnable(){ const ls=odLS(); ls.enabled=true; if(!ls.first) ls.meta={folders:true,tags:true,settings:true,vocab:true}; odSave(); OD.enabled=true; OD.state="idle"; OD.needLogin=false; }
   function odDisable(reset){ const ls=odLS(); ls.enabled=false; if(reset){ ["deltaLink","items","fmap","etags","metaEtags","lastAt","first","upl","rootOk"].forEach(k=>delete ls[k]); } odSave(); OD.enabled=false; OD.state="off"; OD.tok=null; clearTimeout(OD.timer); }
   async function odLogin(){
     if(!odReady()){ toast("请先把连接方式设为自建中转，并填好中转地址和访问口令"); return; }

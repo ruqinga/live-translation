@@ -16,10 +16,11 @@
 **OneDrive 里的文件**（在 OneDrive 网页或本地客户端的「应用 / 同声字幕」文件夹，名字取决于你在 Azure 里给应用起的名字）
 
 ```
-sessions/<会话id>/record.json    完整数据：字幕、时间戳、说话人、语言、标签、摘要、文件夹、updatedAt、deletedAt（带 schemaVersion）
+sessions/<会话id>/record.json    完整数据：字幕、时间戳、说话人、语言、标签、摘要、双语互译模式与语言、学习模式的分析结果（session.learn）、文件夹、updatedAt、deletedAt（带 schemaVersion）
 sessions/<会话id>/audio.webm      录音（iPhone 上是 audio.m4a；中断 / 暂停续录的多段是 audio-p1.webm、audio-p2.webm…）
 readable/<文件夹名>/<YYYY-MM-DD 标题>/notes.md、subtitles.srt   给人直接看的笔记和字幕（只写不读）
 _meta/folders.json、tags.json、settings.json                    文件夹、标签预设、非敏感设置（绝不包含任何密钥、口令、连接地址）
+_meta/vocabulary.json                                          生词本（按词合并：同一个词取较新的一份，删除用带时间的标记同步）
 ```
 
 同步只依据 `sessions/` 和 `_meta/`；`readable/` 由 `record.json` 生成（沿用现有的 Markdown / SRT 导出），记录改名、移动文件夹、删除时对应的 readable 文件会跟着更新或删除。文件名里的非法字符会替换掉，重名时追加短 id。
@@ -66,3 +67,7 @@ _meta/folders.json、tags.json、settings.json                    文件夹、�
 - 只支持**个人 Microsoft 账户**（OneDrive 个人版），不支持工作或学校账户。
 - 已经注册过应用的：如果账户类型不是「仅个人 Microsoft 账户」，到应用的「清单 (Manifest)」里把 `signInAudience` 改成 `"PersonalMicrosoftAccount"`，同时把 `requestedAccessTokenVersion`（新版清单在 `api` 段里）或 `accessTokenAcceptedVersion`（旧版清单）设为 `2`，**两处一起改、一起保存**，否则会保存失败。也可以直接按上面的步骤重新注册一个。
 - 登录时如果看到 `unauthorized_client: ... not enabled for consumers`，说明应用的账户类型没有包含个人账户，按上一条修改；看到 `contextID ... did not have a matching cookie`，关掉所有登录标签，回到页面重新点「登录 OneDrive」，并确认 Safari 没有开无痕模式或阻止 Cookie。
+
+## 数据格式版本
+
+`schemaVersion` 现在是 **2**：记录里新增 `session.learn`（学习模式分析结果）、`session.mode / langA / langB`（翻译模式），新增 `_meta/vocabulary.json`。版本 1 的旧记录照常读取（没有这些字段就当作没有分析、单向翻译）；较旧的页面遇到版本 2 的记录会提示刷新页面更新应用，不会误写。
