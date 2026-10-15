@@ -4499,6 +4499,13 @@ registerProcessor("pcm16",PCM16);`;
   //   schemaVersion 2：记录里新增 session.learn（学习模式的分析结果）；3：新增 session.outline（目录）；旧版本的记录照常读取
   // 登录由 Worker 代管（刷新令牌只在 KV 里）；页面向 Worker 要短期访问令牌，直接调用 Microsoft Graph 读写文件。
   const GRAPH="https://graph.microsoft.com/v1.0", AROOT=GRAPH+"/me/drive/special/approot";
+  // 两种存放位置：默认用应用文件夹（Files.ReadWrite.AppFolder，approot）；应用文件夹在个别账号上无法使用时，Worker 可以改成申请 Files.ReadWrite，
+  // 这时数据放在 OneDrive 根目录下自己建的「同声字幕」文件夹里（OD.full 由 Worker 返回的授权范围决定）
+  const OD_DIR="同声字幕";
+  const odFullScope=sc=>/Files\.ReadWrite(\s|$)/.test(sc||"");
+  const baseSelf=()=>OD.full ? GRAPH+"/me/drive/root:/"+encodeURIComponent(OD_DIR) : AROOT;
+  const baseDelta=()=>OD.full ? baseSelf()+":/delta" : AROOT+"/delta";
+  const baseChildren=()=>OD.full ? baseSelf()+":/children" : AROOT+"/children";
   const OD_SCHEMA=3, OD_CHUNK=320*1024*10, OD_PULL_MS=5*60*1000;
   const OD_SETTING_KEYS=["engine","diarize","refine","autoFallback","zhMode","transMode","langA","langB","sumLang","level","afterEnd","lang","mode","glossary","llm","refineModel","sumModel"];   // 同步的设置（不含任何密钥、口令、连接地址和本机偏好）
   const odSleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -4507,7 +4514,7 @@ registerProcessor("pcm16",PCM16);`;
   function odSave(){ try{ localStorage.setItem("lt-sync",JSON.stringify(odCache||{})); }catch(e){} }
   class OdError extends Error{ constructor(msg,o){ super(msg); Object.assign(this,o||{}); } }
   const encPath=p=>p.split("/").map(encodeURIComponent).join("/");
-  const itemUrl=p=>AROOT+":/"+encPath(p);
+  const itemUrl=p=>OD.full ? GRAPH+"/me/drive/root:/"+encodeURIComponent(OD_DIR)+"/"+encPath(p) : AROOT+":/"+encPath(p);
   const odReady=()=>useRelay() && !!(relayBase() && settings.relayToken);
 
   async function odToken(){
@@ -4548,7 +4555,19 @@ registerProcessor("pcm16",PCM16);`;
   }
   // 应用文件夹是微软第一次访问 approot 时才创建的；子文件夹（sessions、_meta、readable）由这里创建，已存在（409）就忽略
   async function odEnsureRoot(){
-    const ls=odLS(); if(OD.rootOk || ls.rootOk){ OD.rootOk=true; return; }
+    const ls=odLS();
+    await odToken(); OD.full=odFullScope(OD.scope);                       // 先确定用应用文件夹还是根目录下的「同声字幕」
+    if(!!ls.rootFull!==OD.full){ ls.rootOk=false; OD.rootOk=false; OD.dirs=new Set(); ls.deltaLink=""; ls.items={}; ls.fmap={}; ls.etags={}; ls.metaEtags={}; ls.rootFull=OD.full; odSave(); }   // 换了存放位置：旧的同步状态作废
+    if(OD.rootOk || ls.rootOk){ OD.rootOk=true; return; }
+    if(OD.full){
+      const g=await gx(baseSelf()+"?select=id,name");
+      if(g.status===404){
+        const c=await gx(GRAPH+"/me/drive/root/children",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:OD_DIR,folder:{},"@microsoft.graph.conflictBehavior":"fail"})});
+        if(!c.ok && c.status!==409) throw await gerr(c);
+      }else if(!g.ok) throw await gerr(g);
+      for(const d of ["sessions","_meta","readable"]) await odMkdir(d);
+      OD.rootOk=true; ls.rootOk=true; odSave(); return;
+    }
     let r=await gx(AROOT+"?select=id,name");          // 访问 approot 本身，微软会在这时创建「应用/同声字幕」
     if(r.status===404){
       // 个别账号访问 approot 仍是 404：写入一个小文件，让 OneDrive 在写入时创建应用文件夹，再访问一次
@@ -4569,7 +4588,7 @@ registerProcessor("pcm16",PCM16);`;
     if(sc && !/appfolder/i.test(sc)) hint="授权里没有「Files.ReadWrite.AppFolder」权限：到 Azure → 应用注册 → API 权限 里添加它，然后在设置里退出登录、重新登录授权。";
     else if(ds===404) hint="这个微软账号的 OneDrive 好像还没有开通：用电脑浏览器打开 onedrive.live.com，登录同一个账号，等文件列表出现，再回来点「立即同步」。";
     else hint="请先用电脑浏览器打开 onedrive.live.com，登录同一个账号，确认能看到文件（第一次使用会初始化 OneDrive）；再确认 Azure 的 API 权限里有「Files.ReadWrite.AppFolder」，然后退出登录、重新登录授权。";
-    return new OdError("OneDrive 里找不到应用文件夹（GET approot 返回 404）。"+hint+"（诊断：授权范围 "+(sc||"Worker 没有返回，重新部署 Worker 后可见")+"；GET /me/drive → "+ds+"）",{status:404,fatal:true});
+    return new OdError("OneDrive 里找不到应用文件夹（GET approot 返回 404）。"+hint+"（诊断：授权范围 "+(sc||"Worker 没有返回，重新部署 Worker 后可见")+"；GET /me/drive → "+ds+"）。以上都试过仍不行：在 Worker 里加环境变量 MS_FULL_ACCESS=1（改为申请 Files.ReadWrite，权限更大，数据放在 OneDrive 根目录的「同声字幕」文件夹），并在 Azure 添加委托权限 Files.ReadWrite，然后退出登录、重新登录授权。",{status:404,fatal:true});
   }
   async function odMkdir(path){
     const parts=path.split("/").filter(Boolean); let cur="";
@@ -4577,7 +4596,7 @@ registerProcessor("pcm16",PCM16);`;
     for(const n of parts){
       const full=cur?cur+"/"+n:n;
       if(!OD.dirs.has(full)){
-        const r=await gx((cur?itemUrl(cur)+":/children":AROOT+"/children"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:n,folder:{},"@microsoft.graph.conflictBehavior":"fail"})});
+        const r=await gx((cur?itemUrl(cur)+":/children":baseChildren()),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:n,folder:{},"@microsoft.graph.conflictBehavior":"fail"})});
         if(!r.ok && r.status!==409) throw await gerr(r);        // 409 nameAlreadyExists：已经有了
         OD.dirs.add(full);
       }
@@ -4837,11 +4856,11 @@ registerProcessor("pcm16",PCM16);`;
     L.syncState="pending"; L.syncBase=0; L.audioFiles=undefined; delete L.audioFiles; await dbTx(["sessions"],"readwrite",t=>t.objectStore("sessions").put(L),{remote:true});
   }
   async function odPull(){
-    const ls=odLS(); let url=ls.deltaLink||AROOT+"/delta", full=!ls.deltaLink, items=[], next="", guard=0;
+    const ls=odLS(); let url=ls.deltaLink||baseDelta(), full=!ls.deltaLink, items=[], next="", guard=0;
     for(;;){
       if(++guard>300) throw new OdError("同步数据太多，稍后继续",{retry:true});
       const r=await gx(url);
-      if(r.status===410){ ls.deltaLink=""; ls.items={}; ls.fmap={}; odSave(); url=AROOT+"/delta"; full=true; items=[]; continue; }      // 需要全量重新同步
+      if(r.status===410){ ls.deltaLink=""; ls.items={}; ls.fmap={}; odSave(); url=baseDelta(); full=true; items=[]; continue; }      // 需要全量重新同步
       if(r.status===400||r.status===404||r.status===501){ dbg("delta 不可用（"+r.status+"），改为逐个会话文件夹比对"); return odPullScan(); }       // 这个账号的 App Folder 不支持 delta：改为逐个会话文件夹比对
       if(!r.ok) throw await gerr(r);
       const j=await r.json(); items=items.concat(j.value||[]);

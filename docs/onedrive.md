@@ -65,6 +65,17 @@ _meta/vocabulary.json                                          生词本（按�
 - **`GET /me/drive` 是 404**：这个微软账号的 OneDrive 还没开通。用电脑浏览器打开 onedrive.live.com，登录同一个账号，等文件列表出现，再回来点「立即同步」。
 - **其他情况**：同样先用浏览器登录一次 onedrive.live.com，再确认 Azure 的 API 权限和「仅个人 Microsoft 账户」的设置，退出登录重新授权；仍不行就把设置里「调试模式」面板里的 `OD …` 请求序列发出来。
 
+### 备选：根目录下的「同声字幕」文件夹（应用文件夹始终找不到时）
+
+个别账号上 `approot` 一直返回 404，手动建 `Apps/<应用名>` 也无效。这时可以改成申请 `Files.ReadWrite`（**权限更大：能读写整个 OneDrive**，只是 App 本身只会在根目录的「同声字幕」文件夹里读写），步骤：
+
+1. Azure → 应用注册 → API 权限：添加委托权限 `Files.ReadWrite`（`Files.ReadWrite.AppFolder` 可以留着）。
+2. Cloudflare Worker → 设置 → 变量：新增 `MS_FULL_ACCESS` = `1`（普通变量即可），保存并重新部署。
+3. 页面设置里「退出登录」，再「登录 OneDrive」，在授权页同意新的权限。
+4. 再同步：App 根据 Worker 返回的授权范围自动改用「同声字幕」文件夹，在根目录创建它（以及 `sessions`、`_meta`、`readable`）；换存放位置后旧的同步状态自动作废，从头比对。
+
+不设置 `MS_FULL_ACCESS` 时，行为和以前完全一样，只申请应用文件夹权限。已经同步在应用文件夹里的数据不会自动搬到新位置，需要的话在 OneDrive 网页里手动移动。
+
 ## OneDrive 的 Azure 应用注册和 Worker 配置
 
 1. 打开 <https://portal.azure.com> → Microsoft Entra ID → 应用注册 → 新注册。名称填「同声字幕」（OneDrive 里的文件夹就叫「应用 / 同声字幕」）；**受支持的账户类型**选「**仅个人 Microsoft 账户**」（Personal Microsoft accounts only；Worker 的授权端点是 `consumers`，只接受个人账户）；**重定向 URI** 平台选 **Web**，填 `https://<你的Worker地址>/onedrive/callback`（要和 Worker 的实际地址完全一致）。
