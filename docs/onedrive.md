@@ -16,21 +16,24 @@
 **OneDrive 里的文件**（在 OneDrive 网页或本地客户端的「应用 / 同声字幕」文件夹，名字取决于你在 Azure 里给应用起的名字）
 
 ```
-sessions/<会话id>/record.json    完整数据：字幕、时间戳、说话人、语言、标签、摘要、双语互译模式与语言、学习模式的分析结果（session.learn）、文件夹、updatedAt、deletedAt（带 schemaVersion）
-sessions/<会话id>/audio.webm      录音（iPhone 上是 audio.m4a；中断 / 暂停续录的多段是 audio-p1.webm、audio-p2.webm…）
-readable/<文件夹名>/<YYYY-MM-DD 标题>/notes.md、subtitles.srt   给人直接看的笔记和字幕（只写不读）
-_meta/folders.json、tags.json、settings.json                    文件夹、标签预设、非敏感设置（绝不包含任何密钥、口令、连接地址）
-_meta/vocabulary.json                                          生词本（按词合并：同一个词取较新的一份，删除用带时间的标记同步）
+<YYYY-MM-DD 标题>/                每条记录一个文件夹（重名时追加短 id）
+    audio.webm                     录音（iPhone 上是 audio.m4a；中断 / 暂停续录的多段是 audio-p1.webm、audio-p2.webm…）
+    notes.md、subtitles.srt         给人直接看的笔记和字幕（只写不读）
+    record.json                    完整数据：字幕、时间戳、说话人、语言、标签、摘要、双语互译、学习模式、目录、文件夹、updatedAt、deletedAt（带 schemaVersion）
+_meta/folders.json、tags.json、settings.json    文件夹、标签预设、非敏感设置（绝不包含任何密钥、口令、连接地址）
+_meta/vocabulary.json                          生词本（按词合并：同一个词取较新的一份，删除用带时间的标记同步）
 ```
 
-同步只依据 `sessions/` 和 `_meta/`；`readable/` 由 `record.json` 生成（沿用现有的 Markdown / SRT 导出），记录改名、移动文件夹、删除时对应的 readable 文件会跟着更新或删除。文件名里的非法字符会替换掉，重名时追加短 id。
+同步只依据各记录文件夹里的 `record.json` 和 `_meta/`；`notes.md`、`subtitles.srt` 由 `record.json` 生成。**改标题时在云端直接重命名这个文件夹**（录音不重新上传）；记录在 App 里所属的「文件夹」只记在 `record.json` 里，不在 OneDrive 里建对应的目录。移到「最近删除」的记录只保留 `record.json` 和录音（方便在其他设备上恢复），彻底删除时整个文件夹一起删除。请不要在 OneDrive 里手动改名、移动或删除这些文件夹。
+
+**从旧布局自动搬家**：更早的版本把文件分在 `sessions/<id>/`（record.json、录音）和 `readable/<文件夹>/<日期 标题>/`（笔记、字幕）两处。升级后第一次同步会把每条记录搬进自己的文件夹：录音在云端直接移动（不重新上传），笔记重新生成；全部搬完后删掉空的 `sessions/` 和 `readable/`。
 
 **同步规则**
-- **上传**：录音结束后自动上传 `record.json`、录音和 readable 文件；改标题、标签、移动、删除等编辑后约 3 秒上传 `record.json`。录音超过 4MB 用上传会话分块上传，中断后从服务器已收到的位置续传。
-- **拉取**：打开应用、回到前台、前台每 5 分钟，用 delta 增量查询获取变化，下载其他设备新增或修改的记录并合并（个别账号的 App Folder 不支持 delta 时，自动退回为逐个会话文件夹按 eTag 比对）。
+- **上传**：录音结束后自动上传录音、笔记、字幕和 `record.json`；改标题、标签、移动、删除等编辑后约 3 秒上传 `record.json`。录音超过 4MB 用上传会话分块上传，中断后从服务器已收到的位置续传。
+- **拉取**：打开应用、回到前台、前台每 5 分钟，用 delta 增量查询获取变化，下载其他设备新增或修改的记录并合并（个别账号的 App Folder 不支持 delta 时，自动退回为逐个记录文件夹按 eTag 比对）。
 - **录音按需下载**：没有本地录音的设备上，点击播放（或点句子跳播、导出音频）时才从 OneDrive 下载并缓存到本机，显示下载进度；设置里「自动下载录音」默认关。「清理本机录音缓存」只会删除已经在 OneDrive 上有完整副本的本机录音。
 - **冲突**：以 `updatedAt` 较新的为准；两边在上次同步后都有修改时，保留两份，另一份标题加「（冲突副本）」，列表里有警告图标，不会静默丢弃。在详情页「更多 → 标记为已处理」可以清除标记。
-- **删除**：删除（移入最近删除）会同步到其他设备，对方也移入最近删除；30 天后彻底删除时，同时删除 OneDrive 上的会话文件夹和 readable 文件（OneDrive 回收站还会保留一段时间作为保险）。如果云端的记录被手动删掉而本机还有，会重新上传，不会静默丢数据。
+- **删除**：删除（移入最近删除）会同步到其他设备，对方也移入最近删除；30 天后彻底删除时，同时删除 OneDrive 上这条记录的文件夹（OneDrive 回收站还会保留一段时间作为保险）。如果云端的记录被手动删掉而本机还有，会重新上传，不会静默丢数据。
 - **失败处理**：进入待上传队列，指数退避重试（最长 5 分钟）；令牌失效时暂停同步，设置里提示重新登录；不会弹窗打断，只在设置的同步状态和记录列表图标上显示。
 - **首次登录**：本机已有的数据和 OneDrive 里的数据按 id 合并，完成后提示「上传 N 条、下载 N 条」。旧数据自动补上 `updatedAt` 并标为待上传。
 - 注意：各设备用自己的系统时间判断「较新」，请保持手机和电脑的时间正确。
@@ -51,14 +54,14 @@ _meta/vocabulary.json                                          生词本（按�
 ### 排查：同步失败时看什么
 
 - 错误信息带失败的请求，格式如 `OneDrive 返回 403：accessDenied（PUT approot:/_meta/folders.json:/content）`；路径里不含令牌和域名。
-- 打开设置里的「调试模式」，调试面板会按顺序列出每个 OneDrive 请求，形如 `OD PUT approot:/sessions/12/record.json:/content → 201`，方便定位是哪一步失败。
+- 打开设置里的「调试模式」，调试面板会按顺序列出每个 OneDrive 请求，形如 `OD PUT approot:/2026-10-15 期中复习/record.json:/content → 201`，方便定位是哪一步失败。
 
 ### 应用文件夹的访问方式（参考 remotely-save）
 
 只申请 `Files.ReadWrite.AppFolder`，数据都在应用文件夹（`应用 / <Azure 应用的显示名称>`）里。访问方式参考成熟的 Obsidian 插件 remotely-save：
 
 - **不去 `GET approot` 这个条目本身**：个别个人账号上它一直返回 `404 Item not found`，即使授权没问题。App 改为先 `GET approot/children`（列出内容），再 `POST approot/children` 创建 `sessions`、`_meta`、`readable`（已存在返回 409，忽略）。这两种访问都会让 OneDrive 创建应用文件夹。
-- 之后的读写都用路径寻址（`approot:/sessions/<id>/record.json:/content`），上传不需要先建父文件夹；变更用 delta，delta 不可用时退回逐文件夹扫描。
+- 之后的读写都用路径寻址（`approot:/<日期 标题>/record.json:/content`），上传不需要先建父文件夹；变更用 delta，delta 不可用时退回逐文件夹扫描。
 - 读取 `_meta/*.json`、`record.json` 返回 404 表示「云端还没有」，按空数据处理。
 
 - **创建文件夹返回 400（`Invalid request`）**：个别账号不接受 `@microsoft.graph.conflictBehavior` 参数，App 会去掉它再试一次；仍然 400 就不再单独建文件夹，改为依赖路径方式的上传自动创建缺少的父文件夹。错误信息里会带上微软返回的错误码（如 `[invalidRequest]`）。

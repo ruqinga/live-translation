@@ -927,7 +927,7 @@ body.has-page{background:var(--bg)}
         <div class="info" id="odAudioInfo" hidden>默认关：在没有本地录音的设备上，点击播放时才从 OneDrive 下载并缓存。打开后会在同步时把其他设备的录音自动下载到本机（占用空间和流量）。</div>
         <button class="li" id="odLogout" style="color:var(--rec-ink)"><span class="li-t">退出登录</span></button>
       </div>
-      <div class="li-note">文件保存在 OneDrive 的「应用/同声字幕」文件夹，电脑上安装 OneDrive 客户端即可在本地看到。</div>
+      <div class="li-note">每条记录在 OneDrive 的「应用 /（Azure 里的应用名）」文件夹里有一个「日期 标题」文件夹，里面是录音、笔记、字幕和 record.json；_meta 里是设置、文件夹、标签、生词本。请不要手动改名、移动或删除这些文件夹，电脑上安装 OneDrive 客户端即可在本地看到。</div>
     </div>
 
     <h2 class="gt">高级</h2>
@@ -2072,7 +2072,7 @@ body.has-page{background:var(--bg)}
       if(recording(id)) continue;
       try{
         const r=await dbGet("sessions",id);
-        if(r && (r.syncBase || r.readablePath)) await dbTx(["syncq"],"readwrite",t=>t.objectStore("syncq").put({key:"purge:"+id, id, readable:r.readablePath||"", audioSid:r.audioRemoteSid||null, ts:Date.now()}),{remote:true});
+        if(r && (r.syncBase || r.readablePath || r.remoteDir)) await dbTx(["syncq"],"readwrite",t=>t.objectStore("syncq").put({key:"purge:"+id, id, dir:r.remoteDir||"", readable:r.readablePath||"", audioSid:r.audioRemoteSid||null, ts:Date.now()}),{remote:true});
       }catch(e){}
       await dbDelSession(id);
     }
@@ -4495,9 +4495,11 @@ registerProcessor("pcm16",PCM16);`;
 
   // ---------- OneDrive 同步 ----------
   // 本地 IndexedDB 始终是工作区（离线可录可看）；登录 OneDrive 后，会话、文件夹、标签在后台和 App Folder（应用/同声字幕）同步。
-  //   sessions/<id>/record.json      完整数据（字幕、时间戳、说话人、语言、标签、摘要、文件夹、updatedAt、deletedAt）
-  //   sessions/<id>/audio.webm|m4a   录音（多段续录时是 audio-p1.webm、audio-p2.webm…）
-  //   readable/<文件夹>/<日期 标题>/notes.md、subtitles.srt   给人直接看的，只写不读
+  //   <日期 标题>/                    每条记录一个文件夹（改标题 = 重命名这个文件夹，不重新上传录音）：
+  //       audio.webm|m4a                 录音（多段续录时是 audio-p1.webm、audio-p2.webm…）
+  //       notes.md、subtitles.srt         给人直接看的笔记和字幕（App 只写不读）
+  //       record.json                    完整数据（字幕、时间戳、说话人、语言、标签、摘要、文件夹、updatedAt、deletedAt），同步以它为准
+  //   旧版本的布局（sessions/<id>/… + readable/…）会在上传时自动搬到新布局：录音在云端直接移动，不重新上传
   //   _meta/folders.json、tags.json、settings.json            文件夹、标签预设、非敏感设置（绝不含密钥或口令）
   //   _meta/vocabulary.json                                  生词本（按词合并，含删除标记）
   //   schemaVersion 2：记录里新增 session.learn（学习模式的分析结果）；3：新增 session.outline（目录）；旧版本的记录照常读取
@@ -4551,7 +4553,7 @@ registerProcessor("pcm16",PCM16);`;
     return r;
   }
   // 应用文件夹：不去 GET approot 这个条目本身（个别个人账号上它一直返回 404），而是和 remotely-save 一样按「approot/children」列出内容、
-  // 再用「POST approot/children」创建子文件夹（sessions、_meta、readable）：这样访问会让 OneDrive 创建应用文件夹；已存在（409）就忽略
+  // 再用「POST approot/children」创建 _meta：这样访问会让 OneDrive 创建应用文件夹；已存在（409）就忽略
   async function odEnsureRoot(){
     const ls=odLS();
     if(ls.rootVer!==3){ ls.rootOk=false; ls.rootVer=3; ls.deltaLink=""; odSave(); }       // 访问方式改过：旧版本留下的「已就绪」标记作废，重新验证一次
@@ -4562,7 +4564,7 @@ registerProcessor("pcm16",PCM16);`;
     if(l.status===404){ await odSleep(1500); await gx(AROOT); l=await gx(AROOT+"/children?$top=200"); }
     if(!l.ok && l.status!==404) throw await gerr(l);                 // 404：应用文件夹还没创建，下面创建子文件夹时会一起建好
     OD.dirs=new Set();
-    try{ for(const d of ["sessions","_meta","readable"]) await odMkdir(d); }
+    try{ await odMkdir("_meta"); }
     catch(e){ if(e && e.status===404) throw await odDiagnose(); throw e; }
     if(OD.noMkdir){                       // 没能单独建文件夹：用一次真实的写入验证应用文件夹确实可用，不能凭空认为「已就绪」
       const w=await gx(itemUrl("_meta/keep.txt")+":/content?%40microsoft.graph.conflictBehavior=replace",{method:"PUT",headers:{"Content-Type":"text/plain"},body:"ok"});
@@ -4664,6 +4666,21 @@ registerProcessor("pcm16",PCM16);`;
     const r=await gx(itemUrl(path),{method:"DELETE"});
     if(!r.ok && r.status!==404) throw await gerr(r);
   }
+  // 按条目 id 读 JSON（文件夹改过名也能读到）：先取预授权的下载地址
+  // 记住「哪个 record.json 条目属于哪条记录」：同一条记录只认最新的那个条目（搬家、重建后旧条目被删除时，不会误判成记录被删了）
+  function odMapRec(itemId,sid){
+    const ls=odLS(), m=ls.items||(ls.items={});
+    Object.keys(m).forEach(k=>{ if(k!==itemId && m[k] && m[k].k==="rec" && m[k].sid===sid) delete m[k]; });
+    m[itemId]={k:"rec",sid};
+  }
+  async function odJsonById(itemId){
+    const mr=await gx(GRAPH+"/drive/items/"+encodeURIComponent(itemId)+"?$select=id,@microsoft.graph.downloadUrl");
+    if(mr.status===404) return null; if(!mr.ok) throw await gerr(mr);
+    const du=(await mr.json())["@microsoft.graph.downloadUrl"];
+    let r; try{ r=du ? await fetch(du) : await gx(GRAPH+"/drive/items/"+encodeURIComponent(itemId)+"/content"); }catch(e){ throw new OdError("网络不通",{net:true}); }
+    if(r.status===404) return null; if(!r.ok) throw await gerr(r);
+    try{ return await r.json(); }catch(e){ return null; }
+  }
   async function odJson(path){
     const r=await gx(itemUrl(path)+":/content");
     if(r.status===404) return null; if(!r.ok) throw await gerr(r);
@@ -4685,6 +4702,13 @@ registerProcessor("pcm16",PCM16);`;
 
   // ----- 文件名与 readable 路径 -----
   const odSafe=t=>String(t||"").replace(/[\\/:*?"<>|\u0000-\u001f]/g,"_").replace(/\s+/g," ").trim().replace(/[. ]+$/,"").slice(0,60)||"未命名";
+  // 记录文件夹名「日期 标题」；和别的记录重名时追加短 id
+  function recordDir(row,used){
+    const d=new Date(row.created), p=n=>String(n).padStart(2,"0");
+    const base=d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+" "+odSafe(row.title);
+    const others=new Set(used); if(row.remoteDir) others.delete(row.remoteDir);
+    return (others.has(base) || base==="_meta") ? base+" ("+String(row.id).slice(-4)+")" : base;
+  }
   function readableBase(row,used){
     const d=new Date(row.created), p=n=>String(n).padStart(2,"0");
     let base="readable/"+odSafe(folderName(row.folderId==null?null:row.folderId))+"/"+d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+" "+odSafe(row.title);
@@ -4710,38 +4734,79 @@ registerProcessor("pcm16",PCM16);`;
   // ----- 上传 -----
   async function pushSession(row,used){
     const id=row.id, segs=sortSegs(await dbBySid("segments",id)), at=row.updatedAt, patch={};
-    // 1) 录音（只传一次；录音文件录完就不再变）
+    const legacy=!row.remoteDir && !!(row.syncBase || row.readablePath);            // 旧布局上传过：这次顺带搬家
+    // 0) 记录文件夹：标题变了就在云端重命名文件夹（录音不用重传）；文件夹不见了就重新建
+    let dir=row.remoteDir||"", known=(row.audioFiles||[]).slice();
+    const want=recordDir(row,used);
+    if(dir && dir!==want){
+      const nd=await odRenameDir(dir,want,id);
+      if(nd) dir=nd; else{ dir=""; known=[]; }                                       // 云端的文件夹已经没了：按新记录重新上传
+    }
+    if(!dir) dir=want;
+    used.add(dir); patch.remoteDir=dir;
+    // 1) 笔记和字幕（先写它们，顺便建好记录文件夹）；移到最近删除的只保留 record.json 和录音，方便在别的设备上恢复
+    const view=Object.assign({},row,patch);
+    if(row.deletedAt){ await odDel(dir+"/notes.md"); await odDel(dir+"/subtitles.srt"); }
+    else{
+      await odPut(dir+"/notes.md",new Blob([buildMd(view,segs)],{type:"text/markdown"}),"text/markdown");
+      await odPut(dir+"/subtitles.srt",new Blob([buildSrt(segs,view)],{type:"text/plain"}),"text/plain");
+    }
+    // 2) 录音（只传一次；旧布局里已经在云端的直接移动过来，不重新上传）
+    const putRecord=()=>odPut(dir+"/record.json",new Blob([JSON.stringify(buildRecord(Object.assign({},row,patch,{readablePath:""}),segs))],{type:"application/json"}),"application/json");
     if(!row.audioRemoteSid){
-      const chunks=await dbBySid("audioChunks",id), have=new Set(chunks.map(c=>c.part)), known=(row.audioFiles||[]).slice();
+      const chunks=await dbBySid("audioChunks",id), have=new Set(chunks.map(c=>c.part));
       const ext=AUDIO_EXT[row.audioMime]||"webm", multi=(row.parts||[]).length>1;
+      if(legacy && known.length){
+        if(row.deletedAt) await putRecord();                                           // 已删除的记录没有笔记：先写 record.json 把文件夹建出来
+        let dirId=null; const g=await gx(itemUrl(dir)+"?$select=id"); if(g.ok) dirId=(await g.json()).id;
+        const moved=[];
+        for(const f of known){
+          let ok=false;
+          if(dirId){ const r=await gx(itemUrl("sessions/"+id+"/"+f.name),{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({parentReference:{id:dirId}})}); ok=r.ok||r.status===409; }
+          if(ok) moved.push(f); else dbg("旧布局里没能移动录音 "+f.name+"（记录 "+id+"）"+(have.has(f.part)?"，用本机的重新上传":""));
+        }
+        known=moved;                                                                    // 没能移动的：本机有就在下面重新上传
+      }
       for(const pt of (row.parts||[])){
         if(known.some(f=>f.part===pt.n) || !have.has(pt.n)) continue;
         const list=chunks.filter(c=>c.part===pt.n).sort((a,b)=>a.idx-b.idx), blob=new Blob(list.map(c=>c.blob),{type:row.audioMime||"audio/webm"});
         const name=multi ? "audio-p"+pt.n+"."+ext : "audio."+ext;
-        await odPut("sessions/"+id+"/"+name,blob,row.audioMime,"a:"+id+":"+name);
+        await odPut(dir+"/"+name,blob,row.audioMime,"a:"+id+":"+dir+"/"+name);
         known.push({part:pt.n,name,size:blob.size});
       }
       patch.audioFiles=known;
     }
-    // 2) readable（改名、移动文件夹、删除都会同步更新或删除）
-    let rp=row.readablePath||"";
-    if(row.deletedAt){ if(rp){ await odDel(rp); rp=""; } }
-    else{
-      const base=readableBase(row,used);
-      if(rp && rp!==base) await odDel(rp);
-      const view=Object.assign({},row,patch);
-      await odPut(base+"/notes.md",new Blob([buildMd(view,segs)],{type:"text/markdown"}),"text/markdown");
-      await odPut(base+"/subtitles.srt",new Blob([buildSrt(segs,view)],{type:"text/plain"}),"text/plain");
-      rp=base; used.add(base);
-    }
-    patch.readablePath=rp;
-    // 3) record.json 最后上传：其他设备看到它时，录音和 readable 都已经就绪
-    const it=await odPut("sessions/"+id+"/record.json",new Blob([JSON.stringify(buildRecord(Object.assign({},row,patch),segs))],{type:"application/json"}),"application/json");
-    if(it && it.id){ const ls=odLS(); (ls.items||(ls.items={}))[it.id]={k:"rec",sid:id}; odSave(); }
-    // 4) 标记已同步；上传期间如果又改过，保持待上传
+    // 3) record.json 最后上传：其他设备看到它时，录音和笔记都已经就绪
+    const it=await putRecord();
+    if(it && it.id){ odMapRec(it.id,id); odSave(); }
+    // 4) 搬家完成：删掉旧布局里这条记录的文件夹和 readable 文件
+    if(legacy){ await odDel("sessions/"+id); if(row.readablePath) await odDel(row.readablePath); }
+    patch.readablePath="";
+    // 5) 标记已同步；上传期间如果又改过，保持待上传
     const cur=await dbGet("sessions",id);
     if(cur){ Object.assign(cur,patch,{syncBase:at}); if(cur.updatedAt===at) cur.syncState="synced"; await dbTx(["sessions"],"readwrite",t=>t.objectStore("sessions").put(cur),{remote:true}); }
     OD.stats && OD.stats.up++;
+  }
+  // 旧布局（sessions/、readable/）全部搬完后删掉这两个文件夹：本机所有记录都已在新布局，且 sessions/ 里没有别的设备还没搬的记录
+  async function odLegacyCleanup(){
+    const ls=odLS(); if(ls.layout2) return;
+    const all=await dbAll("sessions");
+    if(!all.every(r=>r.remoteDir || (!r.syncBase && !r.readablePath))) return;
+    const c=await gx(itemUrl("sessions")+":/children?$top=5");
+    if(c.ok && ((await c.json()).value||[]).length) return;
+    if(!c.ok && c.status!==404) return;
+    await odDel("sessions"); await odDel("readable");
+    ls.layout2=true; odSave(); dbg("旧布局已清理（sessions/、readable/）");
+  }
+  // 重命名记录文件夹；重名就换一个带短 id 的名字；云端已经没有这个文件夹时返回 ""
+  async function odRenameDir(from,to,id){
+    for(const name of [to, to+" ("+String(id).slice(-4)+")"]){
+      const r=await gx(itemUrl(from),{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({name})});
+      if(r.ok) return name;
+      if(r.status===404) return "";
+      if(r.status!==409) throw await gerr(r);
+    }
+    return from;                                                                      // 两个名字都被占用：先保持原名
   }
   async function pushMeta(){
     const ls=odLS(), m=ls.meta||{};
@@ -4756,19 +4821,21 @@ registerProcessor("pcm16",PCM16);`;
     ls.meta=m; odSave();
   }
   async function pushAll(){
-    const rows=await dbAll("sessions"), used=new Set(rows.map(r=>r.readablePath).filter(Boolean));
-    // 彻底删除的会话：清理云端的会话文件夹和 readable 文件
+    const rows=await dbAll("sessions"), used=new Set(rows.map(r=>r.remoteDir).filter(Boolean));
+    // 彻底删除的会话：清理云端的记录文件夹（以及旧布局里的会话文件夹和 readable 文件）
     const q=await dbTx(["syncq"],"readonly",t=>t.objectStore("syncq").getAll());
     for(const it of q){
-      await odDel("sessions/"+it.id); if(it.readable) await odDel(it.readable);
+      if(it.dir) await odDel(it.dir); await odDel("sessions/"+it.id); if(it.readable) await odDel(it.readable);
       await dbTx(["syncq"],"readwrite",t=>t.objectStore("syncq").delete(it.key),{remote:true});
     }
     let failed=0, last=null;
-    for(const row of rows.filter(r=>r.syncState!=="synced" && !(S && S.id===r.id))){
+    const legacyRow=r=>!r.remoteDir && !!(r.syncBase || r.readablePath);           // 旧布局里的记录：即使已同步也要上传一次，搬到新布局
+    for(const row of rows.filter(r=>(r.syncState!=="synced" || legacyRow(r)) && !(S && S.id===r.id))){
       try{ await pushSession(row,used); }
       catch(e){ if(e.reauth||e.fatal) throw e; failed++; last=e; if(e.net) throw e; }
     }
     try{ await pushMeta(); }catch(e){ if(e.reauth||e.fatal||e.net) throw e; failed++; last=e; }
+    try{ await odLegacyCleanup(); }catch(e){ if(e.reauth||e.fatal||e.net) throw e; dbg("清理旧布局失败："+((e&&e.message)||e)); }
     if(failed) throw last||new OdError("部分内容上传失败",{retry:true});
   }
 
@@ -4784,7 +4851,7 @@ registerProcessor("pcm16",PCM16);`;
   // 冲突副本：给另一份换新 id、标题加「（冲突副本）」；录音沿用原会话在 OneDrive 上的文件（audioRemoteSid），不重复上传
   async function odMakeCopy(session,segs,origId){
     let nid=Date.now(); while(await dbGet("sessions",nid)) nid++;
-    const row=Object.assign({},session,{id:nid, title:(session.title||"")+"（冲突副本）", conflict:true, syncState:"pending", syncBase:0, readablePath:"", audioRemoteSid:session.audioRemoteSid||origId, titleEdited:true, deletedAt:null});
+    const row=Object.assign({},session,{id:nid, title:(session.title||"")+"（冲突副本）", conflict:true, syncState:"pending", syncBase:0, readablePath:"", remoteDir:"", audioRemoteSid:session.audioRemoteSid||origId, audioRemoteDir:session.audioRemoteDir||session.remoteDir||"", titleEdited:true, deletedAt:null});
     const copies=segs.map(g=>{ const n=String(g.id).split("-")[1]||"0"; return Object.assign({},g,{id:nid+"-"+n, sid:nid}); });
     await odReplaceSession(Object.assign(row,{updatedAt:Date.now()}),copies);
     OD.stats && OD.stats.conflict++;
@@ -4849,7 +4916,7 @@ registerProcessor("pcm16",PCM16);`;
     let pname=par?par.name:"", gname=par&&par.parent&&fmap[par.parent]?fmap[par.parent].name:"";
     const pp=decodeURIComponent((it.parentReference&&it.parentReference.path)||"");         // 个别账号会带路径：有就用
     if(pp){ const m1=/\/sessions\/([^\/]+)$/.exec(pp); if(m1){ pname=m1[1]; gname="sessions"; } else if(/\/_meta$/.test(pp)) pname="_meta"; }
-    if(gname==="sessions" && name==="record.json") return {kind:"rec",id:it.id,sid:pname,etag:it.eTag};
+    if(name==="record.json" && pname!=="_meta") return {kind:"rec",id:it.id,etag:it.eTag};   // 记录文件夹可能被改名：按条目 id 读取内容，记录 id 在文件里
     if(pname==="_meta" && /^(folders|tags|settings|vocabulary)\.json$/.test(name)) return {kind:"meta",id:it.id,name};
     return null;
   }
@@ -4862,15 +4929,15 @@ registerProcessor("pcm16",PCM16);`;
       const j=await odJson("_meta/"+m); if(j) await odMergeMeta(m,j);
     }
     for(const r of recs){
-      const rec=await odJson("sessions/"+r.sid+"/record.json"); if(!rec) continue;
-      ls.items[r.id]={k:"rec",sid:rec.id}; await odMergeRecord(rec);
+      const rec=await odJsonById(r.id); if(!rec) continue;
+      odMapRec(r.id,rec.id); await odMergeRecord(rec);
     }
     odSave();
   }
   // 云端的 record.json 不见了（被手动删除，或另一台设备彻底删除）：本机还有的话重新上传，不静默丢数据；已在最近删除里的让它自己过期
   async function odRemoteGone(sid){
     const L=await dbGet("sessions",sid); if(!L || L.deletedAt || (S&&S.id===sid)) return;
-    L.syncState="pending"; L.syncBase=0; L.audioFiles=undefined; delete L.audioFiles; await dbTx(["sessions"],"readwrite",t=>t.objectStore("sessions").put(L),{remote:true});
+    L.syncState="pending"; L.syncBase=0; L.audioFiles=undefined; delete L.audioFiles; L.remoteDir=""; await dbTx(["sessions"],"readwrite",t=>t.objectStore("sessions").put(L),{remote:true});
   }
   async function odPull(){
     const ls=odLS(); let url=ls.deltaLink||AROOT+"/delta", full=!ls.deltaLink, items=[], next="", guard=0;
@@ -4890,17 +4957,18 @@ registerProcessor("pcm16",PCM16);`;
     await odApply([...byId.values()]);
     if(next){ ls.deltaLink=next; odSave(); }
   }
-  // delta 不可用时的退路：列出 sessions/ 下每个会话文件夹（一次请求带出里面的文件），按 eTag 找出有变化的 record.json
+  // delta 不可用时的退路：列出应用文件夹下每个记录文件夹（一次请求带出里面的文件），按 eTag 找出有变化的 record.json；
+  // 旧布局的 sessions/ 下面还有一层，也一起看
   async function odPullScan(){
-    const ls=odLS(); ls.etags=ls.etags||{}; const list=[]; let url=itemUrl("sessions")+":/children?$top=200&$expand=children($select=id,name,eTag)&$select=id,name";
-    for(let g=0;url&&g<100;g++){
-      const r=await gx(url); if(r.status===404) break; if(!r.ok) throw await gerr(r);
-      const j=await r.json(); list.push(...(j.value||[])); url=j["@odata.nextLink"]||"";
-    }
+    const ls=odLS(); ls.etags=ls.etags||{}; ls.items=ls.items||{};
+    const listDir=async base=>{ const out=[]; let url=base+"?$top=200&$expand=children($select=id,name,eTag)&$select=id,name,folder";
+      for(let g=0;url&&g<100;g++){ const r=await gx(url); if(r.status===404) break; if(!r.ok) throw await gerr(r); const j=await r.json(); out.push(...(j.value||[])); url=j["@odata.nextLink"]||""; }
+      return out; };
+    let list=(await listDir(AROOT+"/children")).filter(f=>f.folder && f.name!=="_meta");
+    if(list.some(f=>f.name==="sessions")) list=list.filter(f=>f.name!=="sessions"&&f.name!=="readable").concat(await listDir(itemUrl("sessions")+":/children"));
     const seen=new Set(), recs=[];
-    for(const f of list){ const rc=(f.children||[]).find(c=>c.name==="record.json"); if(!rc) continue; seen.add(f.name); if(ls.etags[f.name]!==rc.eTag){ recs.push({kind:"rec",id:rc.id,sid:f.name}); ls.etags[f.name]=rc.eTag; } }
-    const gone=Object.keys(ls.etags).filter(k=>/^\d+$/.test(k) && !seen.has(k)).map(k=>{ delete ls.etags[k]; return {kind:"gone",id:"scan:"+k,sid:k}; });
-    gone.forEach(g=>{ (ls.items=ls.items||{})[g.id]={k:"rec",sid:g.sid}; });
+    for(const f of list){ const rc=(f.children||[]).find(c=>c.name==="record.json"); if(!rc) continue; seen.add(rc.id); if(ls.etags[rc.id]!==rc.eTag){ recs.push({kind:"rec",id:rc.id}); ls.etags[rc.id]=rc.eTag; } }
+    const gone=Object.keys(ls.etags).filter(k=>!seen.has(k)).map(k=>{ delete ls.etags[k]; const m=ls.items[k]; return m ? {kind:"gone",id:k,sid:m.sid} : null; }).filter(Boolean);
     const metas=[]; const mr=await gx(itemUrl("_meta")+":/children?$select=id,name,eTag");
     if(mr.ok){ for(const c of ((await mr.json()).value||[])){ if(/^(folders|tags|settings|vocabulary)\.json$/.test(c.name) && (ls.metaEtags||(ls.metaEtags={}))[c.name]!==c.eTag){ metas.push({kind:"meta",id:c.id,name:c.name}); ls.metaEtags[c.name]=c.eTag; } } }
     await odApply(metas.concat(recs,gone));
@@ -4913,7 +4981,8 @@ registerProcessor("pcm16",PCM16);`;
     const owner=row.audioRemoteSid||row.id, files=(row.audioFiles||[]).slice(); if(!files.length) throw new OdError("这条记录在 OneDrive 上没有录音");
     let total=files.reduce((a,f)=>a+(f.size||0),0), done=0;
     for(const f of files){
-      const blob=await odDownload("sessions/"+owner+"/"+f.name,(g)=>onProgress&&onProgress(done+g,total));
+      const adir=row.audioRemoteSid ? row.audioRemoteDir : row.remoteDir;
+      const blob=await odDownload((adir ? adir : "sessions/"+owner)+"/"+f.name,(g)=>onProgress&&onProgress(done+g,total));
       if(!blob) throw new OdError("OneDrive 上找不到录音文件："+f.name);
       done+=f.size||blob.size;
       await dbTx(["audioChunks"],"readwrite",t=>t.objectStore("audioChunks").put({sid:row.id, idx:f.part*100000+1, part:f.part, blob}),{remote:true});
@@ -4991,7 +5060,7 @@ registerProcessor("pcm16",PCM16);`;
     }catch(e){ OD.err="连不上中转（网络问题）"; OD.netErr=true; }
   }
   function odEnable(){ const ls=odLS(); ls.enabled=true; if(!ls.first) ls.meta={folders:true,tags:true,settings:true,vocab:true}; odSave(); OD.enabled=true; OD.state="idle"; OD.needLogin=false; }
-  function odDisable(reset){ const ls=odLS(); ls.enabled=false; if(reset){ ["deltaLink","items","fmap","etags","metaEtags","lastAt","first","upl","rootOk"].forEach(k=>delete ls[k]); } odSave(); OD.enabled=false; OD.state="off"; OD.tok=null; OD.noMkdir=false; clearTimeout(OD.timer); }
+  function odDisable(reset){ const ls=odLS(); ls.enabled=false; if(reset){ ["deltaLink","items","fmap","etags","metaEtags","lastAt","first","upl","rootOk","layout2"].forEach(k=>delete ls[k]); } odSave(); OD.enabled=false; OD.state="off"; OD.tok=null; OD.noMkdir=false; clearTimeout(OD.timer); }
   async function odLogin(){
     if(!odReady()){ toast("请先把连接方式设为自建中转，并填好中转地址和访问口令"); return; }
     if(S && !S.closing){ toast("录音中不能登录，请先结束录音"); return; }
