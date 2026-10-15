@@ -61,6 +61,8 @@ _meta/vocabulary.json                                          生词本（按�
 - 之后的读写都用路径寻址（`approot:/sessions/<id>/record.json:/content`），上传不需要先建父文件夹；变更用 delta，delta 不可用时退回逐文件夹扫描。
 - 读取 `_meta/*.json`、`record.json` 返回 404 表示「云端还没有」，按空数据处理。
 
+- **创建文件夹返回 400（`Invalid request`）**：个别账号不接受 `@microsoft.graph.conflictBehavior` 参数，App 会去掉它再试一次；仍然 400 就不再单独建文件夹，改为依赖路径方式的上传自动创建缺少的父文件夹。错误信息里会带上微软返回的错误码（如 `[invalidRequest]`）。
+
 ### 排查：找不到应用文件夹
 
 如果列出和创建 `approot/children` 都是 404，App 会停止重试，并在错误信息里写出诊断：Worker 返回的授权范围（需要重新部署 Worker 才能看到），以及 `GET /me/drive` 的状态码（用应用文件夹权限时返回 403 是正常的）。按提示处理：
