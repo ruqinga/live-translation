@@ -607,6 +607,8 @@ body.has-page{background:var(--bg)}
 .mm-sw{flex:none;position:relative;width:38px;height:22px;border-radius:11px;background:#C8CCD3;transition:background .2s}
 .mm-sw::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:left .2s}
 #mmTwo[aria-checked="true"] .mm-sw{background:var(--accent)}#mmTwo[aria-checked="true"] .mm-sw::after{left:18px}
+
+.od-probe{margin:8px var(--s2);padding:10px;border-radius:10px;background:var(--fill);font-size:12px;line-height:1.55;white-space:pre-wrap;word-break:break-all;user-select:text}
 </style>
 </head>
 <body>
@@ -919,6 +921,8 @@ body.has-page{background:var(--bg)}
         <div class="li"><span class="li-t">上次同步</span><span class="li-v" id="odLast"></span></div>
         <div class="li"><span class="li-t">待上传</span><span class="li-v num" id="odPend">0</span></div>
         <div class="pair-btns"><button id="odSyncNow">立即同步</button><button id="odClear">清理本机录音缓存</button></div>
+        <div class="pair-btns"><button id="odProbe">诊断连接</button></div>
+        <pre class="od-probe" id="odProbeOut" hidden></pre>
         <div class="li tog" id="odAutoAudioRow"><span class="li-t">自动下载录音<button class="ibtn" data-info="odAudioInfo" aria-expanded="false" aria-controls="odAudioInfo" aria-label="说明">ⓘ</button></span><button class="sw" id="odAutoAudio" role="switch" aria-checked="false" aria-label="自动下载录音"></button></div>
         <div class="info" id="odAudioInfo" hidden>默认关：在没有本地录音的设备上，点击播放时才从 OneDrive 下载并缓存。打开后会在同步时把其他设备的录音自动下载到本机（占用空间和流量）。</div>
         <button class="li" id="odLogout" style="color:var(--rec-ink)"><span class="li-t">退出登录</span></button>
@@ -4498,7 +4502,7 @@ registerProcessor("pcm16",PCM16);`;
   //   _meta/vocabulary.json                                  生词本（按词合并，含删除标记）
   //   schemaVersion 2：记录里新增 session.learn（学习模式的分析结果）；3：新增 session.outline（目录）；旧版本的记录照常读取
   // 登录由 Worker 代管（刷新令牌只在 KV 里）；页面向 Worker 要短期访问令牌，直接调用 Microsoft Graph 读写文件。
-  const GRAPH="https://graph.microsoft.com/v1.0", AROOT=GRAPH+"/me/drive/special/approot";
+  const GRAPH="https://graph.microsoft.com/v1.0", AROOT=GRAPH+"/drive/special/approot";            // 和 remotely-save 一样用「/drive/special/approot」（不带 /me）
   const OD_SCHEMA=3, OD_CHUNK=320*1024*10, OD_PULL_MS=5*60*1000;
   const OD_SETTING_KEYS=["engine","diarize","refine","autoFallback","zhMode","transMode","langA","langB","sumLang","level","afterEnd","lang","mode","glossary","llm","refineModel","sumModel"];   // 同步的设置（不含任何密钥、口令、连接地址和本机偏好）
   const odSleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -4528,7 +4532,7 @@ registerProcessor("pcm16",PCM16);`;
     try{
       const u=new URL(url);
       if(u.hostname!=="graph.microsoft.com") return method+" （"+(/upload|files|sharepoint|livefilestore/.test(u.hostname)?"上传会话":"下载地址")+"）";
-      let p=decodeURIComponent(u.pathname).replace(/^\/v1\.0\/me\/drive/,"").replace("/special/approot","approot");
+      let p=decodeURIComponent(u.pathname).replace(/^\/v1\.0(\/me)?\/drive/,"").replace("/special/approot","approot");
       return method+" "+p;
     }catch(e){ return method; }
   }
@@ -4549,22 +4553,48 @@ registerProcessor("pcm16",PCM16);`;
   // 应用文件夹：不去 GET approot 这个条目本身（个别个人账号上它一直返回 404），而是和 remotely-save 一样按「approot/children」列出内容、
   // 再用「POST approot/children」创建子文件夹（sessions、_meta、readable）：这样访问会让 OneDrive 创建应用文件夹；已存在（409）就忽略
   async function odEnsureRoot(){
-    const ls=odLS(); if(OD.rootOk || ls.rootOk){ OD.rootOk=true; return; }
+    const ls=odLS();
+    if(ls.rootVer!==3){ ls.rootOk=false; ls.rootVer=3; ls.deltaLink=""; odSave(); }       // 访问方式改过：旧版本留下的「已就绪」标记作废，重新验证一次
+    if(OD.rootOk || ls.rootOk){ OD.rootOk=true; return; }
     const l=await gx(AROOT+"/children?$select=id,name&$top=200");
     if(!l.ok && l.status!==404) throw await gerr(l);                 // 404：应用文件夹还没创建，下面创建子文件夹时会一起建好
     OD.dirs=new Set();
     try{ for(const d of ["sessions","_meta","readable"]) await odMkdir(d); }
     catch(e){ if(e && e.status===404) throw await odDiagnose(); throw e; }
+    if(OD.noMkdir){                       // 没能单独建文件夹：用一次真实的写入验证应用文件夹确实可用，不能凭空认为「已就绪」
+      const w=await gx(itemUrl("_meta/.keep")+":/content?@microsoft.graph.conflictBehavior=replace",{method:"PUT",headers:{"Content-Type":"text/plain"},body:"ok"});
+      if(!w.ok){ if(w.status===404) throw await odDiagnose(); throw await gerr(w); }
+    }
     OD.rootOk=true; ls.rootOk=true; odSave();
+  }
+  // 诊断连接：把几种访问方式各试一次，把状态码和微软的错误码列出来（不会留下任何文件）
+  async function odProbe(){
+    const out=[], tag=async(label,fn)=>{ try{ const r=await fn(); let c=""; if(!r.ok){ try{ const j=await r.clone().json(); c=" ["+((j.error&&(j.error.code||j.error.message))||"")+"]"; }catch(_){} } out.push(r.status+"  "+label+c); return r; }catch(e){ out.push("×  "+label+"  "+((e&&e.message)||e)); return null; } };
+    out.push("授权范围："+(OD.scope||"（Worker 没有返回）"));
+    const J={"Content-Type":"application/json"};
+    await tag("GET /me（账号）",()=>gx(GRAPH+"/me?$select=displayName,userPrincipalName"));
+    await tag("GET /me/drive",()=>gx(GRAPH+"/me/drive?$select=id,driveType"));
+    await tag("GET /drive",()=>gx(GRAPH+"/drive?$select=id,driveType"));
+    await tag("GET /drive/special/approot",()=>gx(GRAPH+"/drive/special/approot"));
+    await tag("GET /drive/special/approot/children",()=>gx(GRAPH+"/drive/special/approot/children?$top=5"));
+    await tag("GET /me/drive/special/approot",()=>gx(GRAPH+"/me/drive/special/approot"));
+    await tag("GET /me/drive/special/approot/children",()=>gx(GRAPH+"/me/drive/special/approot/children?$top=5"));
+    await tag("GET beta /me/drive/special/approot",()=>gx("https://graph.microsoft.com/beta/me/drive/special/approot"));
+    await tag("GET api.onedrive.com approot",()=>gx("https://api.onedrive.com/v1.0/drive/special/approot"));
+    await tag("GET approot:/_meta（按路径）",()=>gx(AROOT+":/_meta"));
+    const post=await tag("POST approot/children 创建 _probe",()=>gx(AROOT+"/children",{method:"POST",headers:J,body:JSON.stringify({name:"_probe",folder:{}})}));
+    const put=await tag("PUT approot:/_probe/p.txt（按路径写入）",()=>gx(AROOT+":/_probe/p.txt:/content",{method:"PUT",headers:{"Content-Type":"text/plain"},body:"x"}));
+    if((post&&post.ok)||(put&&put.ok)) await tag("DELETE approot:/_probe（清理）",()=>gx(AROOT+":/_probe",{method:"DELETE"}));
+    return out.join("\n");
   }
   // 应用文件夹怎么都找不到：查一下授权范围和 OneDrive 是否开通，给出具体的处理办法
   async function odDiagnose(){
-    let ds="?"; try{ ds=(await gx("https://graph.microsoft.com/v1.0/me/drive?select=id,driveType")).status; }catch(e){}
+    let ds="?"; try{ ds=(await gx(GRAPH+"/drive?$select=id,driveType")).status; }catch(e){}
     const sc=OD.scope||"";
     let hint;
     if(sc && !/appfolder/i.test(sc)) hint="授权里没有「Files.ReadWrite.AppFolder」权限：到 Azure → 应用注册 → API 权限 里添加它，然后在设置里退出登录、重新登录授权。";
     else if(ds===404) hint="这个微软账号的 OneDrive 好像还没有开通：用电脑浏览器打开 onedrive.live.com，登录同一个账号，等文件列表出现，再回来点「立即同步」。";
-    else hint="请先用电脑浏览器打开 onedrive.live.com，登录同一个账号，确认能看到文件（第一次使用会初始化 OneDrive）；再确认 Azure 的 API 权限里有「Files.ReadWrite.AppFolder」，然后退出登录、重新登录授权。";
+    else hint="先撤销旧授权再重新授权（让微软重新创建应用文件夹）：用电脑浏览器打开 https://account.live.com/consent/Manage ，找到这个应用，点「删除这些权限」，再回到设置里退出登录、重新登录。还不行就点设置里的「诊断连接」，把结果发出来。其次：请先用电脑浏览器打开 onedrive.live.com，登录同一个账号，确认能看到文件（第一次使用会初始化 OneDrive）；再确认 Azure 的 API 权限里有「Files.ReadWrite.AppFolder」，然后退出登录、重新登录授权。";
     return new OdError("OneDrive 里找不到应用文件夹（列出和创建 approot/children 都返回 404）。"+hint+"（诊断：授权范围 "+(sc||"Worker 没有返回，重新部署 Worker 后可见")+"；GET /me/drive → "+ds+"）",{status:404,fatal:true});
   }
   // 创建文件夹：先带 conflictBehavior=fail；个别账号对这个参数返回 400，就去掉再试；仍然 400 就不再创建，
@@ -4640,7 +4670,7 @@ registerProcessor("pcm16",PCM16);`;
     const mr=await gx(itemUrl(path)+"?select=id,size,@microsoft.graph.downloadUrl");
     if(mr.status===404) return null; if(!mr.ok) throw await gerr(mr);
     const m=await mr.json(), du=m["@microsoft.graph.downloadUrl"];
-    let r; try{ r=du ? await fetch(du) : await gx(GRAPH+"/me/drive/items/"+m.id+"/content"); }catch(e){ throw new OdError("网络不通",{net:true}); }
+    let r; try{ r=du ? await fetch(du) : await gx(GRAPH+"/drive/items/"+m.id+"/content"); }catch(e){ throw new OdError("网络不通",{net:true}); }
     if(!r.ok) throw await gerr(r);
     const total=m.size||+r.headers.get("content-length")||0;
     if(!r.body || !onProgress) return r.blob();
@@ -5016,6 +5046,11 @@ registerProcessor("pcm16",PCM16);`;
   async function odOpenSettings(){ await odRefreshStatus(); await odCountPending(); odUi(); }
   $("odLogin").onclick=odLogin;
   $("odEnable").onclick=()=>{ odEnable(); odUi(); odSync({manual:true,report:true}); };
+  $("odProbe").onclick=async()=>{
+    const b=$("odProbe"), o=$("odProbeOut"); b.disabled=true; b.textContent="诊断中…"; o.hidden=false; o.textContent="";
+    try{ o.textContent=await odProbe(); }catch(e){ o.textContent="诊断失败："+((e&&e.message)||e); }
+    b.disabled=false; b.textContent="诊断连接";
+  };
   $("odSyncNow").onclick=()=>{ OD.needLogin=false; odSync({manual:true}); };
   $("odAutoAudio").onclick=()=>{ settings.odAutoAudio=!settings.odAutoAudio; saveSettings(); odUi(); if(settings.odAutoAudio) odKick(500); };
   $("odClear").onclick=async()=>{
