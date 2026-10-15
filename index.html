@@ -4556,13 +4556,16 @@ registerProcessor("pcm16",PCM16);`;
     const ls=odLS();
     if(ls.rootVer!==3){ ls.rootOk=false; ls.rootVer=3; ls.deltaLink=""; odSave(); }       // 访问方式改过：旧版本留下的「已就绪」标记作废，重新验证一次
     if(OD.rootOk || ls.rootOk){ OD.rootOk=true; return; }
-    const l=await gx(AROOT+"/children?$select=id,name&$top=200");
+    // 列出 approot/children 会让 OneDrive 创建应用文件夹（诊断里看到：先 GET approot 是 404，列 children 之后 approot 就是 200 了）；
+    // 刚创建时偶尔还会 404，等一下再按「GET approot → children」的顺序重试一次
+    let l=await gx(AROOT+"/children?$top=200");
+    if(l.status===404){ await odSleep(1500); await gx(AROOT); l=await gx(AROOT+"/children?$top=200"); }
     if(!l.ok && l.status!==404) throw await gerr(l);                 // 404：应用文件夹还没创建，下面创建子文件夹时会一起建好
     OD.dirs=new Set();
     try{ for(const d of ["sessions","_meta","readable"]) await odMkdir(d); }
     catch(e){ if(e && e.status===404) throw await odDiagnose(); throw e; }
     if(OD.noMkdir){                       // 没能单独建文件夹：用一次真实的写入验证应用文件夹确实可用，不能凭空认为「已就绪」
-      const w=await gx(itemUrl("_meta/.keep")+":/content?@microsoft.graph.conflictBehavior=replace",{method:"PUT",headers:{"Content-Type":"text/plain"},body:"ok"});
+      const w=await gx(itemUrl("_meta/keep.txt")+":/content?%40microsoft.graph.conflictBehavior=replace",{method:"PUT",headers:{"Content-Type":"text/plain"},body:"ok"});
       if(!w.ok){ if(w.status===404) throw await odDiagnose(); throw await gerr(w); }
     }
     OD.rootOk=true; ls.rootOk=true; odSave();
@@ -4593,6 +4596,7 @@ registerProcessor("pcm16",PCM16);`;
     const sc=OD.scope||"";
     let hint;
     if(sc && !/appfolder/i.test(sc)) hint="授权里没有「Files.ReadWrite.AppFolder」权限：到 Azure → 应用注册 → API 权限 里添加它，然后在设置里退出登录、重新登录授权。";
+    else if(ds===200) hint="OneDrive 能访问，但应用文件夹不在：如果你在 OneDrive 网页里删过「应用」（或 Apps）下面的文件夹，它可能还在回收站里，微软会一直指向这个已删除的文件夹。到 onedrive.live.com 的「回收站」里把它还原，再点「立即同步」。";
     else if(ds===404) hint="这个微软账号的 OneDrive 好像还没有开通：用电脑浏览器打开 onedrive.live.com，登录同一个账号，等文件列表出现，再回来点「立即同步」。";
     else hint="先撤销旧授权再重新授权（让微软重新创建应用文件夹）：用电脑浏览器打开 https://account.live.com/consent/Manage ，找到这个应用，点「删除这些权限」，再回到设置里退出登录、重新登录。还不行就点设置里的「诊断连接」，把结果发出来。其次：请先用电脑浏览器打开 onedrive.live.com，登录同一个账号，确认能看到文件（第一次使用会初始化 OneDrive）；再确认 Azure 的 API 权限里有「Files.ReadWrite.AppFolder」，然后退出登录、重新登录授权。";
     return new OdError("OneDrive 里找不到应用文件夹（列出和创建 approot/children 都返回 404）。"+hint+"（诊断：授权范围 "+(sc||"Worker 没有返回，重新部署 Worker 后可见")+"；GET /me/drive → "+ds+"）",{status:404,fatal:true});
@@ -4629,7 +4633,7 @@ registerProcessor("pcm16",PCM16);`;
   // 小文件（≤4MB）直接 PUT；更大的用上传会话分块上传，记录会话地址，中断后从服务器已收到的位置续传
   async function odPutRaw(path,blob,ctype,key){
     if(blob.size<=4*1024*1024){
-      const r=await gx(itemUrl(path)+":/content?@microsoft.graph.conflictBehavior=replace",{method:"PUT",headers:{"Content-Type":ctype||"application/octet-stream"},body:blob});
+      const r=await gx(itemUrl(path)+":/content?%40microsoft.graph.conflictBehavior=replace",{method:"PUT",headers:{"Content-Type":ctype||"application/octet-stream"},body:blob});
       if(!r.ok) throw await gerr(r); return r.json();
     }
     const ls=odLS(); ls.upl=ls.upl||{}; const k=key||path; let url=null, offset=0;
@@ -4667,7 +4671,7 @@ registerProcessor("pcm16",PCM16);`;
   }
   // 下载文件（带进度）。先取 downloadUrl（预授权地址，不用带令牌），取不到再走 /content
   async function odDownload(path,onProgress){
-    const mr=await gx(itemUrl(path)+"?select=id,size,@microsoft.graph.downloadUrl");
+    const mr=await gx(itemUrl(path)+"?$select=id,size,@microsoft.graph.downloadUrl");
     if(mr.status===404) return null; if(!mr.ok) throw await gerr(mr);
     const m=await mr.json(), du=m["@microsoft.graph.downloadUrl"];
     let r; try{ r=du ? await fetch(du) : await gx(GRAPH+"/drive/items/"+m.id+"/content"); }catch(e){ throw new OdError("网络不通",{net:true}); }
