@@ -4502,7 +4502,7 @@ registerProcessor("pcm16",PCM16);`;
   //   _meta/vocabulary.json                                  生词本（按词合并，含删除标记）
   //   schemaVersion 2：记录里新增 session.learn（学习模式的分析结果）；3：新增 session.outline（目录）；旧版本的记录照常读取
   // 登录由 Worker 代管（刷新令牌只在 KV 里）；页面向 Worker 要短期访问令牌，直接调用 Microsoft Graph 读写文件。
-  const GRAPH="https://graph.microsoft.com/v1.0", AROOT=GRAPH+"/me/drive/special/approot";
+  const GRAPH="https://graph.microsoft.com/v1.0", AROOT=GRAPH+"/drive/special/approot";            // 和 remotely-save 一样用「/drive/special/approot」（不带 /me）
   const OD_SCHEMA=3, OD_CHUNK=320*1024*10, OD_PULL_MS=5*60*1000;
   const OD_SETTING_KEYS=["engine","diarize","refine","autoFallback","zhMode","transMode","langA","langB","sumLang","level","afterEnd","lang","mode","glossary","llm","refineModel","sumModel"];   // 同步的设置（不含任何密钥、口令、连接地址和本机偏好）
   const odSleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -4532,7 +4532,7 @@ registerProcessor("pcm16",PCM16);`;
     try{
       const u=new URL(url);
       if(u.hostname!=="graph.microsoft.com") return method+" （"+(/upload|files|sharepoint|livefilestore/.test(u.hostname)?"上传会话":"下载地址")+"）";
-      let p=decodeURIComponent(u.pathname).replace(/^\/v1\.0\/me\/drive/,"").replace("/special/approot","approot");
+      let p=decodeURIComponent(u.pathname).replace(/^\/v1\.0(\/me)?\/drive/,"").replace("/special/approot","approot");
       return method+" "+p;
     }catch(e){ return method; }
   }
@@ -4553,7 +4553,9 @@ registerProcessor("pcm16",PCM16);`;
   // 应用文件夹：不去 GET approot 这个条目本身（个别个人账号上它一直返回 404），而是和 remotely-save 一样按「approot/children」列出内容、
   // 再用「POST approot/children」创建子文件夹（sessions、_meta、readable）：这样访问会让 OneDrive 创建应用文件夹；已存在（409）就忽略
   async function odEnsureRoot(){
-    const ls=odLS(); if(OD.rootOk || ls.rootOk){ OD.rootOk=true; return; }
+    const ls=odLS();
+    if(ls.rootVer!==3){ ls.rootOk=false; ls.rootVer=3; ls.deltaLink=""; odSave(); }       // 访问方式改过：旧版本留下的「已就绪」标记作废，重新验证一次
+    if(OD.rootOk || ls.rootOk){ OD.rootOk=true; return; }
     const l=await gx(AROOT+"/children?$select=id,name&$top=200");
     if(!l.ok && l.status!==404) throw await gerr(l);                 // 404：应用文件夹还没创建，下面创建子文件夹时会一起建好
     OD.dirs=new Set();
@@ -4572,8 +4574,13 @@ registerProcessor("pcm16",PCM16);`;
     const J={"Content-Type":"application/json"};
     await tag("GET /me（账号）",()=>gx(GRAPH+"/me?$select=displayName,userPrincipalName"));
     await tag("GET /me/drive",()=>gx(GRAPH+"/me/drive?$select=id,driveType"));
-    await tag("GET approot",()=>gx(AROOT));
-    await tag("GET approot/children",()=>gx(AROOT+"/children?$top=5"));
+    await tag("GET /drive",()=>gx(GRAPH+"/drive?$select=id,driveType"));
+    await tag("GET /drive/special/approot",()=>gx(GRAPH+"/drive/special/approot"));
+    await tag("GET /drive/special/approot/children",()=>gx(GRAPH+"/drive/special/approot/children?$top=5"));
+    await tag("GET /me/drive/special/approot",()=>gx(GRAPH+"/me/drive/special/approot"));
+    await tag("GET /me/drive/special/approot/children",()=>gx(GRAPH+"/me/drive/special/approot/children?$top=5"));
+    await tag("GET beta /me/drive/special/approot",()=>gx("https://graph.microsoft.com/beta/me/drive/special/approot"));
+    await tag("GET api.onedrive.com approot",()=>gx("https://api.onedrive.com/v1.0/drive/special/approot"));
     await tag("GET approot:/_meta（按路径）",()=>gx(AROOT+":/_meta"));
     const post=await tag("POST approot/children 创建 _probe",()=>gx(AROOT+"/children",{method:"POST",headers:J,body:JSON.stringify({name:"_probe",folder:{}})}));
     const put=await tag("PUT approot:/_probe/p.txt（按路径写入）",()=>gx(AROOT+":/_probe/p.txt:/content",{method:"PUT",headers:{"Content-Type":"text/plain"},body:"x"}));
@@ -4582,7 +4589,7 @@ registerProcessor("pcm16",PCM16);`;
   }
   // 应用文件夹怎么都找不到：查一下授权范围和 OneDrive 是否开通，给出具体的处理办法
   async function odDiagnose(){
-    let ds="?"; try{ ds=(await gx("https://graph.microsoft.com/v1.0/me/drive?select=id,driveType")).status; }catch(e){}
+    let ds="?"; try{ ds=(await gx(GRAPH+"/drive?$select=id,driveType")).status; }catch(e){}
     const sc=OD.scope||"";
     let hint;
     if(sc && !/appfolder/i.test(sc)) hint="授权里没有「Files.ReadWrite.AppFolder」权限：到 Azure → 应用注册 → API 权限 里添加它，然后在设置里退出登录、重新登录授权。";
@@ -4663,7 +4670,7 @@ registerProcessor("pcm16",PCM16);`;
     const mr=await gx(itemUrl(path)+"?select=id,size,@microsoft.graph.downloadUrl");
     if(mr.status===404) return null; if(!mr.ok) throw await gerr(mr);
     const m=await mr.json(), du=m["@microsoft.graph.downloadUrl"];
-    let r; try{ r=du ? await fetch(du) : await gx(GRAPH+"/me/drive/items/"+m.id+"/content"); }catch(e){ throw new OdError("网络不通",{net:true}); }
+    let r; try{ r=du ? await fetch(du) : await gx(GRAPH+"/drive/items/"+m.id+"/content"); }catch(e){ throw new OdError("网络不通",{net:true}); }
     if(!r.ok) throw await gerr(r);
     const total=m.size||+r.headers.get("content-length")||0;
     if(!r.body || !onProgress) return r.blob();
