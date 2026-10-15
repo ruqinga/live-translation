@@ -4533,7 +4533,7 @@ registerProcessor("pcm16",PCM16);`;
     }catch(e){ return method; }
   }
   async function gerr(r){
-    let m=""; try{ const j=await r.json(); m=(j.error&&(j.error.message||j.error.code))||""; }catch(_){}
+    let m=""; try{ const j=await r.json(), e=j.error||{}; m=(e.message||e.code||"")+((e.code&&e.message&&e.code!==e.message)?" ["+e.code+(e.innerError&&e.innerError.code?"/"+e.innerError.code:"")+"]":""); }catch(_){}
     return new OdError("OneDrive 返回 "+r.status+(m?"："+m:"")+(r.odReq?"（"+r.odReq+"）":""),{status:r.status,req:r.odReq,retry:r.status>=500||r.status===429||r.status===408});
   }
   async function gx(url,opt,tries){
@@ -4567,13 +4567,19 @@ registerProcessor("pcm16",PCM16);`;
     else hint="请先用电脑浏览器打开 onedrive.live.com，登录同一个账号，确认能看到文件（第一次使用会初始化 OneDrive）；再确认 Azure 的 API 权限里有「Files.ReadWrite.AppFolder」，然后退出登录、重新登录授权。";
     return new OdError("OneDrive 里找不到应用文件夹（列出和创建 approot/children 都返回 404）。"+hint+"（诊断：授权范围 "+(sc||"Worker 没有返回，重新部署 Worker 后可见")+"；GET /me/drive → "+ds+"）",{status:404,fatal:true});
   }
+  // 创建文件夹：先带 conflictBehavior=fail；个别账号对这个参数返回 400，就去掉再试；仍然 400 就不再创建，
+  // 改为依赖上传时自动创建父文件夹（路径方式的 PUT 会自动创建缺少的父文件夹，remotely-save 也是这样用的）
   async function odMkdir(path){
+    if(OD.noMkdir) return;
     const parts=path.split("/").filter(Boolean); let cur="";
     OD.dirs=OD.dirs||new Set();
     for(const n of parts){
       const full=cur?cur+"/"+n:n;
       if(!OD.dirs.has(full)){
-        const r=await gx((cur?itemUrl(cur)+":/children":AROOT+"/children"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:n,folder:{},"@microsoft.graph.conflictBehavior":"fail"})});
+        const url=(cur?itemUrl(cur)+":/children":AROOT+"/children"), post=body=>gx(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+        let r=await post({name:n,folder:{},"@microsoft.graph.conflictBehavior":"fail"});
+        if(r.status===400){ dbg("创建文件夹返回 400，去掉冲突参数再试"); r=await post({name:n,folder:{}}); }
+        if(r.status===400){ dbg("创建文件夹仍然 400：不再单独创建文件夹，改为上传时自动创建父文件夹"); OD.noMkdir=true; return; }
         if(!r.ok && r.status!==409) throw await gerr(r);        // 409 nameAlreadyExists：已经有了
         OD.dirs.add(full);
       }
@@ -4951,7 +4957,7 @@ registerProcessor("pcm16",PCM16);`;
     }catch(e){ OD.err="连不上中转（网络问题）"; OD.netErr=true; }
   }
   function odEnable(){ const ls=odLS(); ls.enabled=true; if(!ls.first) ls.meta={folders:true,tags:true,settings:true,vocab:true}; odSave(); OD.enabled=true; OD.state="idle"; OD.needLogin=false; }
-  function odDisable(reset){ const ls=odLS(); ls.enabled=false; if(reset){ ["deltaLink","items","fmap","etags","metaEtags","lastAt","first","upl","rootOk"].forEach(k=>delete ls[k]); } odSave(); OD.enabled=false; OD.state="off"; OD.tok=null; clearTimeout(OD.timer); }
+  function odDisable(reset){ const ls=odLS(); ls.enabled=false; if(reset){ ["deltaLink","items","fmap","etags","metaEtags","lastAt","first","upl","rootOk"].forEach(k=>delete ls[k]); } odSave(); OD.enabled=false; OD.state="off"; OD.tok=null; OD.noMkdir=false; clearTimeout(OD.timer); }
   async function odLogin(){
     if(!odReady()){ toast("请先把连接方式设为自建中转，并填好中转地址和访问口令"); return; }
     if(S && !S.closing){ toast("录音中不能登录，请先结束录音"); return; }
