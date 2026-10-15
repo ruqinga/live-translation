@@ -14,11 +14,11 @@ Deepgram 和 Claude 的密钥只保存在你手机浏览器的 localStorage 里�
 **Deepgram（备用识别引擎）**
 1. 注册 <https://console.deepgram.com>（新用户有免费额度）。
 2. 进入 API Keys 创建密钥（权限选 Member 或 Usage 即可），复制。
-3. 在本页「设置 → 语音识别 → Deepgram API 密钥」粘贴（走自建中转时改在 Worker 里配 `DEEPGRAM_API_KEY`）。
+3. 在本页「设置 → 识别与翻译 → Deepgram API 密钥」粘贴（走自建中转时改在 Worker 里配 `DEEPGRAM_API_KEY`）。
 
 **Claude**
 1. 注册 <https://console.anthropic.com>，充值后在 API Keys 创建密钥（以 `sk-ant-` 开头）。
-2. 在「设置 → 大语言模型 → Claude API 密钥」（连接方式选「直连」时出现）粘贴（走自建中转时改在 Worker 里配 `ANTHROPIC_API_KEY`）。
+2. 在「设置 → 连接与密钥 → Claude API 密钥」（连接方式选「直连」时出现）粘贴（走自建中转时改在 Worker 里配 `ANTHROPIC_API_KEY`）。
 
 ## 费用参考（以官网当前价格为准）
 
@@ -45,7 +45,7 @@ Deepgram 和 Claude 的密钥只保存在你手机浏览器的 localStorage 里�
 
 也可用命令行：`cd worker && npx wrangler deploy`，再用 `npx wrangler secret put ACCESS_TOKEN` 等命令设置密钥。
 
-**在页面里使用**：设置 → 大语言模型 → 连接方式选「自建中转」，填入中转地址和访问口令，再选服务商和模型即可；点「测试连接」会发一个极短请求，成功显示绿色对勾和响应时间，失败显示原因。此时不需要再填 Claude / Deepgram 密钥。
+**在页面里使用**：设置 → 连接与密钥 → 连接方式选「自建中转」，填入中转地址和访问口令，再选服务商和模型即可；点「测试连接」会发一个极短请求，成功显示绿色对勾和响应时间，失败显示原因。此时不需要再填 Claude / Deepgram 密钥。
 
 **接口**（新版增加了 `/summary`，已部署过旧版 Worker 的需要更新代码并重新部署，否则摘要会提示「中转层还不支持摘要」；用 Cloudflare 的 Git 集成部署的话，合并到 main 后会自动更新）
 - `POST /summary`：同 `/translate`，但允许更长的输入（约 20 万字符）和输出（4096 tokens），并支持 `claude-opus-5-5`。

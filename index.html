@@ -609,6 +609,59 @@ body.has-page{background:var(--bg)}
 #mmTwo[aria-checked="true"] .mm-sw{background:var(--accent)}#mmTwo[aria-checked="true"] .mm-sw::after{left:18px}
 
 .od-probe{margin:8px var(--s2);padding:10px;border-radius:10px;background:var(--fill);font-size:12px;line-height:1.55;white-space:pre-wrap;word-break:break-all;user-select:text}
+
+/* ===== 排版：设置分类、详情页顶栏与顺序、电脑横屏两栏 ===== */
+.sh-ic{flex:none;width:30px;height:30px;border-radius:8px;display:grid;place-items:center;background:var(--fill);font-size:16px;line-height:1}
+.set-home .sh .li-v{max-width:48%}
+.set-home .sh .li-t{white-space:nowrap}
+.sp-h{display:none;font-size:20px;font-weight:700;margin:12px 4px 10px}
+.spane>.group+.group,.spane>.group+.li-note+.group{margin-top:16px}
+.spane{padding-top:8px}
+/* 详情页顶栏：‹ 记录 · 标题（点击改名）· 导出 · ⋯ */
+.det-top{position:sticky;top:0;z-index:4;background:var(--bg);display:flex;align-items:center;gap:4px;flex-wrap:nowrap;margin:0 calc(var(--s2) * -1) 8px;padding:6px var(--s2);min-height:52px}
+.det-top button{box-shadow:none;background:none;border:0;min-height:40px;padding:0 8px;color:var(--accent);font-size:16px;border-radius:10px}
+.det-top button.danger{color:var(--rec)}
+.det-top .det-title,.det-top.wide .det-title{flex:1 1 auto;min-width:0;order:0;font-size:17px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.det-top .hd-ic{color:var(--ink);width:40px;padding:0;display:grid;place-items:center}
+.det-top .hd-back{padding-left:0}
+#detRetitle{display:none}
+#detTitle{cursor:pointer}
+.det-mode{margin:2px 0 10px}
+.outbox{margin:8px 0}
+#learnPane{padding:0}
+#pRate{min-width:56px}
+#pRate.on{background:var(--accent);color:var(--accent-ink)}
+/* 手机：字幕/学习 → 播放器 → 目录 → 摘要 → 文件夹 → 标签 → 字幕 */
+.det-cols{display:flex;flex-direction:column}
+.det-side,.det-main{display:contents}
+#detModeSeg{order:1} #player{order:2} #detOutline{order:3} #detSum{order:4} #detSub{order:5} #detTags{order:6} #detList{order:7} #learnPane{order:8}
+.rec-empty:not([hidden]){display:grid;place-items:center;color:var(--muted);font-size:15px}
+#recItems .card.cur{box-shadow:0 0 0 2px var(--accent)}
+@media (min-width:1000px){
+  .app{max-width:none}
+  #home{left:max(0px,calc(50% - 380px));right:max(0px,calc(50% - 380px))}
+  /* 设置：左边分类，右边内容 */
+  #settingsView{padding-left:32px;padding-right:32px}
+  #settingsView .page-bar{max-width:1100px;margin:0 auto;padding-left:0;padding-right:0}
+  .set-wrap{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:340px minmax(0,1fr);gap:28px;align-items:start}
+  .set-home:not([hidden]){position:sticky;top:64px}
+  .set-home .sh[aria-current="true"]{background:var(--accent-soft)}
+  .set-home .sh[aria-current="true"] .li-t{color:var(--accent);font-weight:600}
+  .sp-h{display:block}
+  /* 记录：左边列表，右边详情 */
+  #records.page{display:grid;grid-template-columns:380px minmax(0,1fr);padding:0;overflow:hidden}
+  #records>#recHome{grid-column:1;grid-row:1;overflow-y:auto;height:100%;min-height:0;padding:0 16px 24px;border-right:1px solid var(--line)}
+  #records>#recDetail,#records>#recTrash,#records>#recTags,#records>#recVocab,#records>#recEmpty{grid-column:2;grid-row:1;overflow-y:auto;height:100%;min-height:0;min-width:0;padding:0 28px 24px}
+  #detBack,#trBack,#tvBack,#vcBack{display:none}
+  .det-top{margin-left:-28px;margin-right:-28px;padding-left:28px;padding-right:28px}
+}
+@media (min-width:1280px){
+  /* 详情再分两栏：左边播放器、目录、摘要，右边字幕 / 学习，各自滚动 */
+  #records>#recDetail:not([hidden]){overflow:hidden;display:flex;flex-direction:column}
+  .det-cols{flex:1;min-height:0;display:grid;grid-template-columns:minmax(320px,400px) minmax(0,1fr);gap:24px}
+  .det-side,.det-main{display:block;overflow-y:auto;min-height:0;padding-bottom:24px}
+  .det-main{padding-right:4px}
+}
 </style>
 </head>
 <body>
@@ -712,14 +765,16 @@ body.has-page{background:var(--bg)}
       <div class="rh-tags" id="tvChips"></div>
       <div id="tvList"></div>
     </div>
+    <div id="recEmpty" class="rec-empty" hidden>选择左边的一条记录</div>
     <div id="recDetail" hidden>
       <div class="det-top wide">
-        <button id="detBack">← 记录</button>
+        <button id="detBack" class="hd-back" aria-label="返回记录列表">‹ 记录</button>
         <div class="det-title"><span id="detTitle"></span><button class="pbtn retitle" id="detRetitle">重新生成标题</button></div>
-        <button id="detExport">导出</button>
-        <button id="detMore">更多</button>
+        <button id="detExport" class="hd-ic" aria-label="导出"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M8 8l4-4 4 4M5 15v4h14v-4"/></svg></button>
+        <button id="detMore" class="hd-ic" aria-label="更多"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
       </div>
-      <div class="segc det-mode" id="detModeSeg" role="radiogroup" aria-label="显示模式"><button data-v="sub" aria-pressed="true">字幕</button><button data-v="learn" aria-pressed="false">学习</button></div>
+      <div class="det-cols" id="detCols">
+        <div class="det-side" id="detSide">
       <div class="player" id="player">
         <div class="p-row">
           <button id="pPlay" aria-label="播放">▶</button>
@@ -728,7 +783,7 @@ body.has-page{background:var(--bg)}
         </div>
         <div class="p-row"><span id="pTime">00:00 / 00:00</span>
           <span style="flex:1"></span>
-          <button class="pbtn" data-rate="1" aria-pressed="true">1x</button><button class="pbtn" data-rate="1.25" aria-pressed="false">1.25x</button><button class="pbtn" data-rate="1.5" aria-pressed="false">1.5x</button><button class="pbtn" data-rate="2" aria-pressed="false">2x</button>
+          <button class="pbtn" id="pRate" aria-label="播放速度">1x</button>
         </div>
         <div class="p-note" id="pNote" hidden></div>
         <audio id="plAudio" preload="metadata" playsinline hidden></audio>
@@ -748,8 +803,13 @@ body.has-page{background:var(--bg)}
         <div class="sum-err" id="sumErr" hidden></div>
         <div class="md" id="sumBody"></div>
       </div>
+        </div>
+        <div class="det-main" id="detMain">
+      <div class="segc det-mode" id="detModeSeg" role="radiogroup" aria-label="显示模式"><button data-v="sub" aria-pressed="true">字幕</button><button data-v="learn" aria-pressed="false">学习</button></div>
       <div id="detList"></div>
       <div id="learnPane" hidden></div>
+        </div>
+      </div>
     </div>
     <div id="recVocab" hidden>
       <div class="det-top"><button id="vcBack">← 记录</button><div class="det-title">生词本 <small id="vcCount"></small></div><button id="vcExport">导出 CSV</button></div>
@@ -767,9 +827,24 @@ body.has-page{background:var(--bg)}
   </section>
 
   <section id="settingsView" class="page" aria-label="设置">
-    <div class="page-bar"><button class="backbtn" id="setBack" aria-label="返回">‹ 返回</button><div class="page-title">设置</div></div>
-
-    <h2 class="gt">语音识别</h2>
+    <div class="page-bar"><button class="backbtn" id="setBack" aria-label="返回">‹ 返回</button><div class="page-title" id="setTitle">设置</div></div>
+    <div class="set-wrap">
+    <nav class="set-home" id="setHome" aria-label="设置分类">
+      <div class="group">
+        <button class="li sh" data-go="recog"><span class="sh-ic" aria-hidden="true">🎙️</span><span class="li-t">识别与翻译</span><span class="li-v" id="sh_recog"></span><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></button>
+        <button class="li sh" data-go="ai"><span class="sh-ic" aria-hidden="true">✨</span><span class="li-t">AI 模型</span><span class="li-v" id="sh_ai"></span><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></button>
+        <button class="li sh" data-go="terms"><span class="sh-ic" aria-hidden="true">📖</span><span class="li-t">场景与术语</span><span class="li-v" id="sh_terms"></span><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></button>
+        <button class="li sh" data-go="display"><span class="sh-ic" aria-hidden="true">🔤</span><span class="li-t">显示</span><span class="li-v" id="sh_display"></span><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></button>
+        <button class="li sh" data-go="learn"><span class="sh-ic" aria-hidden="true">🎓</span><span class="li-t">学习</span><span class="li-v" id="sh_learn"></span><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></button>
+        <button class="li sh" data-go="storage"><span class="sh-ic" aria-hidden="true">🗂️</span><span class="li-t">记录与存储</span><span class="li-v" id="sh_storage"></span><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></button>
+        <button class="li sh" data-go="sync"><span class="sh-ic" aria-hidden="true">☁️</span><span class="li-t">OneDrive 同步</span><span class="li-v" id="sh_sync"></span><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></button>
+        <button class="li sh" data-go="keys"><span class="sh-ic" aria-hidden="true">🔑</span><span class="li-t">连接与密钥</span><span class="li-v" id="sh_keys"></span><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></button>
+        <button class="li sh" data-go="adv"><span class="sh-ic" aria-hidden="true">🛠️</span><span class="li-t">高级</span><span class="li-v" id="sh_adv"></span><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></button>
+      </div>
+    </nav>
+    <div class="set-panes">
+    <div class="spane" data-sp="recog" data-title="识别与翻译" hidden>
+      <h2 class="sp-h">识别与翻译</h2>
     <div class="group">
       <button class="li" id="engineRow" aria-haspopup="dialog"><span class="li-t">识别引擎</span><span class="li-v" id="engineVal"></span><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></button>
       <div class="callout" id="sxWarn" hidden>
@@ -813,31 +888,11 @@ body.has-page{background:var(--bg)}
       <div class="info" id="fbInfo" hidden></div>
     </div>
 
-    <h2 class="gt">大语言模型</h2>
+    </div>
+    <div class="spane" data-sp="ai" data-title="AI 模型" hidden>
+      <h2 class="sp-h">AI 模型</h2>
     <div class="group">
       <button class="li" id="providerRow" aria-haspopup="dialog"><span class="li-t">服务商</span><span class="li-v" id="providerVal"></span><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></button>
-      <div class="li col" id="connRow">
-        <div class="li-h">连接方式<button class="ibtn" data-info="connInfo" aria-expanded="false" aria-controls="connInfo" aria-label="说明">ⓘ</button></div>
-        <div class="segc" id="connSeg" role="radiogroup" aria-label="连接方式">
-          <button data-v="relay" aria-pressed="true">自建中转</button>
-          <button data-v="direct" aria-pressed="false">直连</button>
-        </div>
-      </div>
-      <div class="info" id="connInfo" hidden>自建中转：密钥放在你的 Cloudflare Worker 里，手机只保存访问口令，可选 Claude / DeepSeek / OpenAI，Soniox 必须用它。直连：直接用 Claude 密钥，不经过中转。部署方法见 README。</div>
-      <div class="li col" id="relayUrlRow">
-        <label for="relayUrl">中转地址</label>
-        <input type="text" id="relayUrl" placeholder="https://xxx.workers.dev" autocomplete="off" spellcheck="false" autocapitalize="off">
-      </div>
-      <div class="li col" id="relayTokenRow">
-        <label for="relayToken">访问口令</label>
-        <input type="password" id="relayToken" placeholder="Worker 里设置的 ACCESS_TOKEN" autocomplete="off" spellcheck="false">
-      </div>
-      <div class="li col" id="claudeRow">
-        <label for="apiKey">Claude API 密钥</label>
-        <input type="password" id="apiKey" placeholder="sk-ant-…" autocomplete="off" spellcheck="false">
-        <div class="note" id="keyNote" style="font-size:13px;color:var(--muted)">只保存在这台手机的浏览器里。在 <a href="https://console.anthropic.com" target="_blank" rel="noopener" style="color:var(--accent)">Claude Console</a> 申请。</div>
-      </div>
-      <div class="test-row"><button class="btn2" id="testBtn">测试连接</button><span id="testRes" role="status" aria-live="polite"></span></div>
       <div class="li tog" id="refineRow"><span class="li-t">翻译精修<button class="ibtn" data-info="refineInfo" aria-expanded="false" aria-controls="refineInfo" aria-label="说明">ⓘ</button></span><button class="sw" id="refine" role="switch" aria-checked="true" aria-label="翻译精修"></button></div>
       <div class="info" id="refineInfo" hidden></div>
       <button class="li" id="refineModelRow" aria-haspopup="dialog"><span class="li-t" id="refineModelLbl">精修模型</span><span class="li-v" id="refineModelVal"></span><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></button>
@@ -845,7 +900,9 @@ body.has-page{background:var(--bg)}
       <button class="li" id="sumModelRow" aria-haspopup="dialog"><span class="li-t">摘要模型</span><span class="li-v" id="sumModelVal"></span><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></button>
     </div>
 
-    <h2 class="gt">场景与术语</h2>
+    </div>
+    <div class="spane" data-sp="terms" data-title="场景与术语" hidden>
+      <h2 class="sp-h">场景与术语</h2>
     <div class="group">
       <div class="li col">
         <textarea id="glossary" aria-label="场景与术语" placeholder="例如：医学讲座；MRI 译为核磁共振；Apex 是公司名不翻译"></textarea>
@@ -853,7 +910,9 @@ body.has-page{background:var(--bg)}
       <div class="li-note" id="glossNote"></div>
     </div>
 
-    <h2 class="gt">显示</h2>
+    </div>
+    <div class="spane" data-sp="display" data-title="显示" hidden>
+      <h2 class="sp-h">显示</h2>
     <div class="group">
       <div class="li col">
         <div class="li-h">显示方式</div>
@@ -877,13 +936,17 @@ body.has-page{background:var(--bg)}
       </div>
     </div>
 
-    <h2 class="gt">学习</h2>
+    </div>
+    <div class="spane" data-sp="learn" data-title="学习" hidden>
+      <h2 class="sp-h">学习</h2>
     <div class="group">
       <button class="li" id="levelRow" aria-haspopup="dialog"><span class="li-t">我的水平</span><span class="li-v" id="levelVal"></span><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></button>
       <button class="li" id="vocabRow"><span class="li-t">生词本</span><span class="li-v" id="vocabVal"></span><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></button>
     </div>
 
-    <h2 class="gt">存储与同步</h2>
+    </div>
+    <div class="spane" data-sp="storage" data-title="记录与存储" hidden>
+      <h2 class="sp-h">记录与存储</h2>
     <div class="group">
       <div class="li col">
         <div class="li-h">结束录音后</div>
@@ -907,9 +970,12 @@ body.has-page{background:var(--bg)}
       <button class="li" id="goFolderMgr"><span class="li-t">文件夹管理</span><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></button>
     </div>
 
+    </div>
+    <div class="spane" data-sp="sync" data-title="OneDrive 同步" hidden>
+      <h2 class="sp-h">OneDrive 同步</h2>
     <div class="group od-group" id="odBlock">
       <div class="od-title"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4.5 4.5 0 0 1-.5-9A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 9.5z"/></svg>OneDrive 同步</div>
-      <div class="li-note" id="odNeedRelay" hidden>OneDrive 同步需要先把上面「大语言模型 → 连接方式」设为「自建中转」（登录由你的 Cloudflare Worker 代管）。</div>
+      <div class="li-note" id="odNeedRelay" hidden>OneDrive 同步需要先在「连接与密钥」里把连接方式设为「自建中转」（登录由你的 Cloudflare Worker 代管）。</div>
       <div class="li-note od-bad" id="odErr" hidden></div>
       <button class="li od-login" id="odLogin"><span class="li-t">登录 OneDrive</span><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></button>
       <div id="odEnableRow" hidden>
@@ -930,11 +996,43 @@ body.has-page{background:var(--bg)}
       <div class="li-note">每条记录在 OneDrive 的「应用 /（Azure 里的应用名）」文件夹里有一个「日期 标题」文件夹，里面是录音、笔记、字幕和 record.json；_meta 里是设置、文件夹、标签、生词本。请不要手动改名、移动或删除这些文件夹，电脑上安装 OneDrive 客户端即可在本地看到。</div>
     </div>
 
-    <h2 class="gt">高级</h2>
+    </div>
+    <div class="spane" data-sp="keys" data-title="连接与密钥" hidden>
+      <h2 class="sp-h">连接与密钥</h2>
+    <div class="group">
+      <div class="li col" id="connRow">
+        <div class="li-h">连接方式<button class="ibtn" data-info="connInfo" aria-expanded="false" aria-controls="connInfo" aria-label="说明">ⓘ</button></div>
+        <div class="segc" id="connSeg" role="radiogroup" aria-label="连接方式">
+          <button data-v="relay" aria-pressed="true">自建中转</button>
+          <button data-v="direct" aria-pressed="false">直连</button>
+        </div>
+      </div>
+      <div class="info" id="connInfo" hidden>自建中转：密钥放在你的 Cloudflare Worker 里，手机只保存访问口令，可选 Claude / DeepSeek / OpenAI，Soniox 必须用它。直连：直接用 Claude 密钥，不经过中转。部署方法见 README。</div>
+      <div class="li col" id="relayUrlRow">
+        <label for="relayUrl">中转地址</label>
+        <input type="text" id="relayUrl" placeholder="https://xxx.workers.dev" autocomplete="off" spellcheck="false" autocapitalize="off">
+      </div>
+      <div class="li col" id="relayTokenRow">
+        <label for="relayToken">访问口令</label>
+        <input type="password" id="relayToken" placeholder="Worker 里设置的 ACCESS_TOKEN" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="li col" id="claudeRow">
+        <label for="apiKey">Claude API 密钥</label>
+        <input type="password" id="apiKey" placeholder="sk-ant-…" autocomplete="off" spellcheck="false">
+        <div class="note" id="keyNote" style="font-size:13px;color:var(--muted)">只保存在这台手机的浏览器里。在 <a href="https://console.anthropic.com" target="_blank" rel="noopener" style="color:var(--accent)">Claude Console</a> 申请。</div>
+      </div>
+      <div class="test-row"><button class="btn2" id="testBtn">测试连接</button><span id="testRes" role="status" aria-live="polite"></span></div>
+    </div>
+    </div>
+    <div class="spane" data-sp="adv" data-title="高级" hidden>
+      <h2 class="sp-h">高级</h2>
     <div class="group">
       <div class="li tog" id="debugRow"><span class="li-t">调试模式<button class="ibtn" data-info="debugInfo" aria-expanded="false" aria-controls="debugInfo" aria-label="说明">ⓘ</button></span><button class="sw" id="debug" role="switch" aria-checked="false" aria-label="调试模式"></button></div>
       <div class="info" id="debugInfo" hidden>记录引擎状态、备用切换和精修耗时，方便排查问题。日志只在这台手机的内存里，刷新后清空。</div>
       <div id="dbgWrap" hidden><pre id="dbgLog" tabindex="0"></pre><div class="pair-btns"><button id="dbgCopy">复制日志</button><button id="dbgClear">清空日志</button></div></div>
+    </div>
+    </div>
+    </div>
     </div>
     <div style="height:var(--s2)"></div>
   </section>
@@ -1175,6 +1273,7 @@ body.has-page{background:var(--bg)}
     $("sumLangVal").textContent=langName(settings.sumLang||"zh");
     $("levelVal").textContent=settings.level||"B1"; try{ drawVocabCount(); }catch(e){}
     $("dbgWrap").hidden=!settings.debug;
+    try{ drawSetHome(); }catch(e){}
     applyTheme();
     try{ applyUi(); }catch(e){}   // 启动时会话状态还没初始化，忽略
   }
@@ -1208,7 +1307,10 @@ body.has-page{background:var(--bg)}
   function hideBanner(){ banner.classList.remove("show"); }
   let toastT; function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),1800); }
 
-  function openSettings(){ showView("settings"); }
+  function openSettings(pane){ showView("settings",{pane:pane||null}); setPane=pane||null; setRender(); }
+  // 电脑横屏（宽度 ≥ 1000px）：记录页左右两栏、设置页左边分类右边内容；手机竖屏照旧一页一页
+  const wideQ=window.matchMedia ? matchMedia("(min-width:1000px)") : {matches:false, addEventListener(){}};
+  const isWide=()=>!!wideQ.matches;
 
   function checkEngine(){
     const bad = settings.engine==="browser" && !SR;
@@ -1710,7 +1812,7 @@ body.has-page{background:var(--bg)}
     if(idx>=0 && idx<pageStack.length-1) closePagesTo(idx+1);
     if(idx<0){ pageStack.push(name); history.pushState({d:pageStack.length},""); const el=pageEl(name); $("records").parentNode.scrollLeft=0; el.scrollTop=0; el.style.zIndex=30+pageStack.length; el.classList.add("open"); }   // 后打开的页面盖在上面
     if(name==="records"){ if(o.trash) gotoTrash(); else if($("recDetail").hidden) recRefresh(); }
-    if(name==="settings"){ applySettings(); refreshStoreInfo(); odOpenSettings(); }
+    if(name==="settings"){ if(!o.keepPane && idx<0) setPane=o.pane||null; applySettings(); refreshStoreInfo(); odOpenSettings(); setRender(); }
     closeMoreMenu(); applyUi();
   }
   function closeTopPage(){
@@ -1729,6 +1831,7 @@ body.has-page{background:var(--bg)}
   function subBack(){ const n=subpane(); if(n==="trash") $("trBack").click(); else if(n==="tags") $("tvBack").click(); else if(n==="detail") $("detBack").click(); else if(n==="vocab") $("vcBack").click(); }
   function navBack(){
     if(!pageStack.length) return;
+    if(pageStack[pageStack.length-1]==="settings" && setPane && !isWide()){ setPane=null; setRender(); return; }   // 设置二级页 → 设置首页
     if(pageStack[pageStack.length-1]==="records" && subpane()){ subBack(); return; }   // 记录详情 → 记录列表 → 主页
     history.back();
   }
@@ -1738,6 +1841,7 @@ body.has-page{background:var(--bg)}
     if(suppressPop){ suppressPop=false; return; }
     const d=(e.state&&e.state.d)||0;
     if(d===pageStack.length-1 && pageStack[pageStack.length-1]==="records" && subpane()){ subBack(); try{ history.pushState({d:pageStack.length},""); }catch(_){} return; }
+    if(d===pageStack.length-1 && pageStack[pageStack.length-1]==="settings" && setPane && !isWide()){ setPane=null; setRender(); try{ history.pushState({d:pageStack.length},""); }catch(_){} return; }
     while(pageStack.length>d) closeTopPage();
   });
   // iPhone 主屏幕网页没有浏览器的边缘返回手势：从屏幕左边缘向右滑动返回（Safari 里系统手势会触发 popstate，这里就不重复处理）
@@ -1748,6 +1852,32 @@ body.has-page{background:var(--bg)}
     if(t.clientX-g.x>70 && Math.abs(t.clientY-g.y)<60) setTimeout(()=>{ if(!popSeen) navBack(); },80);
   },{passive:true});
   $("recBack").onclick=navBack; $("setBack").onclick=navBack;
+  // ---------- 设置：一级分类列表 → 二级页面（电脑上左右并排）----------
+  let setPane=null;
+  function setRender(){
+    const w=isWide(), cur=setPane||(w?"recog":null);
+    document.querySelectorAll("#settingsView .spane").forEach(p=>{ p.hidden=p.dataset.sp!==cur; });
+    $("setHome").hidden=!w && !!cur;
+    document.querySelectorAll("#setHome .sh").forEach(b=>{ if(b.dataset.go===cur && w) b.setAttribute("aria-current","true"); else b.removeAttribute("aria-current"); });
+    const sp=cur && document.querySelector('#settingsView .spane[data-sp="'+cur+'"]');
+    $("setTitle").textContent=(!w && sp) ? sp.dataset.title : "设置";
+    $("setBack").textContent=(!w && sp) ? "‹ 设置" : "‹ 返回";
+    try{ drawSetHome(); }catch(e){}
+  }
+  document.querySelectorAll("#setHome .sh").forEach(b=>b.onclick=()=>{ setPane=b.dataset.go; setRender(); $("settingsView").scrollTop=0; });
+  // 一级列表里每一行显示当前的值，不用点进去也知道
+  function drawSetHome(){
+    const set=(k,v)=>{ const e=$("sh_"+k); if(e) e.textContent=v; };
+    set("recog",(ENGINE_NAMES[settings.engine]||"")+" · "+(settings.transMode==="two" ? langName(settings.langA)+" ⇄ "+langName(settings.langB) : "单向翻译"));
+    set("ai",llmName()+(settings.refine!==false&&settings.engine==="soniox"?" · 精修开":""));
+    set("terms",(settings.glossary||"").trim() ? String(settings.glossary).trim().slice(0,12)+((settings.glossary||"").trim().length>12?"…":"") : "未填写");
+    set("display",(settings.mode==="zh"?"只看译文":"中英对照")+" · "+settings.size+"px");
+    set("learn",(settings.level||"B1")+" · 生词本 "+(typeof vocLive==="function"?vocLive().length:0));
+    set("storage",settings.saveAudio?"保存录音":"不保存录音");
+    set("sync",!useRelay() ? "需要自建中转" : (OD.enabled ? (($("odState")&&$("odState").textContent)||"已开启") : (OD.logged?"未在本机开启":"未登录")));
+    set("keys",useRelay() ? ("自建中转"+(relayBase()&&settings.relayToken?"":" · 未填写")) : ("直连"+(settings.apiKey?"":" · 未填写")));
+    set("adv",settings.debug?"调试模式开":"");
+  }
   $("recBar").onclick=closeAllPages;
   function showView(v,o){ if(v==="live") closeAllPages(); else openPage(v,o); }       // 兼容旧调用
 
@@ -1789,7 +1919,16 @@ body.has-page{background:var(--bg)}
     S.row.title=n.trim().slice(0,100); S.row.titleEdited=true; sessSave(); toast("已重命名");
   };
   $("idleSum").onclick=()=>openPage("settings");
-  function pane(name){ ["recHome","recTags","recTrash","recDetail","recVocab"].forEach(n=>{ $(n).hidden=(n!==name); }); $("records").scrollTop=0; }
+  let curPane="recHome";
+  function pane(name){
+    curPane=name; const w=isWide();
+    ["recHome","recTags","recTrash","recDetail","recVocab"].forEach(n=>{ $(n).hidden=(n!==name) && !(w && n==="recHome"); });
+    $("recEmpty").hidden=!(w && name==="recHome");
+    $("records").scrollTop=0; markCurCard();
+  }
+  // 电脑上：列表里高亮正在看的那条
+  function markCurCard(){ const id=(det && !$("recDetail").hidden) ? String(det.row.id) : ""; document.querySelectorAll("#recItems .card").forEach(c=>c.classList.toggle("cur",!!id && c.dataset.id===id)); }
+  wideQ.addEventListener && wideQ.addEventListener("change",()=>{ pane(curPane); setRender(); });
   async function loadRecData(){
     const rows=await dbAll("sessions"), gs=await dbAll("segments");
     rd.rows=rows.filter(r=>r.deletedAt==null); rd.trash=rows.filter(r=>r.deletedAt!=null); rd.segs=new Map();
@@ -1810,7 +1949,7 @@ body.has-page{background:var(--bg)}
   }
   function recRefresh(){
     if($("recHome") && !$("recHome").hidden && !rd.rows.length) recSkeleton();
-    loadRecData().then(()=>{ if(!$("recTags").hidden) renderTagView(); else if(!$("recTrash").hidden) renderTrash(); else if(!$("recDetail").hidden) return; else if(!$("recVocab").hidden) renderVocab(); else{ pane("recHome"); renderHome(); } })
+    loadRecData().then(()=>{ if(isWide() && curPane!=="recHome") renderHome(); if(!$("recTags").hidden) renderTagView(); else if(!$("recTrash").hidden) renderTrash(); else if(!$("recDetail").hidden) return; else if(!$("recVocab").hidden) renderVocab(); else{ pane("recHome"); renderHome(); } })
       .catch(()=>{ $("recItems").textContent="这个浏览器不能使用本地存储，无法查看记录。"; });
   }
   function filterChips(box,names,sel,multi,onPick,counts){
@@ -1858,7 +1997,7 @@ body.has-page{background:var(--bg)}
       const bm=document.createElement("button"); bm.textContent="移动"; bm.onclick=e=>{ e.stopPropagation(); moveOne(r); };
       const bd=document.createElement("button"); bd.className="danger"; bd.textContent="删除"; bd.onclick=e=>{ e.stopPropagation(); trashOne(r); };
       acts.append(bm,bd);
-      const c=document.createElement("div"); c.className="card"; c.classList.toggle("sel",sel.ids.has(r.id));
+      const c=document.createElement("div"); c.className="card"; c.dataset.id=String(r.id); c.classList.toggle("sel",sel.ids.has(r.id)); if(det && !$("recDetail").hidden && det.row.id===r.id) c.classList.add("cur");
       const chk=document.createElement("span"); chk.className="chk"; c.appendChild(chk);
       const t=document.createElement("div"); t.className="ct"; t.textContent=r.title;
       const d=new Date(r.created);
@@ -2238,6 +2377,7 @@ body.has-page{background:var(--bg)}
     freePlayer(); learnReset(); det=null; pane("recHome"); recRefresh();
   }
   $("detBack").onclick=closeDetail;
+  $("detTitle").onclick=()=>renameDetail();
   function drawDetSub(){ if(det) $("detSub").textContent="📁 "+folderName(det.row.folderId==null?null:det.row.folderId)+(det.row.mode==="two"?" · 双语互译 "+langName(det.row.langA||"zh")+" ⇄ "+langName(det.row.langB||"es"):""); }
   function renameDetail(){
     if(!det) return; const n=prompt("记录标题",det.row.title); if(!n||!n.trim()) return;
@@ -2269,6 +2409,7 @@ body.has-page{background:var(--bg)}
     if(!det) return; $("menuTitle").textContent="更多"; const box=$("menuList"); box.textContent="";
     const add=(label,fn,danger,note)=>{ const b=document.createElement("button"); b.textContent=label; if(note){ const sm=document.createElement("small"); sm.textContent=note; b.appendChild(sm); } if(danger) b.style.color="var(--rec)"; b.onclick=()=>{ $("menuDlg").close(); fn(); }; box.appendChild(b); };
     add("重命名",renameDetail);
+    add("重新生成标题",()=>$("detRetitle").click(),false,"根据内容让模型重新起一个标题");
     if(det.row.conflict) add("标记为已处理",async()=>{ det.row.conflict=false; try{ await dbPut("sessions",det.row,{remote:true}); toast("已清除冲突标记"); }catch(e){ dbFail(e); } },false,"这是一份冲突副本，和原记录对照处理后可以清除标记");
     const ids=spIds(det.segs);
     if(ids.length) add("重命名说话人",renameSpeakers,false,ids.length+" 位说话人");
@@ -2331,12 +2472,17 @@ body.has-page{background:var(--bg)}
     });
     applyFold();
   }
+  // 字幕列表实际滚动的容器：手机上是整个记录页；电脑上是右栏（或详情里的字幕栏）
+  function detScroller(){
+    for(const id of ["detMain","recDetail"]){ const e=$(id); const o=getComputedStyle(e).overflowY; if((o==="auto"||o==="scroll") && e.clientHeight) return e; }
+    return $("records");
+  }
   function hiliteAt(T,force){
     if(!det) return;
     if(LN.mode==="learn"){ learnHilite(T,force); return; }
     let a=-1; for(let i=0;i<det.segRows.length;i++){ if(det.segRows[i].g.start<=T+0.25) a=i; else break; }
     if(a===det.active) return;
-    const box=$("records"), prev=det.active>=0 ? det.segRows[det.active] : null, next=a>=0 ? det.segRows[a] : null;
+    const box=detScroller(), prev=det.active>=0 ? det.segRows[det.active] : null, next=a>=0 ? det.segRows[a] : null;
     const vis=x=>!!x && x.offsetParent!==null;                       // 所在章节折叠了：行是隐藏的，不滚动
     const anchor=vis(next&&next.el) ? next.el : (vis(prev&&prev.el) ? prev.el : null);
     const startTop=anchor ? anchor.getBoundingClientRect().top : 0;
@@ -2600,7 +2746,7 @@ body.has-page{background:var(--bg)}
   $("outNone").onclick=()=>{ OUT_ST.expand.clear(); drawOutline(); };
   $("outGen").onclick=()=>{
     if(!det) return;
-    if(!sumReady()){ openSettings(); toast(useRelay()?"请先填写中转地址和访问口令":"请先填写 Claude API 密钥"); return; }
+    if(!sumReady()){ openSettings("keys"); toast(useRelay()?"请先填写中转地址和访问口令":"请先填写 Claude API 密钥"); return; }
     const row=det.row;
     if(row.outline && row.outline.edited && outHas(row) && !confirm("目录已手动编辑过，重新生成会覆盖这些修改，继续吗？")) return;
     queueOutline(row.id,{force:true});
@@ -3081,10 +3227,11 @@ body.has-page{background:var(--bg)}
   };
   $("pBack15").onclick=()=>{ if(P) seekTo(Math.max(0,curT()-15),!au.paused); };
   $("pSeek").oninput=e=>{ if(P) seekTo(+e.target.value,!au.paused); };
-  document.querySelectorAll("#player [data-rate]").forEach(b=>b.onclick=()=>{
-    plSpeed=+b.dataset.rate; au.playbackRate=plSpeed; au.defaultPlaybackRate=plSpeed;
-    document.querySelectorAll("#player [data-rate]").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));
-  });
+  const RATES=[1,1.25,1.5,2];
+  $("pRate").onclick=()=>{
+    plSpeed=RATES[(RATES.indexOf(plSpeed)+1)%RATES.length]; au.playbackRate=plSpeed; au.defaultPlaybackRate=plSpeed;
+    $("pRate").textContent=plSpeed+"x"; $("pRate").classList.toggle("on",plSpeed!==1);
+  };
   tagWatchers.push(()=>{ if(!isRecords()) return; if(!$("recDetail").hidden) reloadDetail(); else recRefresh(); });
 
   // ---------- Auto title ----------
@@ -3122,7 +3269,7 @@ body.has-page{background:var(--bg)}
   }
   $("detRetitle").onclick=async()=>{
     if(!det) return;
-    if(!sumReady()){ openSettings(); toast(useRelay()?"请先填写中转地址和访问口令":"请先填写 Claude API 密钥"); return; }
+    if(!sumReady()){ openSettings("keys"); toast(useRelay()?"请先填写中转地址和访问口令":"请先填写 Claude API 密钥"); return; }
     const b=$("detRetitle"), id=det.row.id; b.disabled=true; b.textContent="生成中…";
     try{
       const segs=det.segs.filter(g=>g.kind!=="break");
@@ -3315,7 +3462,7 @@ body.has-page{background:var(--bg)}
   }
   $("sumGen").onclick=()=>{
     if(!det) return;
-    if(!sumReady()){ openSettings(); toast(useRelay()?"请先填写中转地址和访问口令":"请先填写 Claude API 密钥"); return; }
+    if(!sumReady()){ openSettings("keys"); toast(useRelay()?"请先填写中转地址和访问口令":"请先填写 Claude API 密钥"); return; }
     if(det.row.summary && !(sumState[det.row.id]&&sumState[det.row.id].status==="error") && !confirm("重新生成会覆盖现有摘要，继续吗？")) return;
     queueSummary(det.row.id);
   };
@@ -3535,6 +3682,7 @@ body.has-page{background:var(--bg)}
   }
   // 「正在说」卡片：固定在字幕列表下方，随识别实时更新；一句确定后清空，内容落入上方的普通卡片
   const spEn=$("spEn"), spZh=$("spZh");
+  try{ new ResizeObserver(()=>document.documentElement.style.setProperty("--speakh",$("speak").offsetHeight+"px")).observe($("speak")); }catch(e){}
   function showLive(text,zh,lang){
     liveEl=(text||zh)?$("speak"):null;
     spEn.textContent=text||""; spZh.textContent=zh||""; spZh.hidden=!zh;     // 引擎自带翻译时也实时显示译文
@@ -4386,9 +4534,9 @@ registerProcessor("pcm16",PCM16);`;
     }catch(e){}
   }
   async function start(){
-    if(!translateReady()){ openSettings(); toast(useRelay()?"请先填写中转地址和访问口令":"请先填写 Claude API 密钥"); return; }
-    if(settings.engine==="deepgram" && !dgReady()){ openSettings(); toast("请先填写 Deepgram 密钥"); return; }
-    if(settings.engine==="soniox" && !sxReady()){ openSettings(); toast("Soniox 需要先把连接方式设为自建中转"); return; }
+    if(!translateReady()){ openSettings("keys"); toast(useRelay()?"请先填写中转地址和访问口令":"请先填写 Claude API 密钥"); return; }
+    if(settings.engine==="deepgram" && !dgReady()){ openSettings("recog"); toast("请先填写 Deepgram 密钥"); return; }
+    if(settings.engine==="soniox" && !sxReady()){ openSettings("keys"); toast("Soniox 需要先把连接方式设为自建中转"); return; }
     if(ENGINES[settings.engine] && ENGINES[settings.engine].enabled===false){ toast(ENGINES[settings.engine].name+" 尚未启用"); return; }
     hideBanner(); dbg("开始收听，引擎 "+settings.engine+"，连接方式 "+settings.connection+"，录音 "+(settings.saveAudio?"开":"关"));
     if(S && S.closing){
@@ -5094,7 +5242,7 @@ registerProcessor("pcm16",PCM16);`;
     if(OD.state==="error") return "同步失败："+OD.err;
     return OD.pending ? "有 "+OD.pending+" 项待上传" : "已是最新";
   }
-  function odUi(){
+  function odUi(){ try{ setTimeout(drawSetHome,0); }catch(e){}
     const box=$("odBlock"); if(!box) return;
     const need=!useRelay();
     $("odNeedRelay").hidden=!need;
@@ -5240,6 +5388,7 @@ registerProcessor("pcm16",PCM16);`;
   $("size").oninput=e=>{ settings.size=+e.target.value; $("sizeVal").textContent=settings.size+"px"; document.documentElement.style.setProperty("--fs", settings.size+"px"); saveSettings(); };
   // Soniox 需要自建中转：跳到「大语言模型 → 连接方式」
   $("goConn").onclick=()=>{
+    setPane="keys"; setRender();
     const r=$("connRow"); r.scrollIntoView({behavior:"smooth",block:"center"});
     r.classList.remove("flash"); void r.offsetWidth; r.classList.add("flash");
     const first=r.querySelector("button[aria-pressed=false]"); if(first) first.focus({preventScroll:true});
