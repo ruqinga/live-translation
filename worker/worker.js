@@ -166,7 +166,10 @@ async function sonioxToken(env, h) {
 // offline_access（拿刷新令牌）、User.Read（读账号名称）。这是单用户应用：一个 Worker 只绑定一个 OneDrive 账号，
 // 刷新令牌放在 KV 的固定键里。页面只拿到短期访问令牌，并直接调用 Graph 读写文件（文件内容不经过 Worker）。
 const MS_AUTH = "https://login.microsoftonline.com/consumers/oauth2/v2.0";
-const MS_SCOPE = "Files.ReadWrite.AppFolder offline_access User.Read";
+// 默认只申请应用文件夹权限。个别账号上应用文件夹始终找不到（approot 返回 404）时，可以在 Worker 里加环境变量 MS_FULL_ACCESS = 1，
+// 改为申请 Files.ReadWrite（能读写整个 OneDrive，权限更大），页面会把数据放在根目录下自己建的「同声字幕」文件夹里；改完需要重新登录授权。
+const MS_SCOPE_APP = "Files.ReadWrite.AppFolder offline_access User.Read", MS_SCOPE_FULL = "Files.ReadWrite offline_access User.Read";
+const msScope = (env) => (env && String(env.MS_FULL_ACCESS) === "1") ? MS_SCOPE_FULL : MS_SCOPE_APP;
 const KV_REFRESH = "refresh", KV_ACCOUNT = "account";
 
 function odConfigError(env) {
@@ -190,7 +193,7 @@ function backTo(ret, ok, msg) {
   return new Response(null, { status: 302, headers: { Location: u.toString(), "cache-control": "no-store" } });
 }
 async function msToken(env, form) {
-  const body = new URLSearchParams({ client_id: env.MS_CLIENT_ID, client_secret: env.MS_CLIENT_SECRET, scope: MS_SCOPE, ...form });
+  const body = new URLSearchParams({ client_id: env.MS_CLIENT_ID, client_secret: env.MS_CLIENT_SECRET, scope: msScope(env), ...form });
   const res = await fetch(MS_AUTH + "/token", { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body });
   let j = {}; try { j = await res.json(); } catch (_) {}
   return { ok: res.ok, status: res.status, j };
@@ -218,7 +221,7 @@ async function odLogin(req, env) {
   const state = rand(24);
   await env.ONEDRIVE_KV.put("st:" + state, raw, { expirationTtl: 600 });
   const u = new URL(MS_AUTH + "/authorize");
-  u.search = new URLSearchParams({ client_id: env.MS_CLIENT_ID, response_type: "code", redirect_uri: redirectUri(req), response_mode: "query", scope: MS_SCOPE, state, prompt: "select_account" }).toString();
+  u.search = new URLSearchParams({ client_id: env.MS_CLIENT_ID, response_type: "code", redirect_uri: redirectUri(req), response_mode: "query", scope: msScope(env), state, prompt: "select_account" }).toString();
   return new Response(null, { status: 302, headers: { Location: u.toString(), "cache-control": "no-store" } });
 }
 async function odCallback(req, env) {

@@ -90,3 +90,4 @@
 81. **应用文件夹的访问**：用一个全新的个人账号首次同步（以及 `GET approot` 返回 404 的账号）：同步成功，调试面板里没有 `GET approot` 条目本身的请求，而是 `GET approot/children`、`POST approot/children`；故意去掉 Azure 的 `Files.ReadWrite.AppFolder` 权限重新授权后同步：错误信息给出授权范围和 `GET /me/drive` 的诊断和处理办法。
 82. **文件夹创建被拒（400）**：同步时创建文件夹返回 400：调试面板里能看到「去掉冲突参数再试」或「改为上传时自动创建父文件夹」，同步最终成功；错误信息里带微软的错误码。
 83. **诊断连接**：设置 → 存储与同步 →「诊断连接」：列出授权范围和几种访问方式（`GET approot`、`GET approot/children`、按路径读写、创建文件夹）的状态码和微软错误码，不会在 OneDrive 里留下文件；应用文件夹不可用时，同步错误信息指向「撤销旧授权再重新授权」。
+84. **备选存放位置**：Worker 加变量 `MS_FULL_ACCESS=1`、Azure 加 `Files.ReadWrite` 权限、退出后重新登录授权：同步后 OneDrive 根目录出现「同声字幕」文件夹，里面有 `sessions`、`_meta`、`readable`；另一台设备（同样配置）能同步到；不设置该变量时仍用应用文件夹。
