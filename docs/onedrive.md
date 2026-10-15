@@ -53,6 +53,18 @@ _meta/vocabulary.json                                          生词本（按�
 - 错误信息带失败的请求，格式如 `OneDrive 返回 403：accessDenied（PUT approot:/_meta/folders.json:/content）`；路径里不含令牌和域名。
 - 打开设置里的「调试模式」，调试面板会按顺序列出每个 OneDrive 请求，形如 `OD PUT approot:/sessions/12/record.json:/content → 201`，方便定位是哪一步失败。
 
+### 排查：`GET approot` 返回 404
+
+正常情况下，第一次访问 `/me/drive/special/approot` 时微软会自动创建应用文件夹。如果这一步本身就是 404（`OneDrive 返回 404：Item not found（GET approot）`），App 会：
+
+1. 先写入一个很小的 `README.txt`，让 OneDrive 在写入时创建应用文件夹，再访问一次 `approot`；
+2. 仍然 404 就停下来，并在错误信息里写出诊断：Worker 返回的授权范围（需要重新部署 Worker 才能看到），以及 `GET /me/drive` 的状态码。
+
+按提示处理：
+- **授权范围里没有 `Files.ReadWrite.AppFolder`**：Azure → 应用注册 → API 权限里添加它（委托的权限），然后在设置里退出登录、重新登录授权。
+- **`GET /me/drive` 是 404**：这个微软账号的 OneDrive 还没开通。用电脑浏览器打开 onedrive.live.com，登录同一个账号，等文件列表出现，再回来点「立即同步」。
+- **其他情况**：同样先用浏览器登录一次 onedrive.live.com，再确认 Azure 的 API 权限和「仅个人 Microsoft 账户」的设置，退出登录重新授权；仍不行就把设置里「调试模式」面板里的 `OD …` 请求序列发出来。
+
 ## OneDrive 的 Azure 应用注册和 Worker 配置
 
 1. 打开 <https://portal.azure.com> → Microsoft Entra ID → 应用注册 → 新注册。名称填「同声字幕」（OneDrive 里的文件夹就叫「应用 / 同声字幕」）；**受支持的账户类型**选「**仅个人 Microsoft 账户**」（Personal Microsoft accounts only；Worker 的授权端点是 `consumers`，只接受个人账户）；**重定向 URI** 平台选 **Web**，填 `https://<你的Worker地址>/onedrive/callback`（要和 Worker 的实际地址完全一致）。

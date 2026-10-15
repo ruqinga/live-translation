@@ -4521,7 +4521,7 @@ registerProcessor("pcm16",PCM16);`;
       if(r.status===501) throw new OdError(j.error||"Worker 里还没有配置 OneDrive",{fatal:true});
       throw new OdError(j.error||("中转返回 "+r.status),{retry:true});
     }
-    OD.tok=j.access_token; OD.tokExp=Date.now()+(j.expires_in||3600)*1000; return OD.tok;
+    OD.tok=j.access_token; OD.tokExp=Date.now()+(j.expires_in||3600)*1000; OD.scope=j.scope||OD.scope||""; return OD.tok;
   }
   // 请求标签：方法 + 相对 approot 的路径（去掉域名、查询参数，不含令牌），用于错误信息和调试面板
   function odLabel(method,url){
@@ -4549,10 +4549,27 @@ registerProcessor("pcm16",PCM16);`;
   // 应用文件夹是微软第一次访问 approot 时才创建的；子文件夹（sessions、_meta、readable）由这里创建，已存在（409）就忽略
   async function odEnsureRoot(){
     const ls=odLS(); if(OD.rootOk || ls.rootOk){ OD.rootOk=true; return; }
-    const r=await gx(AROOT+"?select=id,name");          // 访问 approot 本身，微软会在这时创建「应用/同声字幕」
+    let r=await gx(AROOT+"?select=id,name");          // 访问 approot 本身，微软会在这时创建「应用/同声字幕」
+    if(r.status===404){
+      // 个别账号访问 approot 仍是 404：写入一个小文件，让 OneDrive 在写入时创建应用文件夹，再访问一次
+      dbg("approot 不存在，尝试写入一个小文件来创建应用文件夹");
+      const w=await gx(itemUrl("README.txt")+":/content?@microsoft.graph.conflictBehavior=replace",{method:"PUT",headers:{"Content-Type":"text/plain"},body:"同声字幕的同步数据放在这个文件夹里。"});
+      if(w.ok) r=await gx(AROOT+"?select=id,name");
+    }
+    if(r.status===404) throw await odDiagnose();
     if(!r.ok) throw await gerr(r);
     for(const d of ["sessions","_meta","readable"]) await odMkdir(d);
     OD.rootOk=true; ls.rootOk=true; odSave();
+  }
+  // 应用文件夹怎么都找不到：查一下授权范围和 OneDrive 是否开通，给出具体的处理办法
+  async function odDiagnose(){
+    let ds="?"; try{ ds=(await gx("https://graph.microsoft.com/v1.0/me/drive?select=id,driveType")).status; }catch(e){}
+    const sc=OD.scope||"";
+    let hint;
+    if(sc && !/appfolder/i.test(sc)) hint="授权里没有「Files.ReadWrite.AppFolder」权限：到 Azure → 应用注册 → API 权限 里添加它，然后在设置里退出登录、重新登录授权。";
+    else if(ds===404) hint="这个微软账号的 OneDrive 好像还没有开通：用电脑浏览器打开 onedrive.live.com，登录同一个账号，等文件列表出现，再回来点「立即同步」。";
+    else hint="请先用电脑浏览器打开 onedrive.live.com，登录同一个账号，确认能看到文件（第一次使用会初始化 OneDrive）；再确认 Azure 的 API 权限里有「Files.ReadWrite.AppFolder」，然后退出登录、重新登录授权。";
+    return new OdError("OneDrive 里找不到应用文件夹（GET approot 返回 404）。"+hint+"（诊断：授权范围 "+(sc||"Worker 没有返回，重新部署 Worker 后可见")+"；GET /me/drive → "+ds+"）",{status:404,fatal:true});
   }
   async function odMkdir(path){
     const parts=path.split("/").filter(Boolean); let cur="";

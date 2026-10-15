@@ -257,7 +257,7 @@ async function odToken(env, h) {
     return json({ error: (t.j && t.j.error_description) || "微软返回 " + t.status, upstream: t.status }, t.status >= 500 ? 502 : 400, h);
   }
   if (t.j.refresh_token && t.j.refresh_token !== refresh) await env.ONEDRIVE_KV.put(KV_REFRESH, t.j.refresh_token);   // 微软换发了新的刷新令牌：更新
-  return json({ access_token: t.j.access_token, expires_in: t.j.expires_in || 3600 }, 200, { ...h, "cache-control": "no-store" });
+  return json({ access_token: t.j.access_token, expires_in: t.j.expires_in || 3600, scope: t.j.scope || "" }, 200, { ...h, "cache-control": "no-store" });
 }
 async function odStatus(env, h) {
   const bad = odConfigError(env); if (bad) return json({ error: bad, configured: false }, 501, h);
