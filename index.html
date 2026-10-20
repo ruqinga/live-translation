@@ -365,6 +365,7 @@ body.selecting .card .chk{display:block}
 .tr-item,.rc-item{border:0;border-radius:var(--r);box-shadow:var(--shadow);background:var(--panel)}
 .tr-item .btns button,.rc-item button,#selBar button,.tm-row button,.fm-row button.act{border:0;background:var(--fill);border-radius:10px;min-height:36px}
 .done.alt{background:var(--fill);color:var(--ink);border:0}
+.done.alt.warn{color:var(--rec)}
 .tagpick button{border-width:0;background:var(--fill);min-height:44px}
 .tagadd input{border:1.5px solid transparent;background:var(--fill);min-height:44px;border-radius:var(--r-sm)}
 .tagadd button{border-radius:var(--r-sm);min-height:44px}
@@ -573,6 +574,8 @@ body.has-page{background:var(--bg)}
 .det-title small{font-size:13px;color:var(--muted);font-weight:400}
 #vcList{padding:0 var(--s2) var(--s3)}
 .vgroup{font-size:15px;margin:14px 0 6px;color:var(--muted)}
+.lvdesc{margin-top:6px;font-size:13px;line-height:1.5;color:var(--ink2);background:var(--fill);border-radius:10px;padding:8px 10px}
+.vkind{margin-bottom:10px}.vw.vs b{font-family:var(--font-en);font-weight:600}.vnt{white-space:pre-line}
 .vitem{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;font-size:14px;line-height:1.5}
 .vw{display:flex;align-items:baseline;gap:6px}.vw b{font-size:17px;font-family:var(--font-en)}.vp{color:var(--muted);font-size:13px;flex:1}
 .vdel{border:0;background:none;color:var(--rec-ink);font-size:13px}.vsrc{display:block;margin-top:6px;border:0;background:none;padding:0;color:var(--accent);font-size:13px;text-align:left}
@@ -813,7 +816,7 @@ body.has-page{background:var(--bg)}
     </div>
     <div id="recVocab" hidden>
       <div class="det-top"><button id="vcBack">← 记录</button><div class="det-title">生词本 <small id="vcCount"></small></div><button id="vcExport">导出 CSV</button></div>
-      <div class="rec-searchrow vc-search"><input type="search" id="vcSearch" placeholder="搜索单词、释义、出处" autocomplete="off" aria-label="搜索生词"></div>
+      <div class="rec-searchrow vc-search"><input type="search" id="vcSearch" placeholder="搜索单词、句子、释义、出处" autocomplete="off" aria-label="搜索生词"></div>
       <div id="vcList"></div>
     </div>
   <div id="selBar">
@@ -1043,7 +1046,8 @@ body.has-page{background:var(--bg)}
   <div class="sheet">
     <h2>结束录音？</h2>
     <div class="rec-note" id="endNote">结束后会自动保存这条记录，并在后台生成摘要。</div>
-    <button class="done" id="endOk">结束并保存</button>
+    <button class="done" id="endOk">结束录音并保存</button>
+    <button class="done alt warn" id="endDiscard">结束录音并丢弃</button>
     <button class="done alt" id="endCancel">继续录音</button>
   </div>
 </dialog>
@@ -1187,6 +1191,17 @@ body.has-page{background:var(--bg)}
   const normLang=l=>{ l=String(l||"").toLowerCase().slice(0,2); return l||"en"; };
   const langPill=l=>LANG_PILL[l]||String(l||"EN").toUpperCase();
   const langName=l=>LANG_NAME[l]||(LANG_BY[l]&&LANG_BY[l].n)||String(l).toUpperCase();
+  // 学习模式的水平（「我的水平」）
+  const LEVELS=["A1","A2","B1","B2","C1"];
+  // 每个水平：名称、说明（显示给用户）、每句最多几个词汇 / 语法点、每批几句、每批最多输出 token、每句估算输出 token
+  const LV={
+    A1:{n:"入门",d:"几乎每个词都讲：只跳过冠词、人称代词这类最基础的词，其余按句中顺序逐个给出词性和中文意思；语法讲最基础的（时态、语序、单复数）。适合刚开始学、想逐词看懂的人。",v:15,g:3,b:6,tok:9000,out:420},
+    A2:{n:"初级",d:"讲日常常用词和固定搭配，跳过最简单的高频词（如 good、go）；语法讲基础句型和常用时态。",v:6,g:2,b:12,tok:6000,out:200},
+    B1:{n:"中级",d:"讲中等难度的词和常用短语；语法讲从句、完成时、被动语态等。日常词汇不再讲。",v:4,g:2,b:20,tok:3500,out:130},
+    B2:{n:"中高级",d:"只讲较难的词、习语和搭配；语法讲复杂句、虚拟语气、非谓语等。",v:4,g:2,b:20,tok:3500,out:120},
+    C1:{n:"高级",d:"只讲少见词、地道习语和细微的语气差别；基础和中级语法不再讲。",v:3,g:1,b:20,tok:3500,out:100},
+  };
+  const lv=l=>LV[l]||LV.B1;
   const settings={connection:"direct", relayUrl:"", relayToken:"", llm:"anthropic", lastFolder:null, saveAudio:true, tagPresets:["重点","作业","考试","没听懂"], sumModel:"", apiKey:"", dgKey:"", engine:"soniox", diarize:true, refine:true, autoFallback:true, refineModel:"claude-haiku-4-5-20251001", zhMode:"off", transMode:"one", langA:"zh", langB:"es", faceMode:false, sumLang:"zh", level:"B1", afterEnd:"home", lang:"en-US", mode:"both", size:22, glossary:"", theme:"auto", debug:false};
   const LEGACY_KEYS={provider:"llm", route:"connection", model:"refineModel"};
   // 旧键名 → 新键名：新键已存在时以新键为准；迁移后立即写回，旧键删除
@@ -1271,7 +1286,7 @@ body.has-page{background:var(--bg)}
     $("langABtn").textContent=langName(settings.langA); $("langBBtn").textContent=langName(settings.langB);
     setSwitch("faceMode",!!settings.faceMode);
     $("sumLangVal").textContent=langName(settings.sumLang||"zh");
-    $("levelVal").textContent=settings.level||"B1"; try{ drawVocabCount(); }catch(e){}
+    $("levelVal").textContent=(settings.level||"B1")+" "+(LV[settings.level]||LV.B1).n; try{ drawVocabCount(); }catch(e){}
     $("dbgWrap").hidden=!settings.debug;
     try{ drawSetHome(); }catch(e){}
     applyTheme();
@@ -1440,11 +1455,20 @@ body.has-page{background:var(--bg)}
     S=null; pendingMark=false;
     let segs=[]; try{ segs=await dbBySid("segments",row.id); }catch(e){}
     const real=segs.filter(x=>x.kind!=="break");
-    if(!real.length && !row.parts.length && row.dur<2){ dbDelSession(row.id).catch(()=>{}); return; }
+    if(!real.length && !row.parts.length && row.dur<2){ dbDelSession(row.id).catch(()=>{}); if(s.discard) discardedUi(false); return; }
+    if(s.discard){
+      row.deletedAt=Date.now(); row.updatedAt=row.deletedAt;
+      try{ await dbPut("sessions",row); }catch(e){ dbFail(e); }
+      applyUi(); discardedUi(true); return;
+    }
     try{ await dbPut("sessions",row); }catch(e){ dbFail(e); }
     if(real.length>10 && !row.summary && sumReady()) queueSummary(row.id);
     applyUi();
     if(s.userEnd) afterUserEnd(row);
+  }
+  function discardedUi(trashed){
+    entries.length=0; queue.length=0; feed.innerHTML=""; f2fReset(); showLive(""); stickToBottom=true; updateToLatest(); $("sumChip").hidden=true;
+    toast(trashed?"已丢弃这条录音（"+TRASH_DAYS+" 天内可在「最近删除」找回）":"已丢弃");
   }
   // 点「结束」之后：回到未录音状态并显示摘要生成进度，或按设置直接打开这条记录的详情
   function afterUserEnd(row){
@@ -2790,7 +2814,7 @@ body.has-page{background:var(--bg)}
   //   问题 i：{k:"g"语法|"n"表达|"c"口语|"a"识别, f:原文片段, x:修改后的句子/更地道的说法/推测原话, y:原因或说明}
   //   词汇 v：{w,p词性,g中文释义,m本句含义,e例句,l原形,c变位}；语法点 g：{n名称,t说明}
   //   res 里空对象 {} 表示分析过、没有可讲的内容（也记下来，下次不再分析）
-  const LEVELS=["A2","B1","B2","C1"], LEARN_BATCH=20, LEARN_CTX=3;
+  const LEARN_CTX=3;
   const LN={mode:"sub", run:null, filter:"all", sp:"all", cards:[], active:-1, loop:null, loopT:null, setup:null};
   // 估算用的参考价（美元 / 百万 token，输入、输出），只用来给个大概数
   const PRICES=[[/haiku/i,[1,5]],[/sonnet/i,[3,15]],[/opus/i,[5,25]],[/deepseek/i,[0.3,1.2]],[/gpt-4o-mini/i,[0.15,0.6]],[/gpt-4o/i,[2.5,10]]];
@@ -2831,8 +2855,8 @@ body.has-page{background:var(--bg)}
   const learnSys=(lang,level)=>"你是一名外语老师，帮一位中文母语的学习者学习"+langName(lang)+"。用户给出一段录音转写里的若干句"+langName(lang)+"（带编号，转写来自语音识别，可能有识别错误；还有前后文仅供参考）。学习者水平：CEFR "+level+"。请逐句分析，所有解释一律用简体中文，只输出一个 JSON 对象，不要任何其他文字。\n\n"
     +"格式：{\"items\":[{\"id\":编号,\"issues\":[{\"type\":\"grammar|expression|colloquial|asr\",\"frag\":\"原文中的相关片段（必须是原句里逐字出现的）\",\"fix\":\"…\",\"why\":\"…\"}],\"vocab\":[{\"word\":\"\",\"lemma\":\"原形\",\"pos\":\"词性\",\"gloss\":\"中文释义\",\"meaning\":\"在本句中的意思\",\"example\":\"一个简短例句（"+langName(lang)+"）\",\"conj\":\"动词变位（时态、人称），没有则留空\"}],\"grammar\":[{\"name\":\"语法点名称\",\"note\":\"一两句说明\"}]}]}\n\n"
     +"规则：\n1）issues 的类型：grammar=语法错误（frag 是错误片段，fix 是修改后的完整句子，why 是简短原因）；expression=语法没错但母语者不这样说（fix 给出更地道的说法完整句子，why 简述）；colloquial=口语中正常的现象，如省略、重复、口头禅、半截话（frag 是该片段，why 简述，它不是错误）；asr=明显是语音识别听错，如同音词（frag 是听错的片段，fix 是推测的原话，why 简述）。口语现象和识别错误都不是说话人的语法错误，不要归入 grammar。拿不准是否错误时，不要报 grammar。\n"
-    +"2）vocab：只挑对 "+level+" 水平值得学习的词和固定短语，每句 0～4 个，太简单的词不要讲；"+(lang==="es"?"西班牙语动词必须给出原形（lemma）并在 conj 里写明变位（时态、人称、式）。":"如果是动词或有变位的词，conj 写明形式（如过去式），没有就留空。")+"\n"
-    +"3）grammar：本句中值得讲解的语法点，每句 0～2 个，名称加一两句说明；太基础的不讲。\n"
+    +"2）vocab："+(level==="A1"?"学习者是入门水平，句子里几乎每个词都要讲：只跳过冠词、人称代词这类最基础的功能词，其余的词（包括常见的动词、名词、形容词、介词）和固定短语按在句中出现的顺序逐个列出，每句最多 15 个；gloss 简短，example 可以留空；":"只挑对 "+level+" 水平值得学习的词和固定短语，每句 0～"+lv(level).v+" 个，太简单的词不要讲；")+(lang==="es"?"西班牙语动词必须给出原形（lemma）并在 conj 里写明变位（时态、人称、式）。":"如果是动词或有变位的词，conj 写明形式（如过去式），没有就留空。")+"\n"
+    +"3）grammar："+(level==="A1"?"本句中的基础语法点（时态、语序、单复数、动词变位等），每句 0～3 个，名称加一两句通俗说明。\n":"本句中值得讲解的语法点，每句 0～"+lv(level).g+" 个，名称加一两句说明；太基础的不讲。\n")
     +"4）没有问题、也没有可学内容的句子可以不出现在 items 里，或给空数组。不要编造不存在的片段。";
   function learnParse(t){
     t=String(t||"").replace(/```(?:json)?/gi,""); const a=t.indexOf("{"), b=t.lastIndexOf("}");
@@ -2842,12 +2866,12 @@ body.has-page{background:var(--bg)}
     return j.items;
   }
   const cs=(v,n)=>typeof v==="string" ? v.trim().slice(0,n||300) : "";
-  function learnClean(it,text){
+  function learnClean(it,text,level){
     const o={}, K={grammar:"g",expression:"n",colloquial:"c",asr:"a"};
     const iss=(Array.isArray(it.issues)?it.issues:[]).slice(0,4).map(x=>({k:K[x&&x.type], f:cs(x&&x.frag,120), x:cs(x&&x.fix,300), y:cs(x&&x.why,300)})).filter(x=>x.k && (x.x||x.y||x.f));
     iss.forEach(x=>{ if(x.f && !text.toLowerCase().includes(x.f.toLowerCase())) x.f=""; });          // 片段必须真的在原句里，否则不画下划线
-    const voc=(Array.isArray(it.vocab)?it.vocab:[]).slice(0,4).map(x=>({w:cs(x&&x.word,60), p:cs(x&&x.pos,20), g:cs(x&&x.gloss,120), m:cs(x&&x.meaning,160), e:cs(x&&x.example,200), l:cs(x&&x.lemma,60), c:cs(x&&x.conj,80)})).filter(x=>x.w&&x.g);
-    const gr=(Array.isArray(it.grammar)?it.grammar:[]).slice(0,2).map(x=>({n:cs(x&&x.name,60), t:cs(x&&x.note,300)})).filter(x=>x.n);
+    const voc=(Array.isArray(it.vocab)?it.vocab:[]).slice(0,lv(level).v).map(x=>({w:cs(x&&x.word,60), p:cs(x&&x.pos,20), g:cs(x&&x.gloss,120), m:cs(x&&x.meaning,160), e:cs(x&&x.example,200), l:cs(x&&x.lemma,60), c:cs(x&&x.conj,80)})).filter(x=>x.w&&x.g);
+    const gr=(Array.isArray(it.grammar)?it.grammar:[]).slice(0,lv(level).g).map(x=>({n:cs(x&&x.name,60), t:cs(x&&x.note,300)})).filter(x=>x.n);
     if(iss.length) o.i=iss; if(voc.length) o.v=voc; if(gr.length) o.g=gr;
     return o;
   }
@@ -2860,15 +2884,15 @@ body.has-page{background:var(--bg)}
     const before=real.slice(Math.max(0,f-LEARN_CTX),f).map(g=>"（前文）"+line(g)), after=real.slice(l+1,l+1+LEARN_CTX).map(g=>"（后文）"+line(g));
     const gl=(settings.glossary||"").trim();
     const user=(gl?"【场景与术语】\n"+gl+"\n\n":"")+"【要分析的句子】\n"+items.map((g,i)=>"["+(i+1)+"] "+line(g)).join("\n")+(before.length||after.length?"\n\n【上下文，仅供参考，不要分析】\n"+before.concat(after).join("\n"):"");
-    const out=await llmStream(learnSys(lang,level),user,3500,null,{model:settings.sumModel});
+    const out=await llmStream(learnSys(lang,level),user,lv(level).tok,null,{model:settings.sumModel});
     const got=learnParse(out), res={};
     items.forEach(g=>{ res[g.id]={}; });
-    got.forEach(it=>{ const g=items[(+it.id||0)-1]; if(g) res[g.id]=learnClean(it,g.en); });
+    got.forEach(it=>{ const g=items[(+it.id||0)-1]; if(g) res[g.id]=learnClean(it,g.en,level); });
     return res;
   }
-  function learnEstimate(cands){
-    const chars=cands.reduce((a,g)=>a+(g.en||"").length,0), n=cands.length, batches=Math.ceil(n/LEARN_BATCH);
-    const inTok=Math.round(chars/3.2+n*14+batches*(900+LEARN_CTX*2*25)), outTok=n*130;
+  function learnEstimate(cands,level){
+    const L=lv(level), chars=cands.reduce((a,g)=>a+(g.en||"").length,0), n=cands.length, batches=Math.ceil(n/L.b);
+    const inTok=Math.round(chars/3.2+n*14+batches*(900+LEARN_CTX*2*25)), outTok=n*L.out;
     const pr=(PRICES.find(p=>p[0].test(settings.sumModel||""))||[])[1];
     return {inTok,outTok,usd:pr?(inTok*pr[0]+outTok*pr[1])/1e6:null,batches};
   }
@@ -2886,8 +2910,9 @@ body.has-page{background:var(--bg)}
     if(opts.scope){ lr.model=settings.sumModel; }
     const run=LN.run={stop:false,done:0,total:ids.length,err:"",lr};
     renderLearn();
-    for(let i=0;i<ids.length && !run.stop;i+=LEARN_BATCH){
-      const part=ids.slice(i,i+LEARN_BATCH);
+    const B=lv(lr.level).b;
+    for(let i=0;i<ids.length && !run.stop;i+=B){
+      const part=ids.slice(i,i+B);
       try{
         const res=await learnBatch(row,segs,part,lr.lang,lr.level);
         Object.assign(lr.res,res); lr.fail=lr.fail.filter(f=>!f.ids.some(x=>part.includes(x)));
@@ -2942,8 +2967,9 @@ body.has-page{background:var(--bg)}
       chl.forEach(c=>{ const b=mk("button","lchip",fmtT(c.s)+" "+c.t); b.setAttribute("aria-pressed",String(st.chs.includes(c.s))); b.onclick=()=>{ st.chs=st.chs.includes(c.s)?st.chs.filter(x=>x!==c.s):st.chs.concat([c.s]); renderLearn(); }; c4.appendChild(b); });
       g4.appendChild(c4); g4.appendChild(mk("small",null,"可多选；不选 = 全部。只分析选中章节里的句子。")); card.appendChild(g4);
     }
-    const g3=mk("div","lrow"); g3.appendChild(mk("b",null,"我的水平")); const c3=mk("div","lchips"); chips(c3,LEVELS.map(l=>[l,l]),settings.level,v=>{ settings.level=v; saveSettings(); applySettings(); renderLearn(); }); g3.appendChild(c3); g3.appendChild(mk("small",null,"决定讲哪些词汇和语法，太简单的不讲；保存在设置里。")); card.appendChild(g3);
-    const cands=learnCands(segs,st.lang,st.sp,st.chs), est=learnEstimate(cands);
+    const g3=mk("div","lrow"); g3.appendChild(mk("b",null,"我的水平")); const c3=mk("div","lchips"); chips(c3,LEVELS.map(l=>[l,l+" "+LV[l].n]),settings.level,v=>{ settings.level=v; saveSettings(); applySettings(); renderLearn(); }); g3.appendChild(c3);
+    g3.appendChild(mk("div","lvdesc",(settings.level||"B1")+" "+lv(settings.level).n+"："+lv(settings.level).d)); g3.appendChild(mk("small",null,"保存在设置里。水平越低讲得越多、每批句子越少，费用也越高。")); card.appendChild(g3);
+    const cands=learnCands(segs,st.lang,st.sp,st.chs), est=learnEstimate(cands,settings.level);
     card.appendChild(mk("p","lnote","将分析 "+cands.length+" 句，分 "+est.batches+" 批；预计用 "+fmtTok(est.inTok+est.outTok)+" token"+(est.usd!=null?"，约 US$"+est.usd.toFixed(est.usd<0.1?3:2):"")+"（按「"+modelLabel(sumList(),settings.sumModel)+"」估算，仅供参考）。可随时停止，已完成的部分会保留。"));
     const go=lbtn("开始分析",()=>{
       if(!sumReady()){ toast("请先在设置里填好密钥或中转地址"); return; }
@@ -2980,10 +3006,11 @@ body.has-page{background:var(--bg)}
     }else{
       const act=mk("div","lact");
       if(undone.length){
-        const est=learnEstimate(undone);
+        const est=learnEstimate(undone,lr.level);
         act.appendChild(lbtn("继续分析（剩 "+undone.length+" 句，约 "+fmtTok(est.inTok+est.outTok)+" token"+(est.usd!=null?"，约 US$"+est.usd.toFixed(est.usd<0.1?3:2):"")+"）",()=>learnRun(undone.map(g=>g.id)),"pbtn primary"));
       }
       act.appendChild(lbtn("重新分析",()=>{ LN.redo=true; LN.setup=null; renderLearn(); }));
+      act.appendChild(lbtn("📒 生词本",()=>gotoVocab()));
       head.appendChild(act);
     }
     (lr.fail||[]).forEach(f=>{
@@ -3019,6 +3046,8 @@ body.has-page{background:var(--bg)}
     const hd=mk("div","lhd"); hd.appendChild(mk("span","dt",fmtT(g.start)));
     if(g.speaker!=null && g.speaker!=="" && spShow(det.row,det.segs)) hd.appendChild(spEl(det.row,g.speaker));
     hd.appendChild(mk("span","grow"));
+    const sv=mk("button","loopbtn"), svDraw=()=>{ const on=!!vocFind(sentId(g)); sv.textContent=on?"★ 已收藏":"☆ 收藏句子"; sv.setAttribute("aria-pressed",String(on)); };
+    svDraw(); sv.onclick=e=>{ e.stopPropagation(); const now=sentToggle(g,r); svDraw(); toast(now?"句子已加入生词本":"已从生词本移除"); }; hd.appendChild(sv);
     const lp=mk("button","loopbtn","🔁 单句循环"); lp.setAttribute("aria-pressed",String(!!(LN.loop&&LN.loop.g&&LN.loop.g.id===g.id)));
     lp.onclick=e=>{ e.stopPropagation(); learnLoop(g,lp); }; hd.appendChild(lp);
     card.appendChild(hd);
@@ -3078,21 +3107,44 @@ body.has-page{background:var(--bg)}
     if(ex) Object.assign(ex,w,{del:undefined}), delete ex.del; else vocab.push(w);
     vocSave(true); return true;
   }
-  const drawVocabCount=()=>{ const n=vocLive().length; const e=$("vocabVal"); if(e) e.textContent=n?n+" 个词":"空"; };
-  const VQ={q:""};
+  // 收藏的句子也放在生词本里：{id:"s|记录id|句子id", kind:"s", lang, w:原句, g:译文, nt:分析要点, sid, segId, start, title, at, upd}
+  const isSent=w=>w.kind==="s";
+  const sentId=g=>"s|"+det.row.id+"|"+g.id;
+  function sentNotes(r){
+    if(!r) return ""; const L=[];
+    (r.i||[]).forEach(x=>{ if(x.k==="g"||x.k==="n") L.push(ISS_LABEL[x.k]+"："+(x.x?"→ "+x.x:"")+(x.y?"（"+x.y+"）":"")); });
+    (r.g||[]).forEach(x=>L.push("语法点："+x.n+(x.t?" — "+x.t:"")));
+    (r.v||[]).slice(0,8).forEach(v=>L.push(v.w+(v.p?" "+v.p:"")+"："+v.g));
+    return L.join("\n").slice(0,1200);
+  }
+  function sentToggle(g,r){
+    const lang=(det.row.learn&&det.row.learn.lang)||g.language||"en", id=sentId(g), now=Date.now(), ex=vocab.find(w=>w.id===id);
+    if(ex && !ex.del){ ex.del=now; ex.upd=now; vocSave(true); return false; }
+    const w={id,kind:"s",lang,w:String(g.en||"").slice(0,600),g:String(g.zh||"").slice(0,600),nt:sentNotes(r),sid:det.row.id,segId:g.id,start:g.start,title:det.row.title,at:now,upd:now};
+    if(ex) Object.assign(ex,w), delete ex.del; else vocab.push(w);
+    vocSave(true); return true;
+  }
+  const vocCountText=()=>{ const L=vocLive(), s=L.filter(isSent).length, w=L.length-s; return (w||!s?w+" 个词":"")+(s?(w?" · ":"")+s+" 个句子":""); };
+  const drawVocabCount=()=>{ const e=$("vocabVal"); if(e) e.textContent=vocLive().length?vocCountText():"空"; };
+  const VQ={q:"",k:"w"};
   function renderVocab(){
     const box=$("vcList"); box.textContent="";
     const q=VQ.q.trim().toLowerCase();
-    const list=vocLive().filter(w=>!q||[w.w,w.g,w.m,w.e,w.title].some(x=>String(x||"").toLowerCase().includes(q)));
-    $("vcCount").textContent=vocLive().length+" 个词";
-    if(!list.length){ box.appendChild(mk("div","rec-note",vocLive().length?"没有匹配的词。":"生词本还是空的。在记录详情 → 学习里，点词汇胶囊展开后可以「☆ 收藏」。")); return; }
+    const live=vocLive(), nS=live.filter(isSent).length, nW=live.length-nS;
+    $("vcCount").textContent=vocCountText();
+    if(VQ.k==="s" && !nS && nW) VQ.k="w"; if(VQ.k==="w" && !nW && nS) VQ.k="s";
+    const seg=mk("div","segc vkind"); [["w","单词 "+nW],["s","句子 "+nS]].forEach(([v,t])=>{ const b=mk("button",null,t); b.setAttribute("aria-pressed",String(VQ.k===v)); b.onclick=()=>{ VQ.k=v; renderVocab(); }; seg.appendChild(b); });
+    box.appendChild(seg);
+    const sent=VQ.k==="s";
+    const list=live.filter(w=>isSent(w)===sent).filter(w=>!q||[w.w,w.g,w.m,w.e,w.nt,w.title].some(x=>String(x||"").toLowerCase().includes(q)));
+    if(!list.length){ box.appendChild(mk("div","rec-note",q&&live.length?"没有匹配的内容。":sent?"还没有收藏句子。在记录详情 → 学习里，点句子右上角的「☆ 收藏句子」。":"还没有收藏单词。在记录详情 → 学习里，点词汇胶囊展开后可以「☆ 收藏」。")); return; }
     const by={}; list.forEach(w=>{ (by[w.lang]=by[w.lang]||[]).push(w); });
     Object.keys(by).sort((a,b)=>by[b].length-by[a].length).forEach(l=>{
       box.appendChild(mk("h3","vgroup",langName(l)+"（"+by[l].length+"）"));
       by[l].sort((a,b)=>b.at-a.at).forEach(w=>{
-        const c=mk("div","vitem"); const t=mk("div","vw"); t.appendChild(mk("b",null,w.w)); if(w.p) t.appendChild(mk("span","vp"," "+w.p));
-        const del=mk("button","vdel","删除"); del.onclick=()=>{ if(!confirm("从生词本删除「"+w.w+"」？")) return; w.del=Date.now(); w.upd=w.del; vocSave(true); renderVocab(); }; t.appendChild(del);
-        c.appendChild(t); c.appendChild(mk("div",null,w.g));
+        const c=mk("div","vitem"); const t=mk("div","vw"+(isSent(w)?" vs":"")); t.appendChild(mk("b",null,w.w)); if(w.p) t.appendChild(mk("span","vp"," "+w.p));
+        const del=mk("button","vdel","删除"); del.onclick=()=>{ if(!confirm("从生词本删除「"+(w.w.length>40?w.w.slice(0,40)+"…":w.w)+"」？")) return; w.del=Date.now(); w.upd=w.del; vocSave(true); renderVocab(); }; t.appendChild(del);
+        c.appendChild(t); if(w.g) c.appendChild(mk("div",null,w.g)); if(w.nt) c.appendChild(mk("div","lwhy vnt",w.nt));
         if(w.c) c.appendChild(mk("div","lwhy","变位："+w.c)); if(w.m) c.appendChild(mk("div","lwhy","本句中：“"+w.m+"”")); if(w.e) c.appendChild(mk("div","lwhy","例：“"+w.e+"”"));
         const d=new Date(w.at), src=mk("button","vsrc","📍 "+(w.title||"记录")+" · "+fmtT(w.start||0)+" · 收藏于 "+d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate()));
         src.onclick=()=>openVocabSource(w); c.appendChild(src); box.appendChild(c);
@@ -3115,18 +3167,18 @@ body.has-page{background:var(--bg)}
     const list=vocLive().sort((a,b)=>a.lang===b.lang?b.at-a.at:a.lang.localeCompare(b.lang));
     if(!list.length){ toast("生词本是空的"); return; }
     const q=x=>'"'+String(x==null?"":x).replace(/"/g,'""')+'"';
-    const rows=[["单词","释义","词性","本句含义","例句","变位","语言","出处","时间点","收藏时间"]].concat(list.map(w=>[w.w,w.g,w.p,w.m,w.e,w.c,langName(w.lang),w.title,fmtT(w.start||0),new Date(w.at).toISOString().slice(0,10)]));
+    const rows=[["单词 / 句子","释义 / 译文","词性","本句含义 / 要点","例句","变位","语言","出处","时间点","收藏时间","类型"]].concat(list.map(w=>[w.w,w.g,w.p,isSent(w)?w.nt:w.m,w.e,w.c,langName(w.lang),w.title,fmtT(w.start||0),new Date(w.at).toISOString().slice(0,10),isSent(w)?"句子":"单词"]));
     const csv="﻿"+rows.map(r=>r.map(q).join(",")).join("\r\n")+"\r\n";
     await deliver([{blob:new Blob([csv],{type:"text/csv;charset=utf-8"}), name:"生词本-"+new Date().toISOString().slice(0,10)+".csv"}]);
   };
   $("vocabRow").onclick=()=>gotoVocab();
-  $("levelRow").onclick=()=>openChoice("我的水平",LEVELS.map(l=>({v:l,t:l,sub:{A2:"初级",B1:"中级",B2:"中高级",C1:"高级"}[l]})),settings.level,v=>{ settings.level=v; saveSettings(); applySettings(); });
+  $("levelRow").onclick=()=>openChoice("我的水平",LEVELS.map(l=>({v:l,t:l+" "+LV[l].n,sub:LV[l].d})),settings.level,v=>{ settings.level=v; saveSettings(); applySettings(); });
   // OneDrive 合并：按 id 取较新的一份（含墓碑）；返回本机是否有云端没有的更新
   function vocMerge(j){
     const rem=(Array.isArray(j&&j.words)?j.words:[]).filter(x=>x&&typeof x.id==="string"&&typeof x.w==="string"), by=new Map(vocab.map(w=>[w.id,w]));
     let changed=false, push=false; const rids=new Set();
     rem.forEach(r=>{ rids.add(r.id); const l=by.get(r.id);
-      if(!l || (r.upd||0)>(l.upd||0)){ by.set(r.id,{id:r.id,lang:String(r.lang||"en").slice(0,5),w:r.w.slice(0,60),p:cs(r.p,20),g:cs(r.g,120),m:cs(r.m,160),e:cs(r.e,200),c:cs(r.c,80),sid:+r.sid||0,segId:String(r.segId||""),start:+r.start||0,title:cs(r.title,100),at:+r.at||0,upd:+r.upd||0,del:r.del?+r.del:undefined}); changed=true; }
+      if(!l || (r.upd||0)>(l.upd||0)){ const S_=r.kind==="s"; by.set(r.id,{id:r.id,kind:S_?"s":undefined,nt:S_?cs(r.nt,1200):undefined,lang:String(r.lang||"en").slice(0,5),w:r.w.slice(0,S_?600:60),p:cs(r.p,20),g:cs(r.g,S_?600:120),m:cs(r.m,160),e:cs(r.e,200),c:cs(r.c,80),sid:+r.sid||0,segId:String(r.segId||""),start:+r.start||0,title:cs(r.title,100),at:+r.at||0,upd:+r.upd||0,del:r.del?+r.del:undefined}); changed=true; }
       else if((r.upd||0)<(l.upd||0)) push=true; });
     if(vocab.some(w=>!rids.has(w.id))) push=true;
     if(changed){ vocab=[...by.values()]; vocSave(false); }
@@ -4578,11 +4630,13 @@ registerProcessor("pcm16",PCM16);`;
   mic.onclick=()=>{ if(!listening) start(); };
   $("pauseBtn").onclick=()=>{ if(listening) pauseRec(); else if(isPaused()) start(); };
   $("endBtn").onclick=()=>{
-    $("endNote").textContent="已录 "+fmt(Math.floor(nowT()||0))+"。结束后会自动保存这条记录"+(sumReady()?"，并在后台生成摘要":"")+"。";
+    $("endNote").textContent="已录 "+fmt(Math.floor(nowT()||0))+"。保存后"+(sumReady()?"会在后台生成摘要；":"可以在「记录」里查看；")+"丢弃的录音会放进「最近删除」，"+TRASH_DAYS+" 天内可以找回。";
     $("endDlg").showModal();
   };
   $("endCancel").onclick=()=>$("endDlg").close();
   $("endOk").onclick=()=>{ $("endDlg").close(); if(S) S.userEnd=true; stop(); };
+  // 丢弃：照常结束，然后把这条记录放进「最近删除」（30 天内可找回），不生成摘要，清空屏幕上的字幕
+  $("endDiscard").onclick=()=>{ $("endDlg").close(); if(S){ S.userEnd=true; S.discard=true; } stop(); };
   document.addEventListener("visibilitychange",async()=>{
     if(document.visibilityState!=="visible") return;
     if(S && S.needPrompt) showIntDlg();
