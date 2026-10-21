@@ -580,6 +580,33 @@ body.has-page{background:var(--bg)}
 .vw{display:flex;align-items:baseline;gap:6px}.vw b{font-size:17px;font-family:var(--font-en)}.vp{color:var(--muted);font-size:13px;flex:1}
 .vdel{border:0;background:none;color:var(--rec-ink);font-size:13px}.vsrc{display:block;margin-top:6px;border:0;background:none;padding:0;color:var(--accent);font-size:13px;text-align:left}
 
+/* 学习卡片：板块、句子结构色块、句型、语块、发音 */
+:root{--ln-s:#1E8C7E;--ln-p:#3E9B57;--ln-k:#D9822B;--ln-x:#8B5CF6;
+  --sb1:#E3ECFF;--sb2:#FBE1E4;--sb3:#DDF2E3;--sb4:#FFF1D6;--sb5:#EDE4FF;--sb6:#DDF0F4;--sb7:#EEEEEE;--sbl:rgba(0,0,0,.08)}
+:root[data-theme="dark"]{--sb1:#25324F;--sb2:#47272D;--sb3:#21402C;--sb4:#463A20;--sb5:#352B52;--sb6:#1F3D44;--sb7:#33363C;--sbl:rgba(255,255,255,.08)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--sb1:#25324F;--sb2:#47272D;--sb3:#21402C;--sb4:#463A20;--sb5:#352B52;--sb6:#1F3D44;--sb7:#33363C;--sbl:rgba(255,255,255,.08)}}
+.lsay{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.say{border:1px solid var(--line);background:var(--panel);color:var(--ink2);border-radius:999px;font-size:12px;padding:3px 10px;min-height:28px;cursor:pointer;vertical-align:middle;line-height:1.2}
+.lfix .say,.lpt .say,.lwhy .say,.lvh .say,.lpat .say,.vw .say{padding:1px 7px;min-height:22px;font-size:12px;margin-left:2px}
+.lsec{margin-top:12px;padding:10px 12px;border-radius:12px;background:var(--bg);border:1px solid var(--line)}
+.lsec-h{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;margin-bottom:8px}
+.lsec-h i{width:8px;height:8px;border-radius:50%;background:currentColor;flex:none}
+.sec-s .lsec-h{color:var(--ln-s)}.sec-p .lsec-h{color:var(--ln-p)}.sec-k .lsec-h{color:var(--ln-k)}.sec-v .lsec-h{color:var(--accent)}.sec-x .lsec-h{color:var(--ln-x)}
+.lstruct{display:flex;flex-wrap:wrap;gap:6px 4px;align-items:flex-start}
+.sblk{display:inline-flex;flex-direction:column;align-items:flex-start;border-radius:8px;padding:3px 8px 2px;border:1px solid var(--sbl);max-width:100%}
+.sblk .st{font-family:var(--font-en);font-size:17px;line-height:1.35;color:var(--ink);overflow-wrap:anywhere}.sblk small{font-size:11px;color:var(--muted);line-height:1.3}
+.sblk.c1{background:var(--sb1)}.sblk.c2{background:var(--sb2)}.sblk.c3{background:var(--sb3)}.sblk.c4{background:var(--sb4)}.sblk.c5{background:var(--sb5)}.sblk.c6{background:var(--sb6)}.sblk.c7{background:var(--sb7)}
+.lpat b{font-family:var(--font-en);font-size:18px;color:var(--ink)}.lpm{font-size:14px;color:var(--ink2);margin-top:2px}
+.lpex{margin-top:8px;display:flex;flex-direction:column;gap:6px;border-top:1px dashed var(--line);padding-top:8px}
+.lpe{display:flex;flex-direction:column}.lpt{font-family:var(--font-en);font-size:15px;color:var(--ink)}
+.lcap.ck{display:inline-flex;flex-direction:column;align-items:flex-start;background:var(--sb4);color:var(--ink);border-radius:12px;padding:5px 12px;text-align:left}
+.lcap.ck small{font-family:var(--font-zh);font-size:11px;color:var(--muted)}.lcap.ck[aria-pressed="true"]{background:var(--ln-k);color:#fff}.lcap.ck[aria-pressed="true"] small{color:#fff}
+.sec-k .lcaps,.sec-v .lcaps{margin-top:0}
+.lcul{font-size:14px;line-height:1.6;color:var(--ink2)}
+.sec-x{border-left:3px solid var(--ln-x)}
+.lshow{align-items:center}.lshow-l{font-size:13px;color:var(--muted);margin-right:2px}.lshow .lchip{min-height:30px;padding:4px 10px;font-size:13px}
+.lfilter .segc button{font-size:13px}
+
 /* 目录 */
 .seekwrap{position:relative;flex:1;min-width:0;display:flex;align-items:center}.seekwrap #pSeek{width:100%}
 .seekmarks{position:absolute;left:0;right:0;top:0;bottom:0;pointer-events:none;margin:0 8px}
@@ -1195,11 +1222,11 @@ body.has-page{background:var(--bg)}
   const LEVELS=["A1","A2","B1","B2","C1"];
   // 每个水平：名称、说明（显示给用户）、每句最多几个词汇 / 语法点、每批几句、每批最多输出 token、每句估算输出 token
   const LV={
-    A1:{n:"入门",d:"几乎每个词都讲：只跳过冠词、人称代词这类最基础的词，其余按句中顺序逐个给出词性和中文意思；语法讲最基础的（时态、语序、单复数）。适合刚开始学、想逐词看懂的人。",v:15,g:3,b:6,tok:9000,out:420},
-    A2:{n:"初级",d:"讲日常常用词和固定搭配，跳过最简单的高频词（如 good、go）；语法讲基础句型和常用时态。",v:6,g:2,b:12,tok:6000,out:200},
-    B1:{n:"中级",d:"讲中等难度的词和常用短语；语法讲从句、完成时、被动语态等。日常词汇不再讲。",v:4,g:2,b:20,tok:3500,out:130},
-    B2:{n:"中高级",d:"只讲较难的词、习语和搭配；语法讲复杂句、虚拟语气、非谓语等。",v:4,g:2,b:20,tok:3500,out:120},
-    C1:{n:"高级",d:"只讲少见词、地道习语和细微的语气差别；基础和中级语法不再讲。",v:3,g:1,b:20,tok:3500,out:100},
+    A1:{n:"入门",d:"几乎每个词都讲：只跳过冠词、人称代词这类最基础的词，其余按句中顺序逐个给出词性和中文意思；语法讲最基础的（时态、语序、单复数）。适合刚开始学、想逐词看懂的人。",v:15,g:3,b:5,tok:8000,out:560,k:4},
+    A2:{n:"初级",d:"讲日常常用词和固定搭配，跳过最简单的高频词（如 good、go）；语法讲基础句型和常用时态。",v:6,g:2,b:10,tok:8000,out:340,k:4},
+    B1:{n:"中级",d:"讲中等难度的词和常用短语；语法讲从句、完成时、被动语态等。日常词汇不再讲。",v:4,g:2,b:12,tok:8000,out:300,k:3},
+    B2:{n:"中高级",d:"只讲较难的词、习语和搭配；语法讲复杂句、虚拟语气、非谓语等。",v:4,g:2,b:12,tok:8000,out:280,k:3},
+    C1:{n:"高级",d:"只讲少见词、地道习语和细微的语气差别；基础和中级语法不再讲。",v:3,g:1,b:12,tok:8000,out:260,k:3},
   };
   const lv=l=>LV[l]||LV.B1;
   const settings={connection:"direct", relayUrl:"", relayToken:"", llm:"anthropic", lastFolder:null, saveAudio:true, tagPresets:["重点","作业","考试","没听懂"], sumModel:"", apiKey:"", dgKey:"", engine:"soniox", diarize:true, refine:true, autoFallback:true, refineModel:"claude-haiku-4-5-20251001", zhMode:"off", transMode:"one", langA:"zh", langB:"es", faceMode:false, sumLang:"zh", level:"B1", afterEnd:"home", lang:"en-US", mode:"both", size:22, glossary:"", theme:"auto", debug:false};
@@ -2389,7 +2416,7 @@ body.has-page{background:var(--bg)}
     pane("recDetail"); $("detTitle").textContent=row.title; drawDetSub();
     OUT_ST.open=false; OUT_ST.expand.clear(); det.collapsed=new Set();
     drawDetTags(); renderDetList(); drawSum(); drawOutline(); applyDetMode();
-    loadPlayer(row).then(()=>{ if(opts.seek!=null && det && det.row.id===id){ seekTo(opts.seek,!!opts.play); hiliteAt(opts.seek,true); } });
+    loadPlayer(row).then(()=>{ if(opts.seek!=null && det && det.row.id===id){ seekSeg(opts.seek,!!opts.play); hiliteAt(opts.seek,true); } });
     if(opts.seek!=null) hiliteAt(opts.seek,true);
   }
   async function reloadDetail(){
@@ -2488,7 +2515,7 @@ body.has-page{background:var(--bg)}
       };
       const edit=()=>openTagMenu("给这句加标签",g.tags||[],tags=>{ g.tags=tags; draw(); dbPut("segments",g).catch(dbFail); });
       draw();
-      row.onclick=()=>{ if(Date.now()-(row._lp||0)<700) return; seekTo(g.start,true); };
+      row.onclick=()=>{ if(Date.now()-(row._lp||0)<700) return; seekSeg(g.start,true); };
       attachLongPress(row,()=>openMenu("这一句",[
         {label:"加标签…",fn:edit},
         {label:outItems(det.row).some(x=>Math.abs(x.s-g.start)<0.01)?"重命名这个章节":"从这里开始新章节",fn:()=>outInsertAt(g)}]));
@@ -2504,7 +2531,7 @@ body.has-page{background:var(--bg)}
   function hiliteAt(T,force){
     if(!det) return;
     if(LN.mode==="learn"){ learnHilite(T,force); return; }
-    let a=-1; for(let i=0;i<det.segRows.length;i++){ if(det.segRows[i].g.start<=T+0.25) a=i; else break; }
+    let a=-1; for(let i=0;i<det.segRows.length;i++){ if(det.segRows[i].g.start<=T+SEEK_LEAD+0.1) a=i; else break; }
     if(a===det.active) return;
     const box=detScroller(), prev=det.active>=0 ? det.segRows[det.active] : null, next=a>=0 ? det.segRows[a] : null;
     const vis=x=>!!x && x.offsetParent!==null;                       // 所在章节折叠了：行是隐藏的，不滚动
@@ -2748,7 +2775,7 @@ body.has-page{background:var(--bg)}
   function outGo(s){
     if(!det) return;
     const ch=outChapterAt(det.row,s); if(ch && det.collapsed && det.collapsed.has(ch.s)){ det.collapsed.delete(ch.s); applyFold(); }
-    seekTo(s,true);
+    seekSeg(s,true);
     if(LN.mode==="learn"){ const c=LN.cards.find(x=>x.g.start>=s-0.01); if(c) c.el.scrollIntoView({block:"center",behavior:"smooth"}); return; }
     const r=det.segRows.find(x=>x.g.start>=s-0.01); if(r){ hiliteAt(s,false); r.el.scrollIntoView({block:"center",behavior:"smooth"}); }
   }
@@ -2839,12 +2866,12 @@ body.has-page{background:var(--bg)}
     learnStopLoop();
     const i=det.segs.indexOf(g), nx=det.segs.slice(i+1).find(x=>x.kind!=="break"&&x.start>g.start);
     const end=(g.end>g.start+0.3)?g.end:(nx?nx.start:g.start+4);
-    LN.loop={g,start:g.start,end:end+0.12}; btn.setAttribute("aria-pressed","true");
-    seekTo(g.start,true);
-    LN.loopT=setInterval(()=>{ if(!LN.loop||!P||au.paused) return; const T=curT(); if(T>=LN.loop.end||T<LN.loop.start-0.6) seekTo(LN.loop.start,true); },80);
+    LN.loop={g,start:Math.max(0,g.start-SEEK_LEAD),end:end+0.25}; btn&&btn.setAttribute("aria-pressed","true");
+    seekTo(LN.loop.start,true);
+    LN.loopT=setInterval(()=>{ if(!LN.loop||!P||au.paused) return; const T=curT(); if(T>=LN.loop.end||T<LN.loop.start-0.6){ if(LN.loop.once){ au.pause(); learnStopLoop(); } else seekTo(LN.loop.start,true); } },80);
   }
   function learnHilite(T,force){
-    let a=-1; for(let i=0;i<LN.cards.length;i++){ if(LN.cards[i].g.start<=T+0.25) a=i; else break; }
+    let a=-1; for(let i=0;i<LN.cards.length;i++){ if(LN.cards[i].g.start<=T+SEEK_LEAD+0.1) a=i; else break; }
     if(a===LN.active && !force) return;
     if(LN.active>=0 && LN.cards[LN.active]) LN.cards[LN.active].el.classList.remove("active");
     LN.active=a; if(a<0) return; const el=LN.cards[a].el; el.classList.add("active");
@@ -2853,11 +2880,16 @@ body.has-page{background:var(--bg)}
 
   // ----- 分析：请求与结果解析 -----
   const learnSys=(lang,level)=>"你是一名外语老师，帮一位中文母语的学习者学习"+langName(lang)+"。用户给出一段录音转写里的若干句"+langName(lang)+"（带编号，转写来自语音识别，可能有识别错误；还有前后文仅供参考）。学习者水平：CEFR "+level+"。请逐句分析，所有解释一律用简体中文，只输出一个 JSON 对象，不要任何其他文字。\n\n"
-    +"格式：{\"items\":[{\"id\":编号,\"issues\":[{\"type\":\"grammar|expression|colloquial|asr\",\"frag\":\"原文中的相关片段（必须是原句里逐字出现的）\",\"fix\":\"…\",\"why\":\"…\"}],\"vocab\":[{\"word\":\"\",\"lemma\":\"原形\",\"pos\":\"词性\",\"gloss\":\"中文释义\",\"meaning\":\"在本句中的意思\",\"example\":\"一个简短例句（"+langName(lang)+"）\",\"conj\":\"动词变位（时态、人称），没有则留空\"}],\"grammar\":[{\"name\":\"语法点名称\",\"note\":\"一两句说明\"}]}]}\n\n"
+    +"格式：{\"items\":[{\"id\":编号,\"issues\":[{\"type\":\"grammar|expression|colloquial|asr\",\"frag\":\"原文中的相关片段（必须是原句里逐字出现的）\",\"fix\":\"…\",\"why\":\"…\"}],\"vocab\":[{\"word\":\"\",\"lemma\":\"原形\",\"pos\":\"词性\",\"gloss\":\"中文释义\",\"ipa\":\"音标\",\"meaning\":\"在本句中的意思\",\"example\":\"一个简短例句（"+langName(lang)+"）\",\"conj\":\"动词变位（时态、人称），没有则留空\"}],\"grammar\":[{\"name\":\"语法点名称\",\"note\":\"一两句说明\"}],\"structure\":[{\"text\":\"原句片段\",\"role\":\"谁\"}],\"patterns\":[{\"pattern\":\"句型公式\",\"meaning\":\"中文意思\",\"compare\":\"对照说法\",\"examples\":[{\"text\":\"例句\",\"zh\":\"中文\"}]}],\"chunks\":[{\"text\":\"语块\",\"zh\":\"中文\"}],\"culture\":\"\"}]}\n\n"
     +"规则：\n1）issues 的类型：grammar=语法错误（frag 是错误片段，fix 是修改后的完整句子，why 是简短原因）；expression=语法没错但母语者不这样说（fix 给出更地道的说法完整句子，why 简述）；colloquial=口语中正常的现象，如省略、重复、口头禅、半截话（frag 是该片段，why 简述，它不是错误）；asr=明显是语音识别听错，如同音词（frag 是听错的片段，fix 是推测的原话，why 简述）。口语现象和识别错误都不是说话人的语法错误，不要归入 grammar。拿不准是否错误时，不要报 grammar。\n"
     +"2）vocab："+(level==="A1"?"学习者是入门水平，句子里几乎每个词都要讲：只跳过冠词、人称代词这类最基础的功能词，其余的词（包括常见的动词、名词、形容词、介词）和固定短语按在句中出现的顺序逐个列出，每句最多 15 个；gloss 简短，example 可以留空；":"只挑对 "+level+" 水平值得学习的词和固定短语，每句 0～"+lv(level).v+" 个，太简单的词不要讲；")+(lang==="es"?"西班牙语动词必须给出原形（lemma）并在 conj 里写明变位（时态、人称、式）。":"如果是动词或有变位的词，conj 写明形式（如过去式），没有就留空。")+"\n"
     +"3）grammar："+(level==="A1"?"本句中的基础语法点（时态、语序、单复数、动词变位等），每句 0～3 个，名称加一两句通俗说明。\n":"本句中值得讲解的语法点，每句 0～"+lv(level).g+" 个，名称加一两句说明；太基础的不讲。\n")
-    +"4）没有问题、也没有可学内容的句子可以不出现在 items 里，或给空数组。不要编造不存在的片段。";
+    +"4）structure：把句子按意群拆成 2～6 块，按原句顺序、首尾相接覆盖整句，每块的 text 必须是原句里逐字出现的片段；role 用 2～4 个汉字说明这块的作用，如 谁 / 做什么 / 对象 / 范围 / 时间 / 地点 / 方式 / 原因 / 条件 / 补充 / 语气。少于 4 个词的短句给空数组。\n"
+    +"5）patterns：本句里可以套用的句型（如 no + 动词 + más que），每句 0～1 个，只挑真正有用、可替换词语反复使用的结构；meaning 是中文意思；compare "+(lang==="en"?"用对应的中文说法帮学习者对上（如 not … until = 直到……才）":"用对应的英语说法帮学习者对上（如 don't … anything but）")+"；examples 给 2 个"+langName(lang)+"例句和中文。\n"
+    +"6）chunks：本句里值得整块听、整块记的语块、意群或固定搭配（不要和 vocab 重复），每句 0～"+lv(level).k+" 个，附中文。\n"
+    +"7）culture：这句话如果有言外之意、文化背景或语用习惯（字面是……其实是……），用一两句中文讲清楚；没有就给空字符串，不要硬编。\n"
+    +"8）vocab 里英语单词给出 ipa（美式音标），其他语言可留空。\n"
+    +"9）没有可学内容的句子可以给空数组。不要编造不存在的片段。";
   function learnParse(t){
     t=String(t||"").replace(/```(?:json)?/gi,""); const a=t.indexOf("{"), b=t.lastIndexOf("}");
     if(a<0||b<=a) throw new Error("模型返回的不是 JSON");
@@ -2870,9 +2902,18 @@ body.has-page{background:var(--bg)}
     const o={}, K={grammar:"g",expression:"n",colloquial:"c",asr:"a"};
     const iss=(Array.isArray(it.issues)?it.issues:[]).slice(0,4).map(x=>({k:K[x&&x.type], f:cs(x&&x.frag,120), x:cs(x&&x.fix,300), y:cs(x&&x.why,300)})).filter(x=>x.k && (x.x||x.y||x.f));
     iss.forEach(x=>{ if(x.f && !text.toLowerCase().includes(x.f.toLowerCase())) x.f=""; });          // 片段必须真的在原句里，否则不画下划线
-    const voc=(Array.isArray(it.vocab)?it.vocab:[]).slice(0,lv(level).v).map(x=>({w:cs(x&&x.word,60), p:cs(x&&x.pos,20), g:cs(x&&x.gloss,120), m:cs(x&&x.meaning,160), e:cs(x&&x.example,200), l:cs(x&&x.lemma,60), c:cs(x&&x.conj,80)})).filter(x=>x.w&&x.g);
+    const voc=(Array.isArray(it.vocab)?it.vocab:[]).slice(0,lv(level).v).map(x=>({w:cs(x&&x.word,60), p:cs(x&&x.pos,20), g:cs(x&&x.gloss,120), m:cs(x&&x.meaning,160), e:cs(x&&x.example,200), l:cs(x&&x.lemma,60), c:cs(x&&x.conj,80), ip:cs(x&&x.ipa,60)})).filter(x=>x.w&&x.g);
     const gr=(Array.isArray(it.grammar)?it.grammar:[]).slice(0,lv(level).g).map(x=>({n:cs(x&&x.name,60), t:cs(x&&x.note,300)})).filter(x=>x.n);
     if(iss.length) o.i=iss; if(voc.length) o.v=voc; if(gr.length) o.g=gr;
+    // 句子结构：片段要按顺序在原句里找得到，找不到的丢掉；少于 2 块不显示
+    const low=text.toLowerCase(); let pos=0; const st=[];
+    (Array.isArray(it.structure)?it.structure:[]).slice(0,8).forEach(x=>{ const t=cs(x&&x.text,200), r=cs(x&&x.role,8); if(!t) return; const i=low.indexOf(t.toLowerCase(),pos); if(i<0) return; st.push({t:text.slice(i,i+t.length),r}); pos=i+t.length; });
+    if(st.length>=2) o.s=st;
+    const pt=(Array.isArray(it.patterns)?it.patterns:[]).slice(0,1).map(x=>({p:cs(x&&x.pattern,80), m:cs(x&&x.meaning,80), c:cs(x&&x.compare,120), ex:(Array.isArray(x&&x.examples)?x.examples:[]).slice(0,3).map(e=>({t:cs(e&&e.text,160), z:cs(e&&e.zh,120)})).filter(e=>e.t)})).filter(x=>x.p);
+    if(pt.length) o.p=pt;
+    const ck=(Array.isArray(it.chunks)?it.chunks:[]).slice(0,lv(level).k).map(x=>({w:cs(x&&x.text,80), g:cs(x&&x.zh,80)})).filter(x=>x.w);
+    if(ck.length) o.k=ck;
+    const cu=cs(it.culture,300); if(cu) o.x=cu;
     return o;
   }
   // 一批：ids 是要分析的句子（按时间顺序），附带前后各几句作上下文
@@ -2989,15 +3030,15 @@ body.has-page{background:var(--bg)}
   }
   const ISS_LABEL={g:"语法",n:"表达",c:"口语",a:"可能识别有误"};
   function learnStats(res,ids){
-    let n=0,g=0,e=0,v=0; ids.forEach(id=>{ const r=res[id]; if(!r) return; n++; (r.i||[]).forEach(x=>{ if(x.k==="g") g++; else if(x.k==="n") e++; }); v+=(r.v||[]).length; });
-    return {n,g,e,v};
+    let n=0,g=0,e=0,v=0,p=0,k=0; ids.forEach(id=>{ const r=res[id]; if(!r) return; n++; (r.i||[]).forEach(x=>{ if(x.k==="g") g++; else if(x.k==="n") e++; }); v+=(r.v||[]).length; p+=(r.p||[]).length; k+=(r.k||[]).length; });
+    return {n,g,e,v,p,k};
   }
   function renderLearnResult(box,lr){
     const run=LN.run, segs=det.segs, all=learnCands(segs,lr.lang,lr.speaker||"all",lr.chs), res=lr.res||{};
     const ids=all.map(g=>g.id), st=learnStats(res,ids), undone=all.filter(g=>!(g.id in res));
     // 顶部：统计、进度、操作
     const head=mk("div","lhead");
-    head.appendChild(mk("div","lstat","分析了 "+st.n+" / "+all.length+" 句（"+langName(lr.lang)+"，"+lr.level+(lr.speaker&&lr.speaker!=="all"?"，仅 "+spName(det.row,lr.speaker):"")+((lr.chs&&lr.chs.length)?"，"+lr.chs.length+" 个章节":"")+"）· 语法错误 "+st.g+" 处 · 表达问题 "+st.e+" 处 · 词汇 "+st.v+" 个"));
+    head.appendChild(mk("div","lstat","分析了 "+st.n+" / "+all.length+" 句（"+langName(lr.lang)+"，"+lr.level+(lr.speaker&&lr.speaker!=="all"?"，仅 "+spName(det.row,lr.speaker):"")+((lr.chs&&lr.chs.length)?"，"+lr.chs.length+" 个章节":"")+"）· 语法错误 "+st.g+" 处 · 表达问题 "+st.e+" 处 · 词汇 "+st.v+" 个"+(st.p?" · 句型 "+st.p+" 个":"")+(st.k?" · 语块 "+st.k+" 个":"")));
     if(run){
       const bar=mk("div","lprog"); const fill=mk("i"); fill.style.width=(run.total?Math.round(run.done/run.total*100):0)+"%"; bar.appendChild(fill); head.appendChild(bar);
       const row=mk("div","lact"); row.appendChild(mk("span",null,"正在分析：已分析 "+run.done+" / 共 "+run.total+" 句"+(run.stop?"（正在停止，当前这批完成后停下）":"")));
@@ -3018,12 +3059,16 @@ body.has-page{background:var(--bg)}
       if(!run) r.appendChild(lbtn("重试",()=>learnRun(f.ids.filter(id=>!(id in res)),{}),"pbtn"));
       head.appendChild(r);
     });
+    if(!run && st.n && !ids.some(id=>{ const r=res[id]; return r && (r.s||r.p||r.k||r.x); })) head.appendChild(mk("div","lnote","这是旧版的分析结果，没有句子结构、语法句型、语块和言外之意；点「重新分析」可以补上。"));
     box.appendChild(head);
     if(LN.redo && !run){ const w=mk("div"); renderLearnSetup(w,true); box.appendChild(w); }
     // 筛选
     const fb=mk("div","lfilter"), seg=mk("div","segc");
-    [["all","全部"],["err","只看有错误的"],["voc","只看有新词的"]].forEach(([v,t])=>{ const b=mk("button",null,t); b.setAttribute("aria-pressed",String(LN.filter===v)); b.onclick=()=>{ LN.filter=v; renderLearn(); }; seg.appendChild(b); });
+    [["all","全部"],["err","有错误"],["voc","有新词"],["pat","有句型"]].forEach(([v,t])=>{ const b=mk("button",null,t); b.setAttribute("aria-pressed",String(LN.filter===v)); b.onclick=()=>{ LN.filter=v; renderLearn(); }; seg.appendChild(b); });
     fb.appendChild(seg);
+    const shw=mk("div","lchips lshow"); shw.appendChild(mk("span","lshow-l","显示"));
+    LSEC.forEach(([k,t])=>{ const b=mk("button","lchip",t); b.setAttribute("aria-pressed",String(secOn(k))); b.onclick=()=>{ lnShow[k]=!secOn(k); try{ localStorage.setItem("lt-learn-show",JSON.stringify(lnShow)); }catch(e){} renderLearn(); }; shw.appendChild(b); });
+    fb.appendChild(shw);
     const sps=spIds(all);
     if(sps.length>=2){ const c=mk("div","lchips"); chips(c,[["all","所有人"]].concat(sps.map(i=>[String(i),spName(det.row,i)])),LN.sp,v=>{ LN.sp=v; renderLearn(); }); fb.appendChild(c); }
     box.appendChild(fb);
@@ -3033,56 +3078,109 @@ body.has-page{background:var(--bg)}
     all.forEach(g=>{
       if(LN.sp!=="all" && String(g.speaker)!==String(LN.sp)) return;
       const r=res[g.id]; const hasErr=!!(r&&(r.i||[]).some(x=>x.k==="g"||x.k==="n")), hasVoc=!!(r&&(r.v||[]).length);
-      if(LN.filter==="err" && !hasErr) return; if(LN.filter==="voc" && !hasVoc) return;
+      if(LN.filter==="err" && !hasErr) return; if(LN.filter==="voc" && !hasVoc) return; if(LN.filter==="pat" && !(r&&(r.p||[]).length)) return;
       const chp=outChapterAt(det.row,g.start);
-      if(chp && chp.s!==lastCh){ lastCh=chp.s; const dv=mk("div","lchap"); dv.append(mk("span","out-tm",fmtT(chp.s)),mk("span",null,chp.t)); dv.onclick=()=>seekTo(chp.s,true); list.appendChild(dv); }
+      if(chp && chp.s!==lastCh){ lastCh=chp.s; const dv=mk("div","lchap"); dv.append(mk("span","out-tm",fmtT(chp.s)),mk("span",null,chp.t)); dv.onclick=()=>seekSeg(chp.s,true); list.appendChild(dv); }
       list.appendChild(learnCard(g,r)); shown++;
     });
     if(!shown) list.appendChild(mk("div","rec-note",all.length&&!st.n?"还没有分析结果。":"没有符合筛选条件的句子。"));
     box.appendChild(list);
   }
+  // ----- 发音：系统朗读（speechSynthesis），以及只播放这一句的原声 -----
+  const TTS_LANG={en:"en-US",es:"es-ES",fr:"fr-FR",de:"de-DE",it:"it-IT",pt:"pt-BR",ja:"ja-JP",ko:"ko-KR",ru:"ru-RU",zh:"zh-CN",ar:"ar-SA",nl:"nl-NL",tr:"tr-TR",vi:"vi-VN",th:"th-TH",id:"id-ID",pl:"pl-PL",sv:"sv-SE",hi:"hi-IN",uk:"uk-UA"};
+  const canSpeak=()=>"speechSynthesis" in window && typeof SpeechSynthesisUtterance!=="undefined";
+  function speak(text,lang,rate){
+    if(!text) return;
+    if(!canSpeak()){ toast("这个浏览器不支持朗读"); return; }
+    try{ if(!au.paused) au.pause(); }catch(e){}
+    const code=TTS_LANG[lang]||lang||"en-US", pre=code.split("-")[0];
+    const vs=speechSynthesis.getVoices()||[], v=vs.find(x=>x.lang===code)||vs.find(x=>(x.lang||"").replace("_","-").toLowerCase().startsWith(pre));
+    const u=new SpeechSynthesisUtterance(text); u.lang=code; if(v) u.voice=v; u.rate=rate||1;
+    try{ speechSynthesis.cancel(); speechSynthesis.speak(u); }catch(e){ toast("朗读失败："+((e&&e.message)||"未知错误")); }
+  }
+  if(canSpeak()) try{ speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged=()=>{}; }catch(e){}
+  const lnLang=g=>(det&&det.row.learn&&det.row.learn.lang)||g.language||"en";
+  // 🔊 小按钮：点一下朗读，stopPropagation 避免触发卡片跳播
+  function sayBtn(text,lang,label,rate){ const b=mk("button","say",label||"🔊"); b.setAttribute("aria-label","朗读 "+text); b.onclick=e=>{ e.stopPropagation(); speak(text,lang,rate); }; return b; }
+  function playOnce(g){
+    if(!P || !P.parts.length){ toast(P&&P.remote?"正在准备录音…":"这条记录没有录音"); if(P&&P.remote) ensureAudio(()=>playOnce(g)); return; }
+    try{ speechSynthesis && speechSynthesis.cancel(); }catch(e){}
+    learnStopLoop(); learnLoop(g,null); if(LN.loop) LN.loop.once=true;
+  }
+  // 显示哪些板块（每台设备自己记住）
+  const LSEC=[["s","句子结构"],["p","语法句型"],["k","语块意群"],["v","词汇"],["x","言外之意"]];
+  let lnShow={}; try{ lnShow=JSON.parse(localStorage.getItem("lt-learn-show")||"{}")||{}; }catch(e){}
+  const secOn=k=>lnShow[k]!==false;
+  // 句子结构色块：常见角色用固定颜色，其余按出现顺序轮换
+  const ROLE_C={"谁":1,"主语":1,"主体":1,"做什么":2,"谓语":2,"动作":2,"对象":3,"宾语":3,"范围":4,"补充":4,"时间":5,"地点":5,"方式":6,"原因":6,"条件":6,"语气":7};
+  function structEl(st){
+    const box=mk("div","lstruct"); const used={}; let n=0;
+    st.forEach(x=>{ let c=ROLE_C[x.r]; if(!c){ c=used[x.r]||(used[x.r]=1+((n++)+3)%7); } const w=mk("span","sblk c"+c); w.appendChild(mk("span","st",x.t)); if(x.r) w.appendChild(mk("small",null,x.r)); box.appendChild(w); });
+    return box;
+  }
+  function lsec(cls,title,body){ const d=mk("div","lsec "+cls); const h=mk("div","lsec-h"); h.appendChild(mk("i")); h.appendChild(mk("span",null,title)); d.appendChild(h); body.forEach(x=>x&&d.appendChild(x)); return d; }
   function learnCard(g,r){
+    const lang=lnLang(g);
     const card=mk("div","lcard"); card.dataset.t=String(g.start);
     const hd=mk("div","lhd"); hd.appendChild(mk("span","dt",fmtT(g.start)));
     if(g.speaker!=null && g.speaker!=="" && spShow(det.row,det.segs)) hd.appendChild(spEl(det.row,g.speaker));
     hd.appendChild(mk("span","grow"));
     const sv=mk("button","loopbtn"), svDraw=()=>{ const on=!!vocFind(sentId(g)); sv.textContent=on?"★ 已收藏":"☆ 收藏句子"; sv.setAttribute("aria-pressed",String(on)); };
     svDraw(); sv.onclick=e=>{ e.stopPropagation(); const now=sentToggle(g,r); svDraw(); toast(now?"句子已加入生词本":"已从生词本移除"); }; hd.appendChild(sv);
-    const lp=mk("button","loopbtn","🔁 单句循环"); lp.setAttribute("aria-pressed",String(!!(LN.loop&&LN.loop.g&&LN.loop.g.id===g.id)));
+    const lp=mk("button","loopbtn","🔁 单句循环"); lp.setAttribute("aria-pressed",String(!!(LN.loop&&!LN.loop.once&&LN.loop.g&&LN.loop.g.id===g.id)));
     lp.onclick=e=>{ e.stopPropagation(); learnLoop(g,lp); }; hd.appendChild(lp);
     card.appendChild(hd);
     const tx=mk("div","ltext"); wavy(g.en,(r&&r.i)||[]).forEach(n=>tx.appendChild(n)); card.appendChild(tx);
     if(g.zh) card.appendChild(mk("div","lzh",g.zh));
+    // 发音：原声（录音里这一句）/ 朗读 / 慢速
+    const pr=mk("div","lsay");
+    const og=mk("button","say","▶ 原声"); og.onclick=e=>{ e.stopPropagation(); playOnce(g); }; pr.appendChild(og);
+    pr.appendChild(sayBtn(g.en,lang,"🔊 朗读")); pr.appendChild(sayBtn(g.en,lang,"🐢 慢速",0.7));
+    card.appendChild(pr);
     if(r){
       (r.i||[]).forEach(x=>{
         const d=mk("div","liss k-"+x.k), lab=mk("span","lbadge",ISS_LABEL[x.k]); d.appendChild(lab);
         const body=mk("div","lbody");
-        if(x.k==="g"||x.k==="n"){ if(x.x) body.appendChild(mk("div","lfix","→ "+x.x)); if(x.y) body.appendChild(mk("div","lwhy",x.y)); }
+        if(x.k==="g"||x.k==="n"){ if(x.x){ const f=mk("div","lfix","→ "+x.x+" "); f.appendChild(sayBtn(x.x,lang)); body.appendChild(f); } if(x.y) body.appendChild(mk("div","lwhy",x.y)); }
         else if(x.k==="c"){ body.appendChild(mk("div","lwhy","口语，非错误"+(x.y?"："+x.y:""))); }
         else { body.appendChild(mk("div","lwhy",(x.x?"推测原话：「"+x.x+"」":"")+(x.y?(x.x?"。":"")+x.y:""))); }
         d.appendChild(body); card.appendChild(d);
       });
-      if((r.v||[]).length){
+      if(r.s && secOn("s")) card.appendChild(lsec("sec-s","句子结构",[structEl(r.s)]));
+      if((r.p||[]).length && secOn("p")) r.p.forEach(x=>{
+        const f=mk("div","lpat"); f.appendChild(mk("b",null,x.p)); f.appendChild(sayBtn(x.p.replace(/[+＋…]|\.{3}/g," "),lang));
+        const body=[f]; if(x.m) body.push(mk("div","lpm","= "+x.m)); if(x.c) body.push(mk("div","lwhy",(lang==="en"?"对照中文：":"先用英语对上：")+x.c));
+        if(x.ex.length){ const t=mk("div","lpex"); x.ex.forEach(e=>{ const row=mk("div","lpe"); const a=mk("span","lpt",e.t+" "); a.appendChild(sayBtn(e.t,lang)); row.appendChild(a); if(e.z) row.appendChild(mk("span","lwhy",e.z)); t.appendChild(row); }); body.push(t); }
+        card.appendChild(lsec("sec-p","语法句型",body));
+      });
+      const capRow=(list,cls,title,sec)=>{
+        if(!list.length || !secOn(sec)) return;
         const caps=mk("div","lcaps"), detail=mk("div","lvdet"); detail.hidden=true; let cur=null;
-        r.v.forEach((v,i)=>{
-          const b=mk("button","lcap",v.w); b.onclick=e=>{ e.stopPropagation(); if(cur===i){ detail.hidden=true; cur=null; b.setAttribute("aria-pressed","false"); return; }
-            cur=i; caps.querySelectorAll(".lcap").forEach(x=>x.setAttribute("aria-pressed","false")); b.setAttribute("aria-pressed","true"); drawVocabDetail(detail,v,g); detail.hidden=false; };
+        list.forEach((v,i)=>{
+          const b=mk("button","lcap "+cls); b.appendChild(mk("span",null,v.w)); if(cls==="ck"&&v.g) b.appendChild(mk("small",null,v.g));
+          b.onclick=e=>{ e.stopPropagation(); speak(v.w,lang);
+            if(cur===i){ detail.hidden=true; cur=null; b.setAttribute("aria-pressed","false"); return; }
+            cur=i; caps.querySelectorAll(".lcap").forEach(x=>x.setAttribute("aria-pressed","false")); b.setAttribute("aria-pressed","true"); drawVocabDetail(detail,cls==="ck"?Object.assign({p:"语块"},v):v,g); detail.hidden=false; };
           caps.appendChild(b);
         });
-        card.appendChild(caps); card.appendChild(detail);
-      }
+        card.appendChild(lsec("sec-"+sec,title+" · 点一下听发音",[caps,detail]));
+      };
+      capRow(r.k||[],"ck","语块意群","k");
+      capRow(r.v||[],"","词汇","v");
       (r.g||[]).forEach(x=>{ const c=mk("div","lgram"); c.appendChild(mk("b",null,x.n)); if(x.t) c.appendChild(mk("span",null," — "+x.t)); card.appendChild(c); });
+      if(r.x && secOn("x")) card.appendChild(lsec("sec-x","言外之意",[mk("div","lcul",r.x)]));
     }
-    card.onclick=e=>{ if(e.target.closest("button")) return; seekTo(g.start,true); };
+    card.onclick=e=>{ if(e.target.closest("button")) return; seekSeg(g.start,true); };
     LN.cards.push({g,el:card}); return card;
   }
   function drawVocabDetail(box,v,g){
     box.textContent="";
-    box.appendChild(mk("div","lvh",v.w+(v.p?"  · "+v.p:"")+(v.l&&v.l.toLowerCase()!==v.w.toLowerCase()?"  （原形 "+v.l+"）":"")));
+    const hh=mk("div","lvh",v.w+(v.ip?"  /"+v.ip.replace(/^\/|\/$/g,"")+"/":"")+(v.p?"  · "+v.p:"")+(v.l&&v.l.toLowerCase()!==v.w.toLowerCase()?"  （原形 "+v.l+"）":"")+" ");
+    const lg=lnLang(g); hh.appendChild(sayBtn(v.w,lg)); hh.appendChild(sayBtn(v.w,lg,"🐢",0.7)); box.appendChild(hh);
     box.appendChild(mk("div",null,v.g));
     if(v.c) box.appendChild(mk("div","lwhy","变位："+v.c));
     if(v.m) box.appendChild(mk("div","lwhy","本句中：“"+v.m+"”"));
-    if(v.e) box.appendChild(mk("div","lwhy","例：“"+v.e+"”"));
+    if(v.e){ const ex=mk("div","lwhy","例：“"+v.e+"” "); ex.appendChild(sayBtn(v.e,lnLang(g))); box.appendChild(ex); }
     const id=vocId(det.row.learn&&det.row.learn.lang||g.language||"en",v), on=!!vocFind(id);
     const star=lbtn(on?"★ 已收藏":"☆ 收藏",()=>{ const now=vocToggle(v,g); star.textContent=now?"★ 已收藏":"☆ 收藏"; toast(now?"已加入生词本":"已从生词本移除"); },"pbtn");
     box.appendChild(star);
@@ -3103,7 +3201,7 @@ body.has-page{background:var(--bg)}
   function vocToggle(v,g){
     const lang=(det.row.learn&&det.row.learn.lang)||g.language||"en", id=vocId(lang,v), now=Date.now(), ex=vocab.find(w=>w.id===id);
     if(ex && !ex.del){ ex.del=now; ex.upd=now; vocSave(true); return false; }
-    const w={id,lang,w:v.w,p:v.p,g:v.g,m:v.m,e:v.e,c:v.c,sid:det.row.id,segId:g.id,start:g.start,title:det.row.title,at:now,upd:now};
+    const w={id,lang,w:v.w,p:v.p,g:v.g,m:v.m,e:v.e,c:v.c,ip:v.ip||undefined,sid:det.row.id,segId:g.id,start:g.start,title:det.row.title,at:now,upd:now};
     if(ex) Object.assign(ex,w,{del:undefined}), delete ex.del; else vocab.push(w);
     vocSave(true); return true;
   }
@@ -3142,7 +3240,7 @@ body.has-page{background:var(--bg)}
     Object.keys(by).sort((a,b)=>by[b].length-by[a].length).forEach(l=>{
       box.appendChild(mk("h3","vgroup",langName(l)+"（"+by[l].length+"）"));
       by[l].sort((a,b)=>b.at-a.at).forEach(w=>{
-        const c=mk("div","vitem"); const t=mk("div","vw"+(isSent(w)?" vs":"")); t.appendChild(mk("b",null,w.w)); if(w.p) t.appendChild(mk("span","vp"," "+w.p));
+        const c=mk("div","vitem"); const t=mk("div","vw"+(isSent(w)?" vs":"")); t.appendChild(mk("b",null,w.w)); t.appendChild(sayBtn(w.w,w.lang)); if(w.ip) t.appendChild(mk("span","vp"," /"+w.ip.replace(/^\/|\/$/g,"")+"/")); if(w.p) t.appendChild(mk("span","vp"," "+w.p)); if(!w.p&&!w.ip) t.appendChild(mk("span","vp"));
         const del=mk("button","vdel","删除"); del.onclick=()=>{ if(!confirm("从生词本删除「"+(w.w.length>40?w.w.slice(0,40)+"…":w.w)+"」？")) return; w.del=Date.now(); w.upd=w.del; vocSave(true); renderVocab(); }; t.appendChild(del);
         c.appendChild(t); if(w.g) c.appendChild(mk("div",null,w.g)); if(w.nt) c.appendChild(mk("div","lwhy vnt",w.nt));
         if(w.c) c.appendChild(mk("div","lwhy","变位："+w.c)); if(w.m) c.appendChild(mk("div","lwhy","本句中：“"+w.m+"”")); if(w.e) c.appendChild(mk("div","lwhy","例：“"+w.e+"”"));
@@ -3178,7 +3276,7 @@ body.has-page{background:var(--bg)}
     const rem=(Array.isArray(j&&j.words)?j.words:[]).filter(x=>x&&typeof x.id==="string"&&typeof x.w==="string"), by=new Map(vocab.map(w=>[w.id,w]));
     let changed=false, push=false; const rids=new Set();
     rem.forEach(r=>{ rids.add(r.id); const l=by.get(r.id);
-      if(!l || (r.upd||0)>(l.upd||0)){ const S_=r.kind==="s"; by.set(r.id,{id:r.id,kind:S_?"s":undefined,nt:S_?cs(r.nt,1200):undefined,lang:String(r.lang||"en").slice(0,5),w:r.w.slice(0,S_?600:60),p:cs(r.p,20),g:cs(r.g,S_?600:120),m:cs(r.m,160),e:cs(r.e,200),c:cs(r.c,80),sid:+r.sid||0,segId:String(r.segId||""),start:+r.start||0,title:cs(r.title,100),at:+r.at||0,upd:+r.upd||0,del:r.del?+r.del:undefined}); changed=true; }
+      if(!l || (r.upd||0)>(l.upd||0)){ const S_=r.kind==="s"; by.set(r.id,{id:r.id,kind:S_?"s":undefined,nt:S_?cs(r.nt,1200):undefined,lang:String(r.lang||"en").slice(0,5),w:r.w.slice(0,S_?600:60),p:cs(r.p,20),g:cs(r.g,S_?600:120),m:cs(r.m,160),e:cs(r.e,200),c:cs(r.c,80),ip:cs(r.ip,60)||undefined,sid:+r.sid||0,segId:String(r.segId||""),start:+r.start||0,title:cs(r.title,100),at:+r.at||0,upd:+r.upd||0,del:r.del?+r.del:undefined}); changed=true; }
       else if((r.upd||0)<(l.upd||0)) push=true; });
     if(vocab.some(w=>!rids.has(w.id))) push=true;
     if(changed){ vocab=[...by.values()]; vocSave(false); }
@@ -3249,6 +3347,9 @@ body.has-page{background:var(--bg)}
       await loadPlayer(my.row); if(P && P.parts.length) then();
     }catch(e){ my.loading=false; n.textContent="下载录音失败："+((e&&e.message)||"未知错误")+"（点播放重试）"; }
   }
+  // 点句子跳播时提前一点开始：句子起点来自识别出的第一个词，往往比真正开口稍晚，录音开始也有一点延迟
+  const SEEK_LEAD=0.4;
+  const seekSeg=(t,play)=>seekTo(Math.max(0,(+t||0)-SEEK_LEAD),play);
   function seekTo(T,play){
     if(P && P.remote){ ensureAudio(()=>seekTo(T,play)); return; }
     if(!P || !P.parts.length) return;
@@ -3462,7 +3563,7 @@ body.has-page{background:var(--bg)}
   }
   function sumRender(id){ if(det && det.row.id===id) drawSum(); }
   const tsToSec=t=>t.split(":").reduce((a,x)=>a*60+(+x),0);
-  function jumpTo(sec){ if(!det) return; if(P && P.parts.length) seekTo(sec,true); hiliteAt(sec,true); }
+  function jumpTo(sec){ if(!det) return; if(P && P.parts.length) seekSeg(sec,true); hiliteAt(sec,true); }
   function mdInline(el,text){
     const re=/\*\*([^*]+)\*\*|\[((?:\d+:)?\d{1,2}:\d{2})\]/g; let last=0, m;
     while((m=re.exec(text))){
@@ -4116,7 +4217,8 @@ registerProcessor("pcm16",PCM16);`;
     isLive(){ return this.state==="live"; }
     setState(st){ this.state=st; this.h.onStatus({state:st,retries:this.retries}); }
     tl(sec){ return this.connOff+sec; }                   // 引擎时间 → 录音时间轴
-    markLive(){ this.retries=0; this.ready=true; this.began=true; this.connOff=this.h.now(); this.setState("live"); }
+    // 送给引擎的第一块音频是在 100ms 分块凑满、再加上设备的输入延迟之后才发出的，所以引擎的 0 秒比「现在」早这么多
+    markLive(){ this.retries=0; this.ready=true; this.began=true; const lag=this.cap?0.1+((this.cap.ctx&&this.cap.ctx.baseLatency)||0):0; this.connOff=Math.max(0,this.h.now()-lag); this.setState("live"); }
     start(stream,opts){
       this.opts=opts||{}; this.cap=this.opts.capture; this.stopped=false; this.closing=false; this.retries=0;
       this.sink=a=>{ const ws=this.ws; if(ws && this.ready && ws.readyState===1) ws.send(a); };
