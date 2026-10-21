@@ -3669,10 +3669,35 @@ body.has-page{background:var(--bg)}
 
   // ---------- Feed ----------
   // 自动滚动：新句子出现时滚到底；用户向上翻看时停止，并显示「↓ 回到最新」
-  feed.addEventListener("scroll",()=>{ stickToBottom = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 60; updateToLatest(); },{passive:true});
+  // 自动跟随最新：只有用户自己滑动（触摸、滚轮、键盘、拖滚动条）离开底部才停止跟随。
+  // 字幕精修替换文字、当前句放大缩回、浏览器的滚动锚定等都会触发 scroll 事件，不能把它们当成「用户往上翻了」，
+  // 否则长时间录音里迟早会在某次内容变化的瞬间被误判，之后就停在中间不动了。
+  let feedUserT=0, feedTouch=false, feedMoved=false;
+  const feedUser=()=>{ feedUserT=performance.now(); };
+  feed.addEventListener("touchstart",()=>{ feedTouch=true; feedMoved=false; },{passive:true});      // 只是点一下卡片不算滑动
+  feed.addEventListener("touchmove",()=>{ feedMoved=true; feedUser(); },{passive:true});
+  const touchOff=()=>{ if(feedMoved) feedUser(); feedTouch=false; feedMoved=false; };
+  feed.addEventListener("touchend",touchOff,{passive:true}); feed.addEventListener("touchcancel",touchOff,{passive:true});
+  feed.addEventListener("wheel",feedUser,{passive:true});
+  feed.addEventListener("pointerdown",e=>{ if(e.pointerType==="mouse") feedUser(); },{passive:true});
+  document.addEventListener("keydown",e=>{ if(/^(ArrowUp|ArrowDown|PageUp|PageDown|Home|End| )$/.test(e.key)) feedUser(); });
+  const feedGap=()=>feed.scrollHeight-feed.scrollTop-feed.clientHeight;
+  const userScrolling=()=>(feedTouch&&feedMoved) || performance.now()-feedUserT<1500;     // 手指离开后惯性滚动还会持续一会儿
+  feed.addEventListener("scroll",()=>{
+    if(feedGap()<60) stickToBottom=true;
+    else if(userScrolling()) stickToBottom=false;
+    else if(stickToBottom) snapSoon();                    // 不是用户滑的：保持跟随，重新贴到底部
+    updateToLatest();
+  },{passive:true});
   function updateToLatest(){ $("toLatest").hidden = stickToBottom || !entries.length; }
   function scrollDown(){ if(stickToBottom) feed.scrollTop=feed.scrollHeight; updateToLatest(); }
-  $("toLatest").onclick=()=>{ stickToBottom=true; feed.scrollTo({top:feed.scrollHeight,behavior:"smooth"}); $("toLatest").hidden=true; };
+  let snapReq=0;
+  function snapSoon(){ if(snapReq) return; snapReq=requestAnimationFrame(()=>{ snapReq=0; if(stickToBottom && !userScrolling() && feedGap()>1) feed.scrollTop=feed.scrollHeight; }); }
+  // 任何内容变化（新句子、译文、精修替换、高度动画结束）后，如果在跟随就贴到底部
+  try{ new MutationObserver(()=>{ if(stickToBottom) snapSoon(); }).observe(feed,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:["class"]}); }catch(e){}
+  feed.addEventListener("transitionend",()=>{ if(stickToBottom) snapSoon(); });
+  try{ new ResizeObserver(()=>{ if(stickToBottom) snapSoon(); }).observe(feed); }catch(e){}
+  $("toLatest").onclick=()=>{ stickToBottom=true; feedUserT=0; feed.scrollTo({top:feed.scrollHeight,behavior:"smooth"}); $("toLatest").hidden=true; };
   function hideEmpty(){}
 
   // ---------- 说话人 ----------
