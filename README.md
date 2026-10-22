@@ -23,7 +23,7 @@
 ## 快速开始
 
 1. **部署页面**：仓库 Settings → Pages，选择分支，用 https 网址打开。
-2. **部署中转（推荐）**：把 `worker/worker.js` 部署到 Cloudflare Workers，添加 Secret `ACCESS_TOKEN` 和要用的服务商密钥（如 `SONIOX_API_KEY`、`ANTHROPIC_API_KEY`）。
+2. **部署中转（推荐）**（手机连不上 Soniox 时，Soniox 的实时音频也可以经它转发，见设置 → 识别与翻译 →「Soniox 连接」）：把 `worker/worker.js` 部署到 Cloudflare Workers，添加 Secret `ACCESS_TOKEN` 和要用的服务商密钥（如 `SONIOX_API_KEY`、`ANTHROPIC_API_KEY`）。
 3. **在页面里设置**：右上角「⋯」→ 设置 → 连接与密钥 → 连接方式选「自建中转」，填中转地址和访问口令，点「测试连接」。
 4. 回到主页，点中间的大按钮开始录音。
 
