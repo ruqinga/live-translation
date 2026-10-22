@@ -53,7 +53,8 @@ Deepgram 和 Claude 的密钥只保存在你手机浏览器的 localStorage 里�
 - `GET /deepgram-token`：返回 `{access_token, expires_in}`，页面用 `new WebSocket(url, ["bearer", access_token])` 连接。
 - `POST /onedrive/login-ticket`、`GET /onedrive/login`、`GET /onedrive/callback`、`GET /onedrive/token`、`GET /onedrive/status`、`POST /onedrive/logout`（新，OneDrive 同步用，见 [OneDrive 同步](onedrive.md#onedrive-的-azure-应用注册和-worker-配置)）：除 `login`（凭一次性登录码）和 `callback`（凭一次性 state）这两个浏览器跳转地址外都要带访问口令；未配置 `MS_CLIENT_ID` / `MS_CLIENT_SECRET` 或没有绑定 `ONEDRIVE_KV` 时返回明确的中文提示。
 - `GET /soniox-token`（新）：用 `SONIOX_API_KEY` 向 Soniox 换取临时 API key（有效期 60 秒，用途限定为实时 WebSocket），返回 `{token, expires_in_seconds}`；页面连接 Soniox 时通过 WebSocket 子协议传这个临时密钥（`new WebSocket(url, ["soniox-api-key", 密钥])`），不再放进第一条配置消息（Soniox 新的鉴权方式，旧方式 2027-01-15 起会返回 401）。未配置 `SONIOX_API_KEY` 时返回 500 和中文提示。已部署过旧版 Worker 的需要更新代码并重新部署，否则页面会提示「中转层还不支持 Soniox」。
-- 所有请求都要带 `Authorization: Bearer <ACCESS_TOKEN>`。服务商和模型有白名单，想加新模型改 `worker.js` 顶部的 `PROVIDERS`，同时在 `index.html` 的 `MODELS` 里加上。
+- `GET /soniox-ws?key=<临时密钥>`（WebSocket，新）：手机连不上 `stt-rt.soniox.com` 时，页面改连这个地址，Worker 用这个临时密钥（`Authorization: Bearer`）连到 Soniox，并把上游连接原样交还给页面，之后的音频和结果由 Cloudflare 直接转发，不经过 Worker 的 JavaScript，几乎不占 CPU 时间。浏览器的 WebSocket 不能带 Authorization 头，所以这个地址不检查访问口令；没有有效的 Soniox 临时密钥时 Soniox 会直接拒绝。不带 Upgrade 的普通 GET 返回 426，页面用它判断 Worker 是否已支持中转。**要用这个功能，需要更新 `worker.js` 并重新部署 Worker**（Git 集成的话合并到 main 后自动部署）。
+- 除了 `/soniox-ws`（靠 Soniox 临时密钥）和 OneDrive 登录 / 回调两个跳转地址，其余请求都要带 `Authorization: Bearer <ACCESS_TOKEN>`。服务商和模型有白名单，想加新模型改 `worker.js` 顶部的 `PROVIDERS`，同时在 `index.html` 的 `MODELS` 里加上。
 
 **排错**：页面提示「中转访问口令无效」（401）时，先到 Worker 的 Settings → Variables and Secrets 确认 `ACCESS_TOKEN` 还在，并且和页面设置里的「访问口令」完全一致。Git 集成部署时，后台添加的普通变量（Text 类型）可能在重新部署后被清掉；添加密钥请选 **Secret** 类型，`wrangler.toml` 里也已加了 `keep_vars = true`。可以用下面的命令验证（应返回 200 和译文，而不是 401）：
 
@@ -85,3 +86,5 @@ OneDrive 同步需要的 Azure 应用注册、KV 和 Secret 配置，见 [OneDri
 **安卓**
 - 请用 **Chrome**。收听时保持页面在前台，省电模式可能会中断后台音频。
 - 用蓝牙耳机时，麦克风可能被切换到耳机，建议使用手机自带麦克风。
+
+**连不上 Soniox（「网络已断开，自动重连 3 次仍失败」，但能取到临时密钥）**：说明手机能连上你的 Worker，却连不上 Soniox 的实时服务 `stt-rt.soniox.com`。设置 → 识别与翻译 →「Soniox 连接」默认是「自动」：直连 7 秒没连上就改走 Worker 中转，并记住这台设备上能用的方式；也可以直接选「经中转」。先确认 Worker 已经更新到支持 `/soniox-ws` 的版本，否则会提示「你的 Worker 还不支持经中转连接 Soniox」。

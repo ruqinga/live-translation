@@ -3,6 +3,7 @@
 //   POST /summary          流式长文本摘要，格式同上，但允许更长的输入和输出
 //   GET  /deepgram-token   签发 Deepgram 短期令牌（手机端不需要保存 Deepgram 长期密钥）
 //   GET  /soniox-token     签发 Soniox 实时转录的临时 API 密钥（真正的密钥只放在这里的 SONIOX_API_KEY）
+//   GET  /soniox-ws?key=   （WebSocket）把 Soniox 实时转录经 Worker 转发，给连不上 stt-rt.soniox.com 的网络用
 //   OneDrive 同步（Worker 代管微软登录；刷新令牌只存在 KV 里，绝不下发到浏览器）：
 //   POST /onedrive/login-ticket  用 ACCESS_TOKEN 换一个一次性登录码（不要把 ACCESS_TOKEN 放进网址）
 //   GET  /onedrive/login?ticket= 凭一次性登录码跳转到微软登录页（不需要 Authorization）
@@ -161,6 +162,23 @@ async function sonioxToken(env, h) {
   return json({ token: j.api_key, expires_in_seconds: 60 }, 200, { ...h, "cache-control": "no-store" });
 }
 
+// Soniox 实时转录经 Worker 中转：手机连不上 stt-rt.soniox.com 时，页面改连 wss://<worker>/soniox-ws?key=<临时密钥>，
+//   Worker 带着这个临时密钥（Authorization: Bearer）连到 Soniox，把上游的 WebSocket 原样返回给页面，
+//   之后的音频和结果由 Cloudflare 直接转发，不经过这里的 JavaScript（几乎不占 CPU 时间）。
+//   浏览器的 WebSocket 不能带 Authorization 头，所以这里不检查访问口令：没有有效的 Soniox 临时密钥，Soniox 会直接拒绝。
+//   不带 Upgrade 的 GET 返回 426，页面用它判断 Worker 是否已经支持中转。
+const SONIOX_WS = "https://stt-rt.soniox.com/transcribe-websocket";
+async function sonioxWs(req, env, h) {
+  if ((req.headers.get("Upgrade") || "").toLowerCase() !== "websocket") return json({ ok: true, error: "需要 WebSocket 连接" }, 426, h);
+  const key = new URL(req.url).searchParams.get("key") || "";
+  if (!/^[A-Za-z0-9_.:\-]{8,300}$/.test(key)) return new Response("missing key", { status: 400 });
+  let up;
+  try { up = await fetch(SONIOX_WS, { headers: { Upgrade: "websocket", Authorization: "Bearer " + key } }); }
+  catch (e) { return new Response("连接 Soniox 失败", { status: 502 }); }
+  if (up.status !== 101 || !up.webSocket) return new Response("Soniox 返回 " + up.status, { status: 502 });
+  return up;
+}
+
 // ---------------- OneDrive（Microsoft 身份平台 v2.0 授权码流程 + Microsoft Graph）----------------
 // 授权端点用 consumers：应用注册为「仅个人 Microsoft 账户」，只接受个人账户（outlook.com / hotmail / live 等）登录。权限范围：Files.ReadWrite.AppFolder（只能访问应用专属文件夹）、
 // offline_access（拿刷新令牌）、User.Read（读账号名称）。这是单用户应用：一个 Worker 只绑定一个 OneDrive 账号，
@@ -279,6 +297,7 @@ export default {
     // 浏览器跳转的两个地址不能带 Authorization：登录靠一次性登录码，回调靠一次性 state
     if (path0 === "/onedrive/login" && req.method === "GET") return odLogin(req, env);
     if (path0 === "/onedrive/callback" && req.method === "GET") return odCallback(req, env);
+    if (path0 === "/soniox-ws" && req.method === "GET") return sonioxWs(req, env, h);
     const auth = req.headers.get("Authorization") || "";
     if (!env.ACCESS_TOKEN || !auth.startsWith("Bearer ") || !safeEqual(auth.slice(7), env.ACCESS_TOKEN)) {
       return json({ error: "访问口令无效" }, 401, h);

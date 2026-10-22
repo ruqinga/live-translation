@@ -890,6 +890,15 @@ body.has-page{background:var(--bg)}
       <div class="info" id="zhInfo" hidden>Soniox 自动识别中文、英文、西班牙语：英文和西班牙语译为中文（Soniox 内置翻译）。中文句子默认不翻译，只显示原文；选「译为英文」后，中文句子确定后交给所选的大语言模型翻译成英文（不经过 Soniox）。</div>
       <div class="li tog" id="fallbackRow"><span class="li-t">自动切换到备用引擎<button class="ibtn" data-info="fbInfo" aria-expanded="false" aria-controls="fbInfo" aria-label="说明">ⓘ</button></span><button class="sw" id="autoFallback" role="switch" aria-checked="true" aria-label="自动切换到备用引擎"></button></div>
       <div class="info" id="fbInfo" hidden></div>
+      <div class="li col" id="sxRouteRow">
+        <div class="li-h">Soniox 连接<button class="ibtn" data-info="sxRouteInfo" aria-expanded="false" aria-controls="sxRouteInfo" aria-label="说明">ⓘ</button></div>
+        <div class="segc" id="sxRouteSeg" role="radiogroup" aria-label="Soniox 连接">
+          <button data-v="auto" aria-pressed="true">自动</button>
+          <button data-v="direct" aria-pressed="false">直连</button>
+          <button data-v="relay" aria-pressed="false">经中转</button>
+        </div>
+      </div>
+      <div class="info" id="sxRouteInfo" hidden>直连：手机直接连 Soniox 的实时服务（stt-rt.soniox.com），延迟最低。经中转：手机只连你的 Cloudflare Worker，由 Worker 转发给 Soniox，适合连不上 Soniox 的网络（需要更新并重新部署 Worker）。自动：先直连，连不上就改走 Worker，并记住这台设备上能用的方式。</div>
     </div>
 
     </div>
@@ -1261,6 +1270,7 @@ body.has-page{background:var(--bg)}
     $("dgRow").hidden=!(engId==="deepgram" && !relay);
     $("sxWarn").hidden=!(soniox && !relay);
     $("fallbackRow").hidden=!soniox; if(!soniox) $("fbInfo").hidden=true;
+    $("sxRouteRow").hidden=!soniox; if(!soniox) $("sxRouteInfo").hidden=true;
     $("fbInfo").textContent="开启后，Soniox 连不上、密钥或余额出错、或重连 3 次失败时，会在同一个会话里自动换成 Deepgram，字幕里插入「[已切换识别引擎]」，之后的翻译改由 "+llm+" 完成。关闭后，Soniox 出错只会提示，不会自动切换。";
     // 大语言模型
     setSeg("connSeg","v",settings.connection);
@@ -1277,7 +1287,7 @@ body.has-page{background:var(--bg)}
     $("glossary").value=settings.glossary||"";
     document.documentElement.style.setProperty("--fs", settings.size+"px");
     document.body.classList.toggle("zh-only", settings.mode==="zh");
-    setSeg("modeSeg","mode",settings.mode); setSeg("themeSeg","v",settings.theme); setSeg("zhSeg","v",settings.zhMode==="en"?"en":"off"); setSeg("afterSeg","v",settings.afterEnd==="detail"?"detail":"home");
+    setSeg("modeSeg","mode",settings.mode); setSeg("themeSeg","v",settings.theme); setSeg("zhSeg","v",settings.zhMode==="en"?"en":"off"); setSeg("sxRouteSeg","v",["direct","relay"].includes(settings.sxRoute)?settings.sxRoute:"auto"); setSeg("afterSeg","v",settings.afterEnd==="detail"?"detail":"home");
     // 翻译模式：双语互译时显示语言 A/B 和面对面视图，隐藏单向翻译专用的「中文内容」
     const two=twoCfg();
     if(settings.langA===settings.langB){ settings.langB=settings.langA==="es"?"zh":"es"; saveSettings(); }
@@ -4133,6 +4143,7 @@ registerProcessor("pcm16",PCM16);`;
     constructor(h){ this.h=h; this.ws=null; this.state="idle"; this.retries=0; this.closing=false; this.stopped=false; this.ready=false;
       this.connOff=0; this.retryTimer=null; this.closeTimer=null; this.reconnectNow=false; this.cap=null; this.sink=null; this.opts=null; this.began=false; }
     giveUpMessage(){ return "网络已断开，自动重连 3 次仍失败。请检查网络后再点麦克风。"; }
+    openMs(){ return WS_STEP_MS; }                         // 握手超时
     get label(){ return "识别服务"; }
     // ---- 子类实现 ----
     async auth(){ throw new Error("not implemented"); }   // → {url, protocols?}；失败抛出带 .fatal（中文）的错误表示不必重试
@@ -4177,7 +4188,7 @@ registerProcessor("pcm16",PCM16);`;
       catch(e){ this.connecting=false; return this.h.onError("无法连接"+this.label+"，请检查密钥或地址格式。"); }
       ws.binaryType="arraybuffer"; this.ws=ws;
       clearTimeout(this.openTimer);
-      this.openTimer=setTimeout(()=>{ if(this.ws===ws && !opened){ dbg("识别服务握手超时，放弃这次连接"); this.drop(ws,{code:4000,reason:"open-timeout"},false); } },WS_STEP_MS);
+      this.openTimer=setTimeout(()=>{ if(this.ws===ws && !opened){ dbg("识别服务握手超时，放弃这次连接"); this.drop(ws,{code:4000,reason:"open-timeout"},false); } },this.openMs());
       ws.onopen=()=>{ if(this.ws!==ws) return; opened=true; this.connecting=false; clearTimeout(this.openTimer); this.onSocketOpen(); };
       ws.onmessage=ev=>{ if(this.ws!==ws || typeof ev.data!=="string") return; let m; try{ m=JSON.parse(ev.data); }catch(_){ return; } this.onMessage(m); };
       ws.onerror=()=>{};
@@ -4335,7 +4346,12 @@ registerProcessor("pcm16",PCM16);`;
     }
     get label(){ return "Soniox"; }
     model(){ return SX_MODELS[Math.min(this.modelIdx,SX_MODELS.length-1)]; }
-    giveUpMessage(){ return this.lastFail==="token" ? "获取 Soniox 临时密钥失败（已重试 3 次）。请检查网络和中转地址，或稍后再试。" : "网络已断开，自动重连 3 次仍失败。请检查网络后再点麦克风。"; }
+    giveUpMessage(){
+      if(this.lastFail==="token") return "获取 Soniox 临时密钥失败（已重试 3 次）。请检查网络和中转地址，或稍后再试。";
+      if(settings.sxRoute==="relay") return "经 Worker 中转也连不上 Soniox（已重试 3 次）。请检查网络，或稍后再试。";
+      if(settings.sxRoute==="direct") return "连不上 Soniox 实时服务（stt-rt.soniox.com，已重试 3 次）。如果当前网络访问不了 Soniox，可以在设置里把「Soniox 连接」改成「经中转」。";
+      return this.relayMissing ? "连不上 Soniox 实时服务（stt-rt.soniox.com），而你的 Worker 还不支持中转。请更新并重新部署 Worker（见 README）后再试。" : "直连和经 Worker 中转都没能连上 Soniox（已重试 3 次）。请检查网络后再点麦克风。";
+    }
     async auth(){
       let r;
       try{ r=await fetch(relayBase()+"/soniox-token",{headers:{authorization:"Bearer "+settings.relayToken}}); }
@@ -4352,7 +4368,21 @@ registerProcessor("pcm16",PCM16);`;
         throw err;
       }
       const j=await r.json(); if(!j.token){ this.lastFail="token"; throw new Error("relay-bad"); }
+      if(this.route==="relay"){
+        dbg("Soniox 经 Worker 中转连接");
+        return {url:relayBase().replace(/^http/i,"ws")+"/soniox-ws?key="+encodeURIComponent(j.token)};   // Worker 用这个临时密钥连 Soniox（Authorization 头）
+      }
       return {url:"wss://stt-rt.soniox.com/transcribe-websocket", protocols:["soniox-api-key",j.token]};
+    }
+    // 自动模式下直连握手正常不到 1 秒，卡住就早点换中转
+    openMs(){ return this.route==="direct" && settings.sxRoute!=="direct" ? 7000 : WS_STEP_MS; }
+    // 连接方式：settings.sxRoute = auto（默认）/ direct / relay。自动模式先用这台设备上次成功的方式（没有就直连），
+    // 连接没能打开就换另一种；打开了就记住。
+    start(stream,opts){
+      const pref=settings.sxRoute;
+      let last=""; try{ last=localStorage.getItem("lt-sx-route")||""; }catch(e){}
+      this.route=pref==="relay"||pref==="direct" ? pref : (last==="relay"?"relay":"direct");
+      super.start(stream,opts);
     }
     config(){
       const c={model:this.model(), audio_format:"pcm_s16le", sample_rate:PCM_RATE, num_channels:1,
@@ -4362,7 +4392,11 @@ registerProcessor("pcm16",PCM16);`;
       const ctx=this.opts.context && this.opts.context(); if(ctx) c.context=ctx;
       return c;
     }
-    onSocketOpen(){ try{ this.ws.send(JSON.stringify(this.config())); }catch(e){ return; } this.markLive(); }   // 先发配置，音频紧跟其后
+    onSocketOpen(){
+      try{ this.ws.send(JSON.stringify(this.config())); }catch(e){ return; }   // 先发配置，音频紧跟其后
+      if(settings.sxRoute!=="relay" && settings.sxRoute!=="direct"){ try{ localStorage.setItem("lt-sx-route",this.route); }catch(e){} }
+      this.markLive();
+    }
     terminateMessage(){ return ""; }       // 空字符串 = 音频结束；服务端返回剩余结果后 finished
     restartNow(){}                         // 英文识别不区分口音，口音设置对它无影响
     // ---- 结果处理 ----
@@ -4439,6 +4473,22 @@ registerProcessor("pcm16",PCM16);`;
     hasPending(){ return this.toks.length>0 || this.nonfinal.length>0; }
     flush(){ this.toks=this.toks.concat(this.nonfinal); this.nonfinal=[]; this.commitPending(); }   // 关闭或出错时，没定稿的也送出去，不丢
     async classifyClose(ev,opened){
+      if(!opened && !this.pendingErr){
+        const auto=settings.sxRoute!=="relay" && settings.sxRoute!=="direct";
+        if(this.route==="relay"){
+          // Worker 是否已经支持中转：旧版 Worker 对 /soniox-ws 返回 404
+          let st=0; try{ st=(await Promise.race([fetch(relayBase()+"/soniox-ws"), new Promise((_,rej)=>setTimeout(()=>rej(new Error("t")),6000))])).status; }catch(e){}
+          if(st===404){
+            if(!auto) return {fatal:"你的 Worker 还不支持经中转连接 Soniox，请更新 worker.js 并重新部署（见 README），或在设置里把「Soniox 连接」改回「自动 / 直连」。"};
+            this.relayMissing=true; this.route="direct"; try{ localStorage.removeItem("lt-sx-route"); }catch(e){}
+            this.h.onHint("Worker 还不支持中转，改回直连 Soniox…"); return null;
+          }
+          if(auto && !this.relayMissing){ this.route="direct"; this.h.onHint("经 Worker 中转没连上，改为直连 Soniox 重试…"); }
+        }else if(auto && !this.relayMissing){
+          this.route="relay"; this.h.onHint("直连 Soniox 没连上，改为经你的 Worker 中转重试…");
+        }
+        this.lastFail="socket";
+      }
       const e=this.pendingErr; this.pendingErr=null;
       const code=e?e.code:null, msg=e?e.msg:(ev.reason||"");
       if(code===401) return {fatal:"Soniox 鉴权失败（临时密钥无效或已过期）。如果反复出现，请检查 Worker 里的 SONIOX_API_KEY。"};
@@ -5489,6 +5539,7 @@ registerProcessor("pcm16",PCM16);`;
   bindSwitch("faceMode","faceMode");
   $("sumLangRow").onclick=()=>openChoice("摘要语言",LANGS.map(l=>({v:l.c,t:l.n,sub:l.nat})),settings.sumLang||"zh",v=>{ settings.sumLang=v; saveSettings(); applySettings(); });
   document.querySelectorAll("#zhSeg button").forEach(b=>b.onclick=()=>{ settings.zhMode=b.dataset.v; saveSettings(); applySettings(); });
+  document.querySelectorAll("#sxRouteSeg button").forEach(b=>b.onclick=()=>{ settings.sxRoute=b.dataset.v; saveSettings(); applySettings(); if(listening) toast("下次连接 Soniox 时生效"); });
   document.querySelectorAll("#afterSeg button").forEach(b=>b.onclick=()=>{ settings.afterEnd=b.dataset.v; saveSettings(); applySettings(); });
   document.querySelectorAll("#modeSeg button").forEach(b=>b.onclick=()=>{ settings.mode=b.dataset.mode; saveSettings(); applySettings(); });
   // 输入框
