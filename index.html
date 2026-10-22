@@ -457,6 +457,7 @@ body.zh-only .entry .en{max-height:none;opacity:1;overflow:visible}
 .speak-bar{display:flex;align-items:center;justify-content:space-between;gap:var(--s1);padding:6px 14px;border-top:1px solid var(--line);background:var(--fill);font-size:11px;color:var(--muted);min-height:30px}
 .live-tag{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:11px;letter-spacing:.06em;font-weight:600;color:var(--ok)}
 #home[data-st=paused] .live-tag{color:var(--faint)}
+.live-tag.warn{color:var(--orange,#C77700)}
 .lvl-msg{flex:1;text-align:right;color:var(--warn-ink);font-size:12px;font-weight:600}
 .lvl{display:inline-flex;align-items:flex-end;gap:3px;height:14px}
 .lvl i{width:5px;border-radius:2px;background:var(--line);transition:background-color .12s}
@@ -3985,7 +3986,7 @@ body.has-page{background:var(--bg)}
     const t=fmt(Math.floor(nowT()||0));
     if(listening){
       if(engState==="connecting") return "连接中…";
-      if(engState==="retry") return "重连中（"+(eng?eng.retries:0)+"/3）";
+      if(engState==="retry") return eng&&eng.waitNet ? "等待网络…" : "重连中（"+(eng?eng.retries:0)+"/3）";
       return "录音中 ("+t+")";
     }
     return isPaused() ? "已暂停 ("+t+")" : "未开始";
@@ -4006,7 +4007,10 @@ body.has-page{background:var(--bg)}
     const pb=$("pauseBtn"), paused=st==="paused";
     pb.setAttribute("aria-label",paused?"继续录音":"暂停");
     const icon=paused ? '<path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/>' : '<rect x="6" y="5" width="4" height="14" rx="1.2"/><rect x="14" y="5" width="4" height="14" rx="1.2"/>';
-    if(lastUi!==st){ $("pauseIcon").innerHTML=icon; $("liveTag").textContent=paused?"已暂停":"● LIVE"; lastUi=st; if(st!=="live") setLevel(0,true); }
+    if(lastUi!==st){ $("pauseIcon").innerHTML=icon; lastUi=st; if(st!=="live") setLevel(0,true); }
+    // 「正在说」卡片的标记跟随连接状态：重连 / 等网络时不再显示 LIVE
+    const lt=$("liveTag"), conn=st==="live" && (engState==="retry"||engState==="connecting");
+    lt.textContent=paused?"已暂停":conn?(engState==="connecting"?"● 连接中":eng&&eng.waitNet?"● 等待网络":"● 重连中"):"● LIVE"; lt.classList.toggle("warn",conn);
     $("idleSum").textContent=summaryLine();
     $("idleHint").textContent=(st==="idle" && noRecords) ? FIRST_HINT : "";
     // 打开记录 / 设置页时，顶部的红色横条提示录音仍在继续，点击回到主页
@@ -4124,6 +4128,7 @@ registerProcessor("pcm16",PCM16);`;
   // WebSocket 流式引擎的公共基类：连接、重连（最多 3 次，间隔 1/2/4 秒）、优雅停止、时间轴偏移。
   // 时间戳换算：引擎返回的时间从「这一次连接」开始计，断线重连会从 0 重新算，所以每次连接成功时记下
   // 当时的录音时间轴位置 connOff，点句跳播和存储用的都是 connOff + 引擎时间。
+  const WS_STEP_MS=12000, WS_STALL_BYTES=320000;   // 取密钥 / 握手各自的超时；16kHz 16bit 单声道约 32KB/秒，积压 10 秒算卡住
   class WsEngine{
     constructor(h){ this.h=h; this.ws=null; this.state="idle"; this.retries=0; this.closing=false; this.stopped=false; this.ready=false;
       this.connOff=0; this.retryTimer=null; this.closeTimer=null; this.reconnectNow=false; this.cap=null; this.sink=null; this.opts=null; this.began=false; }
@@ -4144,31 +4149,41 @@ registerProcessor("pcm16",PCM16);`;
     markLive(){ this.retries=0; this.ready=true; this.began=true; this.connOff=this.h.now(); this.setState("live"); }
     start(stream,opts){
       this.opts=opts||{}; this.cap=this.opts.capture; this.stopped=false; this.closing=false; this.retries=0;
-      this.sink=a=>{ const ws=this.ws; if(ws && this.ready && ws.readyState===1) ws.send(a); };
+      this.sink=a=>{ const ws=this.ws; if(ws && this.ready && ws.readyState===1){
+        // 连接看起来开着但数据发不出去（手机切网后常见的「假在线」）：积压超过约 10 秒的音频就断开重连
+        if(ws.bufferedAmount>WS_STALL_BYTES){ dbg("识别服务连接发不出数据（积压 "+Math.round(ws.bufferedAmount/1024)+"KB），重新连接"); this.drop(ws,{code:4001,reason:"stalled"},true); return; }
+        ws.send(a); } };
       if(this.cap) this.cap.addSink(this.sink);
       this.setState("connecting"); this.connect();
     }
+    // 每一步都有超时：手机网络切换 / 断网时，取临时密钥的请求或 WebSocket 握手可能一直挂着既不成功也不失败，
+    // 以前会一直停在「重连中（1/3）」。超时就当作这次失败，进入下一次重连。
     async connect(){
       if(this.stopped || this.closing) return;
+      this.connecting=true; this.waitNet=false;
       let a;
-      try{ a=await this.auth(); }
+      try{ a=await Promise.race([this.auth(), new Promise((_,rej)=>setTimeout(()=>rej(new Error("relay-timeout")),WS_STEP_MS))]); }
       catch(err){
+        this.connecting=false;
         if(this.stopped||this.closing) return;
         if(err && err.fatal) return this.h.onError(err.fatal);
         if(!(err && /^relay-/.test(err.message||""))) console.warn("[识别引擎] 取得连接信息时出错：",err);   // 非预期错误留个线索，仍按普通故障重连
         return this.retry();
       }
-      if(this.stopped||this.closing) return;
+      if(this.stopped||this.closing){ this.connecting=false; return; }
       this.authInfo=a;
       let ws, opened=false; this.ready=false; this.began=false;
       try{ ws=a.protocols ? new WebSocket(a.url,a.protocols) : new WebSocket(a.url); }
-      catch(e){ return this.h.onError("无法连接"+this.label+"，请检查密钥或地址格式。"); }
+      catch(e){ this.connecting=false; return this.h.onError("无法连接"+this.label+"，请检查密钥或地址格式。"); }
       ws.binaryType="arraybuffer"; this.ws=ws;
-      ws.onopen=()=>{ if(this.ws!==ws) return; opened=true; this.onSocketOpen(); };
+      clearTimeout(this.openTimer);
+      this.openTimer=setTimeout(()=>{ if(this.ws===ws && !opened){ dbg("识别服务握手超时，放弃这次连接"); this.drop(ws,{code:4000,reason:"open-timeout"},false); } },WS_STEP_MS);
+      ws.onopen=()=>{ if(this.ws!==ws) return; opened=true; this.connecting=false; clearTimeout(this.openTimer); this.onSocketOpen(); };
       ws.onmessage=ev=>{ if(this.ws!==ws || typeof ev.data!=="string") return; let m; try{ m=JSON.parse(ev.data); }catch(_){ return; } this.onMessage(m); };
       ws.onerror=()=>{};
       ws.onclose=ev=>{
         if(this.ws!==ws) return;
+        this.connecting=false; clearTimeout(this.openTimer);
         this.ws=null; this.ready=false; this.flush(); this.h.onPartial("");
         if(this.closing){ this.finish(); return; }
         if(this.stopped) return;
@@ -4176,20 +4191,38 @@ registerProcessor("pcm16",PCM16);`;
         this.dropped(ev,opened);
       };
     }
+    // 主动放弃一条卡住的连接（握手超时、发不出去）：不等浏览器的 onclose，直接按断线处理
+    drop(ws,ev,opened){
+      if(this.ws!==ws) return;
+      clearTimeout(this.openTimer); this.connecting=false;
+      ws.onopen=ws.onmessage=ws.onclose=null; this.ws=null; this.ready=false;
+      try{ ws.close(); }catch(e){}
+      this.flush(); this.h.onPartial("");
+      if(this.closing){ this.finish(); return; }
+      if(this.stopped) return;
+      this.dropped(ev,opened);
+    }
+    // 网络恢复 / 回到前台：正在等下一次重连的话立刻重连
+    kick(){
+      if(this.stopped || this.closing || this.state!=="retry" || this.connecting) return;
+      clearTimeout(this.retryTimer); this.connect();
+    }
     async dropped(ev,opened){
-      let r=null; try{ r=await this.classifyClose(ev,opened); }catch(e){}
+      let r=null; try{ r=await Promise.race([this.classifyClose(ev,opened), new Promise(res=>setTimeout(()=>res(null),8000))]); }catch(e){}
       if(this.stopped||this.closing) return;
       if(r && r.fatal) return this.h.onError(r.fatal);
       if(r && r.retryNow) return this.connect();
       this.retry();
     }
     retry(){
+      // 手机没网时不消耗重连次数，等网络恢复（online 事件会调 kick）；录音存档不受影响
+      if(navigator.onLine===false){ this.waitNet=true; this.setState("retry"); this.h.onHint("网络已断开，恢复后自动重连（录音仍在保存）"); return; }
       if(this.retries>=3) return this.h.onError(this.giveUpMessage());
       this.retries++; this.setState("retry");
       this.h.onHint("连接中断，正在自动重连…");
       this.retryTimer=setTimeout(()=>this.connect(),1000*Math.pow(2,this.retries-1));
     }
-    detach(){ this.stopped=true; clearTimeout(this.retryTimer); if(this.cap && this.sink) this.cap.removeSink(this.sink); }
+    detach(){ this.stopped=true; clearTimeout(this.retryTimer); clearTimeout(this.openTimer); if(this.cap && this.sink) this.cap.removeSink(this.sink); }
     stop(){
       if(this.stopped && !this.ws) return;
       this.detach();
@@ -4665,7 +4698,7 @@ registerProcessor("pcm16",PCM16);`;
   document.addEventListener("visibilitychange",async()=>{
     if(document.visibilityState!=="visible") return;
     if(S && S.needPrompt) showIntDlg();
-    else if(listening) checkPipeline();
+    else if(listening){ checkPipeline(); if(eng && eng.kick) eng.kick(); }
     if(listening && "wakeLock" in navigator){ try{ wakeLock=await navigator.wakeLock.request("screen"); }catch(e){} }
   });
 
@@ -5517,6 +5550,7 @@ registerProcessor("pcm16",PCM16);`;
   })();
   document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") odSyncSoon(800); });
   window.addEventListener("online",()=>odSyncSoon(500));
+  window.addEventListener("online",()=>{ if(listening && eng && eng.kick){ dbg("网络恢复，立即重连识别服务"); eng.kick(); } });
   setInterval(()=>{ if(document.visibilityState==="visible") odSyncSoon(0); },OD_PULL_MS);
   dbAll("sessions").then(r=>{ noRecords=r.length===0; applyUi(); }).catch(()=>{});
 })();
