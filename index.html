@@ -880,6 +880,15 @@ body.has-page{background:var(--bg)}
         <input type="password" id="dgKey" placeholder="Deepgram 密钥" autocomplete="off" spellcheck="false">
         <div class="note" style="font-size:13px;color:var(--muted)">只保存在这台手机的浏览器里。在 <a href="https://console.deepgram.com" target="_blank" rel="noopener" style="color:var(--accent)">Deepgram Console</a> 申请。</div>
       </div>
+      <div class="li col" id="sxLangRow">
+        <div class="li-h">识别的语言<button class="ibtn" data-info="sxLangInfo" aria-expanded="false" aria-controls="sxLangInfo" aria-label="说明">ⓘ</button></div>
+        <div class="segc" id="sxLangSeg" role="radiogroup" aria-label="识别的语言">
+          <button data-v="zh,en,es" aria-pressed="true">中英西</button>
+          <button data-v="zh,en" aria-pressed="false">中英</button>
+          <button data-v="zh,es" aria-pressed="false">中西</button>
+        </div>
+      </div>
+      <div class="info" id="sxLangInfo" hidden>告诉 Soniox 会出现哪些语言。英文和西班牙语都用拉丁字母，个别词（人名、no、a 等）容易被认错语言；如果你只听中文和英文，选「中英」后会强烈偏向这两种语言，英文就不会再被标成 ES（西班牙语）。</div>
       <div class="li col" id="zhRow">
         <div class="li-h">中文内容<button class="ibtn" data-info="zhInfo" aria-expanded="false" aria-controls="zhInfo" aria-label="说明">ⓘ</button></div>
         <div class="segc" id="zhSeg" role="radiogroup" aria-label="中文内容">
@@ -1212,6 +1221,9 @@ body.has-page{background:var(--bg)}
     C1:{n:"高级",d:"只讲少见词、地道习语和细微的语气差别；基础和中级语法不再讲。",v:3,g:1,b:20,tok:3500,out:100},
   };
   const lv=l=>LV[l]||LV.B1;
+  // 单向翻译时 Soniox 识别哪些语言（设置「识别的语言」）；少于三种时打开 language_hints_strict，强烈偏向这几种语言
+  const SX_ALL_LANGS=["zh","en","es"];
+  const sxLangs=()=>{ const v=String(settings.sxLangs||"").split(",").filter(l=>SX_ALL_LANGS.includes(l)); return v.length>=2 ? v : SX_ALL_LANGS; };
   const settings={connection:"direct", relayUrl:"", relayToken:"", llm:"anthropic", lastFolder:null, saveAudio:true, tagPresets:["重点","作业","考试","没听懂"], sumModel:"", apiKey:"", dgKey:"", engine:"soniox", diarize:true, refine:true, autoFallback:true, refineModel:"claude-haiku-4-5-20251001", zhMode:"off", transMode:"one", langA:"zh", langB:"es", faceMode:false, sumLang:"zh", level:"B1", afterEnd:"home", lang:"en-US", mode:"both", size:22, glossary:"", theme:"auto", debug:false};
   const LEGACY_KEYS={provider:"llm", route:"connection", model:"refineModel"};
   // 旧键名 → 新键名：新键已存在时以新键为准；迁移后立即写回，旧键删除
@@ -1287,13 +1299,14 @@ body.has-page{background:var(--bg)}
     $("glossary").value=settings.glossary||"";
     document.documentElement.style.setProperty("--fs", settings.size+"px");
     document.body.classList.toggle("zh-only", settings.mode==="zh");
-    setSeg("modeSeg","mode",settings.mode); setSeg("themeSeg","v",settings.theme); setSeg("zhSeg","v",settings.zhMode==="en"?"en":"off"); setSeg("sxRouteSeg","v",["direct","relay"].includes(settings.sxRoute)?settings.sxRoute:"auto"); setSeg("afterSeg","v",settings.afterEnd==="detail"?"detail":"home");
+    setSeg("modeSeg","mode",settings.mode); setSeg("themeSeg","v",settings.theme); setSeg("zhSeg","v",settings.zhMode==="en"?"en":"off"); setSeg("sxLangSeg","v",sxLangs().join(",")); setSeg("sxRouteSeg","v",["direct","relay"].includes(settings.sxRoute)?settings.sxRoute:"auto"); setSeg("afterSeg","v",settings.afterEnd==="detail"?"detail":"home");
     // 翻译模式：双语互译时显示语言 A/B 和面对面视图，隐藏单向翻译专用的「中文内容」
     const two=twoCfg();
     if(settings.langA===settings.langB){ settings.langB=settings.langA==="es"?"zh":"es"; saveSettings(); }
     setSeg("tmSeg","v",two?"two":"one");
     $("twBox").hidden=!two; $("twWarn").hidden=!(two && !soniox);
     $("zhRow").hidden=two; if(two) $("zhInfo").hidden=true;
+    $("sxLangRow").hidden=two || settings.engine!=="soniox"; if($("sxLangRow").hidden) $("sxLangInfo").hidden=true;
     $("langABtn").textContent=langName(settings.langA); $("langBBtn").textContent=langName(settings.langB);
     setSwitch("faceMode",!!settings.faceMode);
     $("sumLangVal").textContent=langName(settings.sumLang||"zh");
@@ -4004,7 +4017,7 @@ body.has-page{background:var(--bg)}
   function summaryLine(){
     const sx=settings.engine==="soniox";
     if(twoCfg()) return langName(settings.langA)+" ⇄ "+langName(settings.langB)+" · "+(ENGINE_NAMES[settings.engine]||"")+" · "+folderName(settings.lastFolder);
-    const langs=sx ? "中 / 英 / 西" : "英", to=sx ? (settings.zhMode==="en" ? "中文 / 英文" : "中文") : "中文";
+    const langs=sx ? sxLangs().map(l=>({zh:"中",en:"英",es:"西"})[l]).join(" / ") : "英", to=sx ? (settings.zhMode==="en" ? "中文 / 英文" : "中文") : "中文";
     return langs+" → "+to+" · "+(ENGINE_NAMES[settings.engine]||"")+" · "+folderName(settings.lastFolder);
   }
   let lastUi="";
@@ -4338,10 +4351,35 @@ registerProcessor("pcm16",PCM16);`;
   //   - 译文 token 没有时间戳；顺序严格是「原文块 → 对应译文块 → 下一个原文块 → …」，所以按这个顺序配对。
   //   - 错误：{error_code, error_message}（401 鉴权、402/429 额度或并发、400 参数、408/500/503 可重试）。
   const SX_MODELS=["stt-rt-v5","stt-rt-v3"], SX_LANGS=["zh","en","es"];   // 语言提示：中文、英文、西班牙语；开启语言识别后每个 token 带 language
+  const SX_HOLD_MS=6000;   // 换语言切出去的一段最多等译文这么久
+  // 文字体系：中日韩 / 拉丁字母（含西、法、德等）/ 西里尔 / 其他字母；没有字母（标点、数字）返回 null
+  function scriptOf(s){
+    s=String(s||""); let c=0,l=0,y=0,o=0;
+    for(const ch of s){ if(/[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af\uf900-\ufaff]/.test(ch)) c++; else if(/[A-Za-z\u00c0-\u024f]/.test(ch)) l++; else if(/[\u0400-\u04ff]/.test(ch)) y++; else if(/\p{L}/u.test(ch)) o++; }
+    const m=Math.max(c,l,y,o); if(!m) return null;
+    return m===c?"cjk":m===l?"lat":m===y?"cyr":"oth";
+  }
+  // 多数决定一段原文的语言：按词计票（Soniox 的 token 是词片段，以空格开头或接在空格后的才算新词；中日韩每个字算半票），
+  // 平票时取先出现的语言。按词而不按字母数，免得句子里夹一个较长的外语词组就把整句判成那种语言
+  function voteLang(toks){
+    const w={}; let best=null, prevSpace=true;
+    for(const t of toks){
+      const txt=String((t&&t.text)||""); if(!txt) continue;
+      const l=t.language?normLang(t.language):null; let n=0;
+      const cjk=(txt.match(/[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/g)||[]).length;
+      if(cjk) n=cjk*0.5;
+      else n=(txt.match(/(^|[\s,.;:!?¿¡"“”()\-])\p{L}/gu)||[]).length - (!prevSpace && /^\p{L}/u.test(txt) ? 1 : 0);   // 词的开头数（接着上一个 token 的词片段不算新词）
+      prevSpace=/\s$/.test(txt);
+      if(!l) continue;
+      w[l]=(w[l]||0)+n; if(best==null) best=l;
+    }
+    for(const l in w) if(w[l]>w[best]) best=l;
+    return best;
+  }
   const SENT_END=/[.!?。！？¿¡]["'”’)\]]*$/, ANY_PUNCT=/[.!?,;:。！？，；：、]["'”’)\]]*$/;
   class SonioxEngine extends WsEngine{
     constructor(h){
-      super(h); this.toks=[]; this.nonfinal=[]; this.lastKind=null; this.endSeen=false; this.endAt=0; this.timer=null;
+      super(h); this.toks=[]; this.nonfinal=[]; this.lastKind=null; this.endSeen=false; this.endAt=0; this.timer=null; this.held=[];
       this.modelIdx=0; this.pendingErr=null; this.lastFail="socket"; this.closeWaitMs=5000;
     }
     get label(){ return "Soniox"; }
@@ -4386,8 +4424,9 @@ registerProcessor("pcm16",PCM16);`;
     }
     config(){
       const c={model:this.model(), audio_format:"pcm_s16le", sample_rate:PCM_RATE, num_channels:1,
-        language_hints:rt.two?[rt.a,rt.b]:SX_LANGS, enable_language_identification:true, enable_endpoint_detection:true,
+        language_hints:rt.two?[rt.a,rt.b]:sxLangs(), enable_language_identification:true, enable_endpoint_detection:true,
         translation:rt.two ? {type:"two_way", language_a:rt.a, language_b:rt.b} : {type:"one_way", target_language:"zh"}};
+      if(!rt.two && sxLangs().length<SX_ALL_LANGS.length) c.language_hints_strict=true;
       if(settings.diarize!==false) c.enable_speaker_diarization=true;
       const ctx=this.opts.context && this.opts.context(); if(ctx) c.context=ctx;
       return c;
@@ -4417,7 +4456,8 @@ registerProcessor("pcm16",PCM16);`;
     }
     origText(){ return this.toks.filter(t=>this.isOrig(t)).map(t=>t.text).join("").trim(); }
     // 一句话的边界只出现在“原文块+译文块”配对完成之后：下一个原文 token 到来时才可能切，保证原文和译文不错位
-    unitLang(){ const t=this.toks.find(t=>this.isOrig(t) && t.language); return t?normLang(t.language):null; }
+    // 一句的语言按多数决定（按字母数加权），不再看第一个词：Soniox 常把英文句子里的个别词（人名、no、a…）标成西班牙语
+    unitLang(){ return voteLang(this.toks.filter(t=>this.isOrig(t))); }
     // 这种语言的原文后面不会跟译文块：单向翻译里的中文；双语互译里 A、B 以外的语言
     noTrBlock(l){ return l!=null && (rt.two ? (l!==rt.a && l!==rt.b) : l==="zh"); }
     cutBefore(next){
@@ -4434,20 +4474,34 @@ registerProcessor("pcm16",PCM16);`;
     }
     addFinal(t){
       if(this.isOrig(t)){
-        // 同一句里语言切换：在切换处分成两张卡片，每张只有一种语言
-        const ul=this.unitLang();
-        if(this.toks.length && ul && t.language && normLang(t.language)!==ul) this.commitPending();
+        // 前面因换语言先切出去、正在等译文的句子：已经收到译文、又来了新的原文 → 它的译文收齐了，按顺序送出
+        while(this.held.length && this.held[0].gotTr) this.emitUnit(this.held.shift().toks);
+        // 同一句里换了文字体系（中日韩 ↔ 拉丁字母等）才在切换处分开；拉丁字母语言之间（英 / 西 / 法…）个别词的语言标记不可靠，
+        // 不再据此切句（以前会把英文句子从中间切开，译文落到下一张卡片上，前一张就没有译文，后一张被标成 ES）
+        const ul=this.unitLang(), us=scriptOf(this.origText()), ts=scriptOf(t.text);
+        if(this.toks.length && ul && us && ts && us!==ts && t.language && normLang(t.language)!==ul){
+          // 这一段还在等译文（Soniox 的译文跟在整段原文后面，可能晚于下一段原文才到）：先挂起，译文到了再送出
+          if(!this.noTrBlock(ul) && !this.toks.some(x=>!this.isOrig(x))){ this.held.push({toks:this.toks,at:performance.now(),gotTr:false}); this.toks=[]; this.lastKind=null; this.endSeen=false; }
+          else this.commitPending();
+        }
         // 中文没有译文块，不会出现 lastKind==="t"，同样按边界规则切
         else if((this.lastKind==="t" || this.noTrBlock(ul)) && this.cutBefore(t)) this.commitPending();
         this.lastKind="o";
-      }else this.lastKind="t";
+      }else{
+        const h=this.held[0];
+        if(h){ h.toks.push(t); h.gotTr=true; return; }     // 译文属于挂起的那一段
+        this.lastKind="t";
+      }
       this.toks.push(t);
     }
     // 没有新的最终 token 时，等一小会儿让译文收尾，再把这一句提交
     schedule(changed){
       if(!changed && this.timer!=null) return;   // 只有新的最终 token 才重新计时；纯非最终更新不重置
       clearTimeout(this.timer); this.timer=null;
-      if(!this.toks.length) return;
+      if(!this.toks.length){
+        if(this.held.length) this.timer=setTimeout(()=>{ this.timer=null; this.commitPending(); this.preview(); },this.held.every(u=>u.gotTr)?1200:400);   // 只剩挂起的段：译文到了就送出
+        return;
+      }
       let delay=null;
       if(this.lastKind==="t" || this.noTrBlock(this.unitLang())) delay=this.endSeen ? 600 : (SENT_END.test(this.origText()) ? 1200 : 4000);   // 中文没有译文，不用等
       else if(this.endSeen) delay=2500;                 // 端点已到但译文还没来：多等一会儿
@@ -4455,23 +4509,31 @@ registerProcessor("pcm16",PCM16);`;
       if(this.nonfinal.length) delay=Math.max(delay,8000);   // 还有没定稿的内容在变，别急着提交
       this.timer=setTimeout(()=>{ this.timer=null; this.commitPending(); this.preview(); },delay);
     }
-    commitPending(){
+    commitPending(force){
       clearTimeout(this.timer); this.timer=null;
+      // 卡片按顺序出：挂起的段还在等译文（最多 SX_HOLD_MS）就先等一会儿再提交当前这段
+      if(this.held.length){
+        if(!force && this.held.some(u=>!u.gotTr && performance.now()-u.at<SX_HOLD_MS)){ this.timer=setTimeout(()=>{ this.timer=null; this.commitPending(); this.preview(); },300); return; }
+        this.held.splice(0).forEach(u=>this.emitUnit(u.toks));
+      }
       const toks=this.toks; this.toks=[]; this.lastKind=null; this.endSeen=false;
+      this.emitUnit(toks);
+    }
+    emitUnit(toks){
       const o=toks.filter(t=>this.isOrig(t)), tr=toks.filter(t=>!this.isOrig(t));
       const text=o.map(t=>t.text).join("").trim(), zh=tr.map(t=>t.text).join("").trim();
       if(!text) return;      // 只有译文没有原文：没法配对，丢弃
       const first=o[0], last=o[o.length-1];
       const ts=ms=>typeof ms==="number" ? this.tl(ms/1000) : null;
-      const lang=normLang((o.find(t=>t.language)||{}).language||"en");
+      const lang=voteLang(o)||"en";
       this.h.onFinal({text, translation:zh, language:lang, startSec:ts(first.start_ms), endSec:ts(last.end_ms), speaker:first.speaker!=null?String(first.speaker):null});
     }
     preview(){
-      const all=this.toks.concat(this.nonfinal), o=all.filter(t=>this.isOrig(t)), lt=o.find(t=>t.language);
-      this.h.onPartial(o.map(t=>t.text).join("").trim(), all.filter(t=>!this.isOrig(t)).map(t=>t.text).join("").trim(), lt?normLang(lt.language):null);
+      const all=this.toks.concat(this.nonfinal), o=all.filter(t=>this.isOrig(t));
+      this.h.onPartial(o.map(t=>t.text).join("").trim(), all.filter(t=>!this.isOrig(t)).map(t=>t.text).join("").trim(), voteLang(o));
     }
-    hasPending(){ return this.toks.length>0 || this.nonfinal.length>0; }
-    flush(){ this.toks=this.toks.concat(this.nonfinal); this.nonfinal=[]; this.commitPending(); }   // 关闭或出错时，没定稿的也送出去，不丢
+    hasPending(){ return this.toks.length>0 || this.nonfinal.length>0 || this.held.length>0; }
+    flush(){ this.toks=this.toks.concat(this.nonfinal); this.nonfinal=[]; this.commitPending(true); }   // 关闭或出错时，没定稿的也送出去，不丢
     async classifyClose(ev,opened){
       if(!opened && !this.pendingErr){
         const auto=settings.sxRoute!=="relay" && settings.sxRoute!=="direct";
@@ -4816,7 +4878,7 @@ registerProcessor("pcm16",PCM16);`;
   // 登录由 Worker 代管（刷新令牌只在 KV 里）；页面向 Worker 要短期访问令牌，直接调用 Microsoft Graph 读写文件。
   const GRAPH="https://graph.microsoft.com/v1.0", AROOT=GRAPH+"/drive/special/approot";            // 和 remotely-save 一样用「/drive/special/approot」（不带 /me）
   const OD_SCHEMA=3, OD_CHUNK=320*1024*10, OD_PULL_MS=5*60*1000;
-  const OD_SETTING_KEYS=["engine","diarize","refine","autoFallback","zhMode","transMode","langA","langB","sumLang","level","afterEnd","lang","mode","glossary","llm","refineModel","sumModel"];   // 同步的设置（不含任何密钥、口令、连接地址和本机偏好）
+  const OD_SETTING_KEYS=["sxLangs","engine","diarize","refine","autoFallback","zhMode","transMode","langA","langB","sumLang","level","afterEnd","lang","mode","glossary","llm","refineModel","sumModel"];   // 同步的设置（不含任何密钥、口令、连接地址和本机偏好）
   const odSleep=ms=>new Promise(r=>setTimeout(r,ms));
   let odCache=null;
   function odLS(){ if(!odCache){ try{ odCache=JSON.parse(localStorage.getItem("lt-sync")||"{}")||{}; }catch(e){ odCache={}; } } return odCache; }
@@ -5539,6 +5601,7 @@ registerProcessor("pcm16",PCM16);`;
   bindSwitch("faceMode","faceMode");
   $("sumLangRow").onclick=()=>openChoice("摘要语言",LANGS.map(l=>({v:l.c,t:l.n,sub:l.nat})),settings.sumLang||"zh",v=>{ settings.sumLang=v; saveSettings(); applySettings(); });
   document.querySelectorAll("#zhSeg button").forEach(b=>b.onclick=()=>{ settings.zhMode=b.dataset.v; saveSettings(); applySettings(); });
+  document.querySelectorAll("#sxLangSeg button").forEach(b=>b.onclick=()=>{ settings.sxLangs=b.dataset.v; saveSettings(); applySettings(); if(listening) toast("下次开始录音时生效"); });
   document.querySelectorAll("#sxRouteSeg button").forEach(b=>b.onclick=()=>{ settings.sxRoute=b.dataset.v; saveSettings(); applySettings(); if(listening) toast("下次连接 Soniox 时生效"); });
   document.querySelectorAll("#afterSeg button").forEach(b=>b.onclick=()=>{ settings.afterEnd=b.dataset.v; saveSettings(); applySettings(); });
   document.querySelectorAll("#modeSeg button").forEach(b=>b.onclick=()=>{ settings.mode=b.dataset.mode; saveSettings(); applySettings(); });
