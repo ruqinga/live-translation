@@ -581,6 +581,39 @@ body.has-page{background:var(--bg)}
 .vw{display:flex;align-items:baseline;gap:6px}.vw b{font-size:17px;font-family:var(--font-en)}.vp{color:var(--muted);font-size:13px;flex:1}
 .vdel{border:0;background:none;color:var(--rec-ink);font-size:13px}.vsrc{display:block;margin-top:6px;border:0;background:none;padding:0;color:var(--accent);font-size:13px;text-align:left}
 
+/* 实时洞察 */
+.insbadge{display:inline-flex;align-items:center;gap:3px;border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:4px 10px;font-size:13px;color:var(--ink);min-height:32px}
+.insbadge b{font-weight:700;color:var(--accent)}
+.inspop{position:absolute;left:12px;right:12px;top:60px;z-index:30;animation:insIn .28s var(--ease)}
+@keyframes insIn{from{transform:translateY(-12px);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.inspop{animation:none}}
+.inspop .inscard{box-shadow:0 10px 28px rgba(0,0,0,.18);cursor:pointer}
+.inscard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 12px;font-size:14px;line-height:1.55;color:var(--ink2)}
+.inscard+.inscard{margin-top:10px}
+.inscard.k-c{border-left:3px solid var(--accent)}.inscard.k-d{border-left:3px solid var(--orange,#C77700)}
+.inscard.flash{box-shadow:0 0 0 2px var(--accent)}
+.ic-h{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);margin-bottom:2px}
+.ic-k{font-weight:700;color:var(--ink2)}.ic-t{margin-left:auto;font-family:var(--font-en);border:0;background:none;padding:0;color:var(--accent);font-size:12px}
+span.ic-t{color:var(--muted)}
+.ic-upd{font-size:11px;color:var(--accent)}
+.ic-x{border:0;background:none;font-size:18px;line-height:1;color:var(--muted);padding:0 2px;min-width:28px;min-height:28px}
+.ic-title{font-size:15px;font-weight:700;color:var(--ink);margin:2px 0 4px}
+.ic-views{margin:0;padding-left:18px}.ic-views li{margin:2px 0}.ic-views b{color:var(--ink)}
+.ic-open{margin-top:6px;font-size:13px;color:var(--orange,#C77700)}
+.ic-src{margin-top:6px;font-size:12px;color:var(--muted)}.ic-src a{color:var(--accent)}
+.inscard.compact .ic-body,.inscard.compact .ic-views{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.ins-side{display:none}
+.ins-empty{color:var(--muted);font-size:14px;line-height:1.6;padding:12px 2px}
+#insDlg .ins-list{max-height:62vh;overflow-y:auto;margin:6px 0}
+.insbox .ins-list{padding:0 12px 12px}
+#detIns{order:3}
+@media (min-width:1000px){
+  .stage.ins-wide #home{left:max(16px,calc(50% - 640px));right:420px}
+  .ins-side:not([hidden]){display:flex;flex-direction:column;position:absolute;top:0;bottom:0;right:0;width:400px;border-left:1px solid var(--line);background:var(--bg);z-index:2}
+  .ins-sh{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 8px;font-weight:700;font-size:15px}.ins-sh small{color:var(--muted);font-weight:400}
+  .ins-side .ins-list{flex:1;overflow-y:auto;padding:4px 18px 24px}
+}
+
 /* 目录 */
 .seekwrap{position:relative;flex:1;min-width:0;display:flex;align-items:center}.seekwrap #pSeek{width:100%}
 .seekmarks{position:absolute;left:0;right:0;top:0;bottom:0;pointer-events:none;margin:0 8px}
@@ -672,16 +705,19 @@ body.has-page{background:var(--bg)}
 <div class="app">
   <button class="recbar" id="recBar" hidden aria-label="回到主页"><i class="recdot"></i><span id="recBarTxt">录音中 00:00</span></button>
   <div class="stage">
+    <aside class="ins-side" id="insSide" hidden aria-label="实时洞察"><div class="ins-sh"><span>💡 实时洞察</span><small id="insSideN"></small></div><div class="ins-list" id="insSideList"></div></aside>
     <section id="home" data-st="idle" aria-label="主页">
       <header class="topbar">
         <button id="folderChip" aria-label="选择存入的文件夹">📁 未分类 ▾</button>
         <div class="tb-right">
+          <button class="insbadge" id="insBadge" hidden aria-label="实时洞察"><span aria-hidden="true">💡</span><b id="insN">0</b></button>
           <span class="livebadge" id="liveBadge" hidden><i></i><span id="liveBadgeTxt">Live</span></span>
           <button class="endbtn" id="endBtn" hidden>结束</button>
           <button class="icon-btn" id="moreBtn" aria-label="更多" aria-haspopup="menu" aria-expanded="false"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
         </div>
       </header>
       <div class="banner" id="banner" role="status"></div>
+      <div class="inspop" id="insPop" hidden role="status" aria-live="polite"></div>
 
       <div class="idle" id="idle">
         <button id="mic" aria-label="开始录音">
@@ -799,6 +835,10 @@ body.has-page{background:var(--bg)}
           <div class="sum-err" id="outErr" hidden></div>
           <div id="outList"></div>
         </div>
+      </div>
+      <div class="outbox insbox" id="detIns" hidden>
+        <button class="out-head" id="insHead" aria-expanded="false" aria-controls="detInsList"><span class="out-hl"><span>💡 洞察</span><span class="out-now" id="insCnt"></span></span><span class="out-hc" aria-hidden="true">▾</span></button>
+        <div class="ins-list" id="detInsList" hidden></div>
       </div>
       <div class="det-sub" id="detSub"></div>
       <div class="det-tags" id="detTags"></div>
@@ -918,6 +958,8 @@ body.has-page{background:var(--bg)}
       <div class="li tog" id="refineRow"><span class="li-t">翻译精修<button class="ibtn" data-info="refineInfo" aria-expanded="false" aria-controls="refineInfo" aria-label="说明">ⓘ</button></span><button class="sw" id="refine" role="switch" aria-checked="true" aria-label="翻译精修"></button></div>
       <div class="info" id="refineInfo" hidden></div>
       <button class="li" id="refineModelRow" aria-haspopup="dialog"><span class="li-t" id="refineModelLbl">精修模型</span><span class="li-v" id="refineModelVal"></span><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></button>
+      <div class="li tog" id="insRow"><span class="li-t">实时洞察<button class="ibtn" data-info="insInfo" aria-expanded="false" aria-controls="insInfo" aria-label="说明">ⓘ</button></span><button class="sw" id="insights" role="switch" aria-checked="true" aria-label="实时洞察"></button></div>
+      <div class="info" id="insInfo" hidden>录音时，如果大家围绕某个问题展开讨论，会梳理出问题和各方观点；如果某个概念被反复提到，会给出简短介绍（先经你的 Worker 用 DeepSeek 联网搜索，没配 DeepSeek 时用模型自身知识）。手机上从顶部弹出，几秒后收进右上角的 💡；电脑上显示在右侧。为了省 token，不会定期把整段转写发给模型：每句精修时顺带标出术语和话题，够条件时才只把相关的几句发去生成卡片，最多约每分钟一张。卡片随记录保存，记录详情里可以再看。</div>
       <button class="li" id="sumLangRow" aria-haspopup="dialog"><span class="li-t">摘要语言</span><span class="li-v" id="sumLangVal"></span><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></button>
       <button class="li" id="sumModelRow" aria-haspopup="dialog"><span class="li-t">摘要模型</span><span class="li-v" id="sumModelVal"></span><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg></button>
     </div>
@@ -1068,6 +1110,14 @@ body.has-page{background:var(--bg)}
     <button class="done" id="endOk">结束录音并保存</button>
     <button class="done alt warn" id="endDiscard">结束录音并丢弃</button>
     <button class="done alt" id="endCancel">继续录音</button>
+  </div>
+</dialog>
+
+<dialog id="insDlg">
+  <div class="sheet">
+    <h2>实时洞察</h2>
+    <div class="ins-list" id="insDlgList"></div>
+    <button class="done alt" id="insDlgClose">关闭</button>
   </div>
 </dialog>
 
@@ -1274,7 +1324,7 @@ body.has-page{background:var(--bg)}
     $("apiKey").value=settings.apiKey||"";
     $("dgKey").value=settings.dgKey||"";
     $("engineVal").textContent=ENGINE_NAMES[engId];
-    setSwitch("saveAudio",settings.saveAudio); setSwitch("diarize",settings.diarize!==false); setSwitch("refine",settings.refine!==false); setSwitch("debug",!!settings.debug); setSwitch("autoFallback",settings.autoFallback!==false);
+    setSwitch("saveAudio",settings.saveAudio); setSwitch("diarize",settings.diarize!==false); setSwitch("refine",settings.refine!==false); setSwitch("debug",!!settings.debug); setSwitch("autoFallback",settings.autoFallback!==false); setSwitch("insights",settings.insights!==false);
     // 条件显示：说话人分离只对 Soniox 有意义；口音只影响 Deepgram 和浏览器自带；Soniox 必须走自建中转
     $("diarizeRow").hidden=!soniox; if(!soniox) $("diarizeInfo").hidden=true;
     $("accentRow").hidden=soniox;
@@ -1459,6 +1509,7 @@ body.has-page{background:var(--bg)}
     if(rt.two){ row.langA=rt.a; row.langB=rt.b; }
     S={id:row.id, row, t0:performance.now(), gapMs:0, intAt:null, intT:0, segN:0, nSeg:0, titled:false, closing:false, ending:false, chunkIdx:0, writes:[], mrDones:[], mr:null, needPrompt:false};
     pendingMark=false; noRecords=false; if(!listening) setHint("");
+    insReset(row);
     dbPut("sessions",row).catch(dbFail);
     askPersist();
     return S;
@@ -2412,14 +2463,14 @@ body.has-page{background:var(--bg)}
     det={row, segs:sortSegs(segs), segRows:[], active:-1};
     pane("recDetail"); $("detTitle").textContent=row.title; drawDetSub();
     OUT_ST.open=false; OUT_ST.expand.clear(); det.collapsed=new Set();
-    drawDetTags(); renderDetList(); drawSum(); drawOutline(); applyDetMode();
+    drawDetTags(); renderDetList(); drawSum(); drawOutline(); drawInsights(); applyDetMode();
     loadPlayer(row).then(()=>{ if(opts.seek!=null && det && det.row.id===id){ seekTo(opts.seek,!!opts.play); hiliteAt(opts.seek,true); } });
     if(opts.seek!=null) hiliteAt(opts.seek,true);
   }
   async function reloadDetail(){
     if(!det) return; const id=det.row.id;
     try{ det.row=await dbGet("sessions",id)||det.row; det.segs=sortSegs(await dbBySid("segments",id)); }catch(e){ return; }
-    drawDetTags(); renderDetList(); drawSum(); drawOutline(); drawSeekMarks(); if(LN.mode==="learn") renderLearn();
+    drawDetTags(); renderDetList(); drawSum(); drawOutline(); drawInsights(); drawSeekMarks(); if(LN.mode==="learn") renderLearn();
   }
   function closeDetail(){
     freePlayer(); learnReset(); det=null; pane("recHome"); recRefresh();
@@ -3666,6 +3717,7 @@ body.has-page{background:var(--bg)}
         outline:(x.outline && typeof x.outline==="object" && Array.isArray(x.outline.items)) ? {v:1,at:num(x.outline.at,Date.now()),lang:String(x.outline.lang||"zh").slice(0,5),edited:!!x.outline.edited,short:!!x.outline.short,
           items:outNorm(x.outline.items.map(i=>({s:num(i&&i.s,NaN),t:cut(i&&i.t,20),lv:i&&i.lv===2?2:1,n:i&&i.n?cut(i.n,120):undefined})))} : undefined,
         learn:(x.learn && typeof x.learn==="object" && x.learn.res && typeof x.learn.res==="object") ? x.learn : undefined,
+        insights:Array.isArray(x.insights) ? x.insights.filter(c=>c && typeof c==="object" && typeof c.id==="string" && (c.k==="c"||c.k==="d") && typeof c.title==="string").slice(0,100) : undefined,
         mode:x.mode==="two"?"two":"one", langA:/^[a-z]{2}$/.test(x.langA||"")?x.langA:undefined, langB:/^[a-z]{2}$/.test(x.langB||"")?x.langB:undefined,
         speakerNames:(x.speakerNames && typeof x.speakerNames==="object" && !Array.isArray(x.speakerNames)) ? Object.fromEntries(Object.entries(x.speakerNames).filter(([k,v])=>typeof v==="string"&&v.trim()).map(([k,v])=>[String(k).slice(0,20),v.trim().slice(0,20)])) : undefined,
         folderId:(x.folderId!=null && folderById(+x.folderId)) ? +x.folderId : null, deletedAt:x.deletedAt==null?null:num(x.deletedAt,null)};
@@ -3845,7 +3897,7 @@ body.has-page{background:var(--bg)}
     if(!rt.two && language==="zh") tr="";
     const tgt=tgtOf(language);
     if(!tgt) tr="";
-    const e={id:++seq, en:text, zh:tr, language, tgt, status:(tr||!tgt)?"done":"waiting", tags:[]};
+    const e={id:++seq, en:text, zh:tr, language, tgt, status:(tr||!tgt)?"done":"waiting", tags:[], at:performance.now()};
     if(tr) e.zhSrc="engine";
     if(!tgt) e.noTr=true;                  // 不需要译文的卡片：只显示原文一行
     if(extra && extra.speaker!=null && extra.speaker!=="") e.speaker=String(extra.speaker);
@@ -3871,26 +3923,31 @@ body.has-page{background:var(--bg)}
   // 失败、解析不了、超过 8 秒一律静默放弃，保持原样。
   const REFINE_SYS="你是一名多语种（中文、英文、西班牙语）课程、讲座、会议的字幕校对员。用户给出语音识别的【原文】（会说明原文语言）和机器翻译的【Soniox 译文】（简体中文），以及【前文】和【场景与术语】。请校对：1）修正原文里明显的识别错误（同音词、专有名词、术语，参考前文和术语表），没有把握就不要改，原文必须保持原来的语言；2）让中文译文准确、通顺、口语化，术语译法与术语表一致。不要增删原文没有的内容。严格按下面两行格式输出，不要解释：\n原文：（校对后的原文，没有修改就原样照抄）\n译文：（校对后的中文）";
   const REFINE_MS=8000;
+  // 开着「实时洞察」时，精修顺带标出这句的术语和话题（只多十几个输出 token），供本地计数
+  const REFINE_INS="\n另外在最后再输出两行（同样不要解释）：\n术语：（这句里的专业术语、专有名词或核心概念，用原文写法，最多 3 个，用「; 」分隔，没有就留空）\n话题：（如果这句是在围绕某个问题讨论、提问或表达观点，用不超过 12 个字概括这个问题，尽量沿用【正在讨论的问题】里的原话；否则留空）";
   // 目标语言不是中文（双语互译里的 B→A 等方向）时用的校对提示：原文、目标语言写明，术语表两个方向都适用
   const REFINE_SYS_X="你是一名多语种课程、讲座、会议、对话的字幕校对员。用户给出语音识别的【原文】（会说明原文语言）和机器翻译的【Soniox 译文】（会说明目标语言），以及【前文】和【场景与术语】（术语表在两个翻译方向上都适用）。请校对：1）修正原文里明显的识别错误（同音词、专有名词、术语，参考前文和术语表），没有把握就不要改，原文必须保持原来的语言；2）让译文准确、通顺、口语化，必须使用目标语言，术语译法与术语表一致。不要增删原文没有的内容。严格按下面两行格式输出，不要解释：\n原文：（校对后的原文，没有修改就原样照抄）\n译文：（校对后的译文，目标语言）";
   let refineTail=Promise.resolve();
   function refineEntry(e){
     const prev=prevCtx(e);
     const g=(settings.glossary||"").trim();
-    const user=(prev?"【前文】\n"+prev+"\n\n":"")+(g?"【场景与术语】\n"+g+"\n\n":"")+"【原文语言】"+langName(e.language)+"\n【目标语言】"+langName(e.tgt||"zh")+"\n【原文】\n"+e.en+"\n\n【Soniox 译文】\n"+e.zh;
+    const ins=insOn() && INS && e.sid===INS.sid, tp=ins?insTopics():[];
+    const user=(prev?"【前文】\n"+prev+"\n\n":"")+(g?"【场景与术语】\n"+g+"\n\n":"")+(tp.length?"【正在讨论的问题】\n"+tp.map(q=>"- "+q).join("\n")+"\n\n":"")+"【原文语言】"+langName(e.language)+"\n【目标语言】"+langName(e.tgt||"zh")+"\n【原文】\n"+e.en+"\n\n【Soniox 译文】\n"+e.zh;
     const t0=performance.now();
     const req=Promise.race([
-      llmStream((e.tgt&&e.tgt!=="zh")?REFINE_SYS_X:REFINE_SYS,user,600,null,{model:settings.refineModel,path:"/translate"}),
+      llmStream(((e.tgt&&e.tgt!=="zh")?REFINE_SYS_X:REFINE_SYS)+(ins?REFINE_INS:""),user,600,null,{model:settings.refineModel,path:"/translate"}),
       new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")),REFINE_MS))
     ]).then(t=>{ const r=parseRefine(t); dbg("精修 "+Math.round(performance.now()-t0)+"ms "+(r?"完成":"无法解析")); return r; },err=>{ dbg("精修放弃："+((err&&err.message)||err)); return null; });
-    const mine=refineTail.then(()=>req).then(r=>{ if(r) applyRefine(e,r); }).catch(()=>{});
+    const mine=refineTail.then(()=>req).then(r=>{ if(r){ applyRefine(e,r); if(ins) insTag(e,r.terms,r.topic); } }).catch(()=>{});
     refineTail=mine;
   }
   function parseRefine(t){
+    let terms=[], topic="";
+    t=String(t||"").replace(/\n\s*术语[:：]([^\n]*)/,(_,x)=>{ terms=insParseTags(x); return ""; }).replace(/\n\s*话题[:：]([^\n]*)/,(_,x)=>{ topic=x.trim(); if(/^[（(]|^(无|没有|空)$/.test(topic)) topic=""; return ""; });
     const m=/(?:原文|英文)[:：]\s*([\s\S]*?)\n\s*(?:译文|中文)[:：]\s*([\s\S]+)/.exec(t||"");
     if(!m) return null;
     const en=m[1].trim(), zh=m[2].trim();
-    return zh ? {en,zh} : null;
+    return zh ? {en,zh,terms,topic} : null;
   }
   function applyRefine(e,r){
     let changed=false;
@@ -3904,6 +3961,179 @@ body.has-page{background:var(--bg)}
       e.el.textContent=e.zh; e.el.classList.add("refresh"); setTimeout(()=>e.el&&e.el.classList.remove("refresh"),700);
     }
   }
+
+  // ---------- 实时洞察：围绕某个问题的讨论 → 梳理观点；反复出现的概念 → 介绍（概念先经 Worker 联网搜索） ----------
+  // 为了省 token，不定期把整段转写发给模型：
+  //   1）每句「精修」请求顺带让模型多输出两行——这句的「术语」和「话题」（正在讨论的问题），只多十几个 token；
+  //      没有走精修的句子（中文、其他引擎、精修关闭或失败）每约半分钟批量补标一次，只发这些新句子；
+  //   2）本地计数：同一个概念在 3 句以上出现 → 概念卡片；同一个问题已有 5 句以上、且有两人以上发言（或 8 句以上）→ 观点卡片，
+  //      之后每多 4 句更新一次这张卡片；
+  //   3）只有该出卡片时才请求模型，而且只发相关的那几句；两次卡片请求至少间隔约 1 分钟。
+  // 卡片保存在 row.insights（随记录同步到 OneDrive），记录详情里有「洞察」区块。
+  const INS_GAP_MS=60000, INS_TERM_N=3, INS_TOPIC_N=5, INS_TOPIC_STEP=4, INS_POP_MS=10000, INS_TAG_AGE=12000;
+  const insOn=()=>settings.insights!==false && useRelay() && translateReady();
+  let INS=null;          // 当前录音会话的计数：{sid, terms:Map, topics:Map, busy, lastAt, tagAt, tagBusy}
+  const insKey=s=>String(s||"").toLowerCase().replace(/[\s\-_.·・"'“”‘’()（）《》「」]/g,"");
+  function insReset(row){ INS={sid:row.id, terms:new Map(), topics:new Map(), busy:false, lastAt:0, tagAt:0, tagBusy:false}; if(!Array.isArray(row.insights)) row.insights=[]; insDraw(); }
+  const insCards=()=>(S && S.row && Array.isArray(S.row.insights)) ? S.row.insights : [];
+  function insTopics(){ return INS ? [...INS.topics.values()].sort((a,b)=>(b.last||0)-(a.last||0)).slice(0,3).map(t=>t.q) : []; }
+  // 精修 / 批量标注之后：记下这句的术语和话题，够条件就排一张卡片
+  function insTag(e,terms,topic){
+    if(!INS || !S || e.sid!==INS.sid) return;
+    e.insTagged=true;
+    (terms||[]).slice(0,3).forEach(t=>{
+      t=String(t).trim().replace(/^[-•\s]+/,"").slice(0,40); const k=insKey(t); if(k.length<2) return;
+      let o=INS.terms.get(k); if(!o){ o={t,n:0,ids:[]}; INS.terms.set(k,o); }
+      if(!o.ids.includes(e.segId)){ o.n++; o.ids.push(e.segId); }
+    });
+    topic=String(topic||"").trim().slice(0,30);
+    if(topic){
+      const k=insKey(topic); let o=INS.topics.get(k);
+      if(!o){ o={q:topic,ids:[],sps:new Set(),cardN:0}; INS.topics.set(k,o); }
+      if(!o.ids.includes(e.segId)) o.ids.push(e.segId);
+      if(e.speaker!=null) o.sps.add(e.speaker); o.last=Date.now();
+    }
+    insKick();
+  }
+  const insParseTags=x=>String(x||"").split(/[;；,，、]/).map(s=>s.trim()).filter(s=>s && !/^[（(]|^(无|没有|空|none)$/i.test(s));
+  // 没有经过精修的句子：批量补标（只发这些句子，不发整段转写）
+  async function insTagBatch(){
+    if(!INS || INS.tagBusy || !S) return;
+    const now=performance.now();
+    const list=entries.filter(x=>x.sid===INS.sid && !x.insTagged && x.en && x.segId && now-(x.at||0)>INS_TAG_AGE);
+    if(!list.length) return;
+    if(list.length<4 && Date.now()-INS.tagAt<60000) return;          // 句子少就攒一攒，最多每分钟补一次
+    const part=list.slice(0,20); part.forEach(x=>x.insTagged=true);
+    INS.tagBusy=true; INS.tagAt=Date.now();
+    const tp=insTopics();
+    const sys="你是课堂、讲座、会议的听写助理。为用户给出的每一行转写标注两项：术语（这行里出现的专业术语、专有名词或核心概念，用原文写法，最多 3 个）；话题（如果这行是在围绕某个问题讨论、提问或表达观点，用不超过 12 个字概括这个问题，尽量沿用【正在讨论的问题】里的原话；否则留空）。每行输出一行：编号|术语1; 术语2|话题。没有就留空，不要解释。";
+    const user=(tp.length?"【正在讨论的问题】\n"+tp.map(q=>"- "+q).join("\n")+"\n\n":"")+part.map((x,i)=>"["+(i+1)+"] "+x.en).join("\n");
+    try{
+      const t=await llmStream(sys,user,60+part.length*40,null,{model:settings.refineModel,path:"/translate"});
+      String(t||"").split("\n").forEach(l=>{ const m=/^\s*\[?(\d+)\]?\s*[|｜]([^|｜]*)(?:[|｜](.*))?$/.exec(l); if(!m) return; const x=part[+m[1]-1]; if(x) insTag(x,insParseTags(m[2]),(m[3]||"").trim().replace(/^[（(].*[）)]$/,"")); });
+      dbg("洞察：补标 "+part.length+" 句");
+    }catch(e){ dbg("洞察补标失败："+((e&&e.message)||e)); }
+    INS.tagBusy=false;
+  }
+  // 该出哪张卡片：先概念，后观点；正在请求或距上一次不到约 1 分钟就等下一轮
+  function insKick(){
+    if(!INS || INS.busy || !S || !insOn()) return;
+    if(Date.now()-INS.lastAt<INS_GAP_MS) return;
+    const have=new Set(insCards().map(c=>c.id));
+    for(const [k,o] of INS.terms) if(o.n>=INS_TERM_N && !have.has("c:"+k) && !o.tried){ o.tried=true; insRun(()=>insConcept(k,o)); return; }
+    for(const [k,o] of INS.topics) if(o.ids.length>=INS_TOPIC_N && (o.sps.size>=2 || o.ids.length>=8) && o.ids.length-o.cardN>=INS_TOPIC_STEP){ o.cardN=o.ids.length; insRun(()=>insDiscuss(k,o)); return; }
+  }
+  async function insRun(fn){
+    INS.busy=true; INS.lastAt=Date.now(); const my=INS;
+    try{ const c=await fn(); if(c && INS===my && S && S.id===my.sid) insSave(c); }
+    catch(e){ dbg("洞察卡片失败："+((e&&e.message)||e)); }
+    my.busy=false;
+  }
+  function insJSON(t){ t=String(t||"").replace(/```(?:json)?/gi,""); const a=t.indexOf("{"), b=t.lastIndexOf("}"); if(a<0||b<=a) return null; try{ return JSON.parse(t.slice(a,b+1)); }catch(e){ return null; } }
+  const insLang=()=>langName(settings.sumLang||"zh");
+  const segById=id=>entries.find(x=>x.segId===id);
+  async function insConcept(k,o){
+    const ctx=o.ids.map(segById).filter(Boolean).slice(-3);
+    let res=[];
+    try{
+      const r=await Promise.race([fetch(relayBase()+"/search",{method:"POST",headers:{authorization:"Bearer "+settings.relayToken,"content-type":"application/json"},body:JSON.stringify({q:o.t,ctx:(ctx[0]&&ctx[0].en||"").slice(0,120),n:4})}), new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")),9000))]);
+      if(r.ok){ const j=await r.json(); res=(Array.isArray(j.results)?j.results:[]).slice(0,4); } else dbg("洞察：联网搜索不可用（"+r.status+"），改用模型自身知识");
+    }catch(e){ dbg("洞察：联网搜索失败，改用模型自身知识"); }
+    const sys="你是听课、开会时的即时助理。录音里反复提到一个概念，请用"+insLang()+"简明介绍：它是什么，以及在这段对话里大概指什么。优先依据给出的搜索结果，结合你的知识；拿不准的不要编。严格只输出 JSON：{\"title\":\"概念名称（外语可附译名）\",\"body\":\"不超过 120 字的介绍\",\"src\":[用到的搜索结果编号]}";
+    const user="【概念】"+o.t+"\n\n【录音里提到它的句子】\n"+ctx.map(x=>"- "+x.en).join("\n")+(res.length?"\n\n【搜索结果】\n"+res.map((x,i)=>"["+(i+1)+"] "+(x.title||"")+" — "+(x.snippet||"")).join("\n"):"");
+    const j=insJSON(await llmStream(sys,user,450,null,{model:settings.refineModel,path:"/summary"}));
+    if(!j || !j.body) throw new Error("概念卡片解析失败");
+    const src=(Array.isArray(j.src)?j.src:[]).map(n=>res[+n-1]).filter(x=>x&&x.url).slice(0,3).map(x=>({title:String(x.site||x.title||x.url).slice(0,60),url:x.url}));
+    return {id:"c:"+k, k:"c", t:ctx.length?ctx[0].start:0, title:String(j.title||o.t).slice(0,60), body:String(j.body).slice(0,400), src, web:res.length>0};
+  }
+  async function insDiscuss(k,o){
+    const segs=o.ids.map(segById).filter(Boolean).slice(-30);
+    const sp=x=>x.speaker!=null&&x.speaker!=="" ? spName(S.row,x.speaker)+"：" : "";
+    const old=insCards().find(c=>c.id==="d:"+k);
+    const sys="你是会议、讨论的记录员。下面是围绕同一个问题的若干句发言（语音转写，可能有识别错误）。请用"+insLang()+"梳理：讨论的问题是什么，各方观点（合并相同观点，标明是谁说的，不知道是谁就留空），还有哪些分歧或没解决的点。"+(old?"已有一版梳理，请在它的基础上更新。":"")+"严格只输出 JSON：{\"question\":\"讨论的问题\",\"views\":[{\"who\":\"说话人\",\"view\":\"一句话观点\"}],\"open\":\"尚未解决的分歧或待定事项，没有就空字符串\"}，观点 2～5 条。";
+    const user=(old?"【上一版梳理】\n"+JSON.stringify({question:old.title,views:old.views,open:old.open})+"\n\n":"")+"【发言】\n"+segs.map(x=>"["+fmtT(x.start)+"] "+sp(x)+x.en).join("\n");
+    const j=insJSON(await llmStream(sys,user,550,null,{model:settings.refineModel,path:"/summary"}));
+    if(!j || !Array.isArray(j.views) || !j.views.length) throw new Error("观点卡片解析失败");
+    return {id:"d:"+k, k:"d", t:old?old.t:(segs[0]?segs[0].start:0), title:String(j.question||o.q).slice(0,80),
+      views:j.views.slice(0,6).map(v=>({who:String(v&&v.who||"").slice(0,20),view:String(v&&v.view||"").slice(0,200)})).filter(v=>v.view), open:String(j.open||"").slice(0,200)};
+  }
+  function insSave(c){
+    const list=S.row.insights=insCards(); const i=list.findIndex(x=>x.id===c.id), isNew=i<0;
+    c.at=Date.now(); if(isNew) list.push(c); else list[i]=Object.assign({},list[i],c);
+    sessSave(); insDraw(); insPop(c,isNew);
+    dbg("洞察："+(c.k==="c"?"概念":"观点")+"卡片"+(isNew?"":"更新")+"「"+c.title+"」");
+  }
+  // ----- 界面：手机顶部弹出 + 💡 角标 / 电脑右侧栏 / 记录详情 -----
+  function insCardEl(c,opt){
+    opt=opt||{};
+    const d=document.createElement("div"); d.className="inscard k-"+c.k+(opt.compact?" compact":""); d.dataset.id=c.id;
+    const h=document.createElement("div"); h.className="ic-h";
+    const kd=document.createElement("span"); kd.className="ic-k"; kd.textContent=c.k==="c"?"💡 概念":"🗣 观点梳理"; h.appendChild(kd);
+    const tm=document.createElement(opt.seek?"button":"span"); tm.className="ic-t"; tm.textContent=fmtT(c.t||0); if(opt.seek) tm.onclick=ev=>{ ev.stopPropagation(); opt.seek(c); }; h.appendChild(tm);
+    if(opt.close){ const x=document.createElement("button"); x.className="ic-x"; x.setAttribute("aria-label","关闭"); x.textContent="×"; x.onclick=ev=>{ ev.stopPropagation(); opt.close(); }; h.appendChild(x); }
+    d.appendChild(h);
+    const t=document.createElement("div"); t.className="ic-title"; t.textContent=c.title; d.appendChild(t);
+    if(c.k==="c"){ const b=document.createElement("div"); b.className="ic-body"; b.textContent=c.body||""; d.appendChild(b); }
+    else{
+      const ul=document.createElement("ul"); ul.className="ic-views";
+      (c.views||[]).slice(0,opt.compact?3:6).forEach(v=>{ const li=document.createElement("li"); if(v.who){ const w=document.createElement("b"); w.textContent=v.who+"："; li.appendChild(w); } li.appendChild(document.createTextNode(v.view)); ul.appendChild(li); });
+      d.appendChild(ul);
+      if(c.open && !opt.compact){ const o=document.createElement("div"); o.className="ic-open"; o.textContent="待定："+c.open; d.appendChild(o); }
+    }
+    if(!opt.compact && (c.src||[]).length){ const s=document.createElement("div"); s.className="ic-src"; s.appendChild(document.createTextNode("来源：")); c.src.forEach((x,i)=>{ const a=document.createElement("a"); a.href=x.url; a.target="_blank"; a.rel="noopener"; a.textContent=x.title; s.appendChild(a); if(i<c.src.length-1) s.appendChild(document.createTextNode(" · ")); }); d.appendChild(s); }
+    else if(!opt.compact && c.k==="c" && c.web===false){ const s=document.createElement("div"); s.className="ic-src"; s.textContent="未联网搜索，仅供参考"; d.appendChild(s); }
+    return d;
+  }
+  const insSorted=list=>list.slice().sort((a,b)=>(b.at||0)-(a.at||0));
+  function insLayout(){
+    const live=recActive() && settings.insights!==false;
+    const wide=live && isWide();
+    document.querySelector(".stage").classList.toggle("ins-wide",wide);
+    $("insSide").hidden=!wide;
+    const n=insCards().length;
+    $("insBadge").hidden=!live || wide || !n;
+    if(!live || wide) insPopHide();
+  }
+  function insDraw(){
+    const list=insSorted(insCards()), n=list.length;
+    $("insN").textContent=String(n); $("insSideN").textContent=n?String(n):"";
+    const side=$("insSideList"); side.textContent="";
+    if(!n){ const e=document.createElement("div"); e.className="ins-empty"; e.textContent=insOn()?"讨论某个问题，或反复提到某个概念时，这里会出现梳理和介绍。":"实时洞察需要先在设置里配好中转和大语言模型。"; side.appendChild(e); }
+    list.forEach(c=>side.appendChild(insCardEl(c)));
+    if($("insDlg").open){ const b=$("insDlgList"); b.textContent=""; list.forEach(c=>b.appendChild(insCardEl(c))); }
+    insLayout();
+  }
+  let insPopT=null;
+  function insPopHide(){ clearTimeout(insPopT); insPopT=null; $("insPop").hidden=true; $("insPop").textContent=""; }
+  function insPop(c,isNew){
+    if(isWide()){ const el=$("insSideList").querySelector('[data-id="'+CSS.escape(c.id)+'"]'); if(el){ el.classList.add("flash"); setTimeout(()=>el.classList.remove("flash"),1600); } return; }
+    if(!recActive()) return;
+    const p=$("insPop"); p.textContent="";
+    const el=insCardEl(c,{compact:true,close:insPopHide}); if(!isNew){ const u=document.createElement("span"); u.className="ic-upd"; u.textContent="已更新"; el.querySelector(".ic-h").insertBefore(u,el.querySelector(".ic-t")); }
+    el.onclick=()=>{ insPopHide(); insOpenDlg(c.id); };
+    p.appendChild(el); p.hidden=false;
+    clearTimeout(insPopT); insPopT=setTimeout(insPopHide,INS_POP_MS);
+  }
+  function insOpenDlg(id){
+    const b=$("insDlgList"); b.textContent=""; insSorted(insCards()).forEach(c=>b.appendChild(insCardEl(c)));
+    $("insDlg").showModal();
+    if(id){ const el=b.querySelector('[data-id="'+CSS.escape(id)+'"]'); if(el) el.scrollIntoView({block:"start"}); }
+  }
+  $("insBadge").onclick=()=>insOpenDlg();
+  $("insDlgClose").onclick=()=>$("insDlg").close();
+  try{ wideQ.addEventListener("change",()=>insLayout()); }catch(e){}
+  setInterval(()=>{ if(INS && S && S.id===INS.sid && listening && insOn()){ insTagBatch(); insKick(); } },15000);
+  // 记录详情里的「洞察」区块
+  let insDetOpen=false;
+  function drawInsights(){
+    const box=$("detIns"); if(!det){ box.hidden=true; return; }
+    const list=(Array.isArray(det.row.insights)?det.row.insights:[]).slice().sort((a,b)=>(a.t||0)-(b.t||0));
+    box.hidden=!list.length; if(!list.length) return;
+    $("insCnt").textContent=list.length+" 条"; $("insHead").setAttribute("aria-expanded",String(insDetOpen)); $("detInsList").hidden=!insDetOpen;
+    const b=$("detInsList"); b.textContent="";
+    list.forEach(c=>b.appendChild(insCardEl(c,{seek:c=>{ if(P && P.parts.length) seekTo(Math.max(0,(c.t||0)-0.4),true); hiliteAt(c.t||0,true); }})));
+  }
+  $("insHead").onclick=()=>{ insDetOpen=!insDetOpen; drawInsights(); };
 
   // ---------- Translation (Claude API, streaming) ----------
   async function pump(){
@@ -4035,6 +4265,7 @@ body.has-page{background:var(--bg)}
     const lt=$("liveTag"), conn=st==="live" && (engState==="retry"||engState==="connecting");
     lt.textContent=paused?"已暂停":conn?(engState==="connecting"?"● 连接中":eng&&eng.waitNet?"● 等待网络":"● 重连中"):"● LIVE"; lt.classList.toggle("warn",conn);
     $("idleSum").textContent=summaryLine();
+    if(typeof insLayout==="function") try{ insLayout(); }catch(e){}
     $("idleHint").textContent=(st==="idle" && noRecords) ? FIRST_HINT : "";
     // 打开记录 / 设置页时，顶部的红色横条提示录音仍在继续，点击回到主页
     const bar=$("recBar"), show=recActive() && pageStack.length>0;
@@ -4878,7 +5109,7 @@ registerProcessor("pcm16",PCM16);`;
   // 登录由 Worker 代管（刷新令牌只在 KV 里）；页面向 Worker 要短期访问令牌，直接调用 Microsoft Graph 读写文件。
   const GRAPH="https://graph.microsoft.com/v1.0", AROOT=GRAPH+"/drive/special/approot";            // 和 remotely-save 一样用「/drive/special/approot」（不带 /me）
   const OD_SCHEMA=3, OD_CHUNK=320*1024*10, OD_PULL_MS=5*60*1000;
-  const OD_SETTING_KEYS=["sxLangs","engine","diarize","refine","autoFallback","zhMode","transMode","langA","langB","sumLang","level","afterEnd","lang","mode","glossary","llm","refineModel","sumModel"];   // 同步的设置（不含任何密钥、口令、连接地址和本机偏好）
+  const OD_SETTING_KEYS=["insights","sxLangs","engine","diarize","refine","autoFallback","zhMode","transMode","langA","langB","sumLang","level","afterEnd","lang","mode","glossary","llm","refineModel","sumModel"];   // 同步的设置（不含任何密钥、口令、连接地址和本机偏好）
   const odSleep=ms=>new Promise(r=>setTimeout(r,ms));
   let odCache=null;
   function odLS(){ if(!odCache){ try{ odCache=JSON.parse(localStorage.getItem("lt-sync")||"{}")||{}; }catch(e){ odCache={}; } } return odCache; }
@@ -5549,6 +5780,7 @@ registerProcessor("pcm16",PCM16);`;
   bindSwitch("diarize","diarize");
   bindSwitch("refine","refine");
   bindSwitch("autoFallback","autoFallback");
+  bindSwitch("insights","insights",()=>{ try{ insDraw(); }catch(e){} });
   bindSwitch("debug","debug",on=>{ if(on) dbg("调试模式已开启"); drawDbg(); });
   // 底部选择面板：选项较多的设置
   function openChoice(title,opts,cur,cb){
