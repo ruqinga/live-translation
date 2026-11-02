@@ -3,6 +3,7 @@
 //   POST /summary          流式长文本摘要，格式同上，但允许更长的输入和输出
 //   GET  /deepgram-token   签发 Deepgram 短期令牌（手机端不需要保存 Deepgram 长期密钥）
 //   GET  /soniox-token     签发 Soniox 实时转录的临时 API 密钥（真正的密钥只放在这里的 SONIOX_API_KEY）
+//   POST /search           联网搜索（转发 DeepSeek Search API，用 DEEPSEEK_API_KEY），实时洞察的概念卡片用
 //   GET  /soniox-ws?key=   （WebSocket）把 Soniox 实时转录经 Worker 转发，给连不上 stt-rt.soniox.com 的网络用
 //   OneDrive 同步（Worker 代管微软登录；刷新令牌只存在 KV 里，绝不下发到浏览器）：
 //   POST /onedrive/login-ticket  用 ACCESS_TOKEN 换一个一次性登录码（不要把 ACCESS_TOKEN 放进网址）
@@ -162,6 +163,32 @@ async function sonioxToken(env, h) {
   return json({ token: j.api_key, expires_in_seconds: 60 }, 200, { ...h, "cache-control": "no-store" });
 }
 
+// 联网搜索（实时洞察的概念卡片用）：转发到 DeepSeek 的 Search API（POST https://api.deepseek.com/v1/tools/search），
+//   用已有的 DEEPSEEK_API_KEY，只返回前几条的标题、链接和摘要，给页面再交给大语言模型写介绍。没配 DeepSeek 时返回 501，页面改用模型自身知识。
+async function webSearch(req, env, h) {
+  if (!env.DEEPSEEK_API_KEY) return json({ error: "Worker 里没有配置 DEEPSEEK_API_KEY，无法联网搜索" }, 501, h);
+  let b; try { b = await req.json(); } catch (_) { return json({ error: "请求格式错误" }, 400, h); }
+  const q = String(b.q || "").trim().slice(0, 128);
+  if (!q) return json({ error: "缺少搜索词" }, 400, h);
+  const n = Math.max(1, Math.min(8, +b.n || 4));
+  const body = { query: q, count: n, need_content: false };
+  if (b.ctx) body.ori_question = String(b.ctx).slice(0, 128);
+  let res;
+  try {
+    res = await fetch("https://api.deepseek.com/v1/tools/search", {
+      method: "POST",
+      headers: { "content-type": "application/json", Authorization: "Bearer " + env.DEEPSEEK_API_KEY },
+      body: JSON.stringify(body),
+    });
+  } catch (e) { return json({ error: "连接 DeepSeek 搜索失败" }, 502, h); }
+  let j = {}; try { j = await res.json(); } catch (_) {}
+  if (!res.ok) return json({ error: String((j.error && (j.error.message || j.error)) || "DeepSeek 搜索返回 " + res.status), upstream: res.status }, res.status === 401 ? 502 : res.status, h);
+  const list = Array.isArray(j.results) ? j.results : Array.isArray(j.data) ? j.data : [];
+  const clip = (x, m) => String(x || "").replace(/\s+/g, " ").trim().slice(0, m);
+  const results = list.slice(0, n).map(r => ({ title: clip(r.title, 120), url: clip(r.url || r.link, 300), snippet: clip(r.summary || r.snippet || r.content, 360), site: clip(r.site_name, 40), date: clip(r.date, 20) })).filter(r => r.url || r.snippet);
+  return json({ results }, 200, h);
+}
+
 // Soniox 实时转录经 Worker 中转：手机连不上 stt-rt.soniox.com 时，页面改连 wss://<worker>/soniox-ws?key=<临时密钥>，
 //   Worker 带着这个临时密钥（Authorization: Bearer）连到 Soniox，把上游的 WebSocket 原样返回给页面，
 //   之后的音频和结果由 Cloudflare 直接转发，不经过这里的 JavaScript（几乎不占 CPU 时间）。
@@ -307,6 +334,7 @@ export default {
     if (path === "/summary" && req.method === "POST") return translate(req, env, h, LIMITS.summary);
     if (path === "/deepgram-token" && req.method === "GET") return deepgramToken(env, h);
     if (path === "/soniox-token" && req.method === "GET") return sonioxToken(env, h);
+    if (path === "/search" && req.method === "POST") return webSearch(req, env, h);
     if (path === "/onedrive/login-ticket" && req.method === "POST") return odLoginTicket(req, env, h);
     if (path === "/onedrive/token" && req.method === "GET") return odToken(env, h);
     if (path === "/onedrive/status" && req.method === "GET") return odStatus(env, h);
