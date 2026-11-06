@@ -603,6 +603,19 @@ span.ic-t{color:var(--muted)}
 .ic-src{margin-top:6px;font-size:12px;color:var(--muted)}.ic-src a{color:var(--accent)}
 .inscard.compact .ic-body,.inscard.compact .ic-views{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
 .ins-side{display:none}
+.inspin{position:absolute;left:12px;right:12px;top:60px;z-index:29}
+.inspin .inscard{box-shadow:0 8px 24px rgba(0,0,0,.16);cursor:pointer;max-height:46vh;overflow-y:auto}
+.inspin.flash .pinbar,.inspin.flash .inscard{animation:pinFlash 1.2s ease}
+@keyframes pinFlash{0%{box-shadow:0 0 0 3px var(--accent)}100%{box-shadow:0 8px 24px rgba(0,0,0,.16)}}
+@media (prefers-reduced-motion:reduce){.inspin.flash .pinbar,.inspin.flash .inscard{animation:none}}
+.pinbar{display:flex;align-items:center;gap:8px;width:100%;border:1px solid var(--line);border-left:3px solid var(--orange,#C77700);background:var(--panel);border-radius:12px;padding:8px 12px;font-size:13px;color:var(--ink2);text-align:left;box-shadow:0 6px 18px rgba(0,0,0,.14);min-height:44px}
+.pinbar b{flex:none;max-width:42%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink)}
+.pinbar span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pinbar i{flex:none;font-style:normal;color:var(--muted);font-size:12px}
+#home.pin-on #feed{padding-top:58px}
+.ic-live{font-size:11px;font-weight:700;color:var(--orange,#C77700)}
+.ic-views li.nv{background:color-mix(in srgb,var(--accent) 12%,transparent);border-radius:6px;padding:0 4px;margin-left:-4px}
+.nv-b{display:inline-block;font-size:10px;font-weight:700;color:#fff;background:var(--accent);border-radius:4px;padding:0 4px;margin-right:4px;vertical-align:1px}
 .ins-empty{color:var(--muted);font-size:14px;line-height:1.6;padding:12px 2px}
 #insDlg .ins-list{max-height:62vh;overflow-y:auto;margin:6px 0}
 .insbox .ins-list{padding:0 12px 12px}
@@ -717,6 +730,7 @@ span.ic-t{color:var(--muted)}
         </div>
       </header>
       <div class="banner" id="banner" role="status"></div>
+      <div class="inspin" id="insPin" hidden aria-live="polite"></div>
       <div class="inspop" id="insPop" hidden role="status" aria-live="polite"></div>
 
       <div class="idle" id="idle">
@@ -3970,11 +3984,15 @@ span.ic-t{color:var(--muted)}
   //      之后每多 4 句更新一次这张卡片；
   //   3）只有该出卡片时才请求模型，而且只发相关的那几句；两次卡片请求至少间隔约 1 分钟。
   // 卡片保存在 row.insights（随记录同步到 OneDrive），记录详情里有「洞察」区块。
-  const INS_GAP_MS=60000, INS_TERM_N=3, INS_TOPIC_N=5, INS_TOPIC_STEP=4, INS_POP_MS=10000, INS_TAG_AGE=12000;
+  const INS_GAP_MS=60000, INS_TERM_N=3, INS_TOPIC_N=5, INS_POP_MS=10000, INS_TAG_AGE=12000;
+  // 观点卡片持续更新：进行中的讨论每多 2 句、且距上次更新 20 秒以上就增量更新（只发上一版梳理 + 新增的几句）；只多 1 句时等 45 秒
+  const INS_UPD_MS=20000, INS_UPD_STEP=2, INS_UPD_LONE_MS=45000, INS_ACTIVE_MS=120000;
+  // 短时间内同时达标的新卡片太多时只挑几张：3 分钟内最多 2 张新卡片，按分数挑最值得的；等了 5 分钟还没轮到的就放弃
+  const INS_BUDGET=2, INS_BUDGET_WIN=180000, INS_STALE_MS=300000;
   const insOn=()=>settings.insights!==false && useRelay() && translateReady();
   let INS=null;          // 当前录音会话的计数：{sid, terms:Map, topics:Map, busy, lastAt, tagAt, tagBusy}
   const insKey=s=>String(s||"").toLowerCase().replace(/[\s\-_.·・"'“”‘’()（）《》「」]/g,"");
-  function insReset(row){ INS={sid:row.id, terms:new Map(), topics:new Map(), busy:false, lastAt:0, tagAt:0, tagBusy:false}; if(!Array.isArray(row.insights)) row.insights=[]; insDraw(); }
+  function insReset(row){ INS={sid:row.id, terms:new Map(), topics:new Map(), busy:false, lastNew:0, newAt:[], tagAt:0, tagBusy:false, fresh:new Map(), active:null, pinOpen:false}; if(!Array.isArray(row.insights)) row.insights=[]; insPinHide(); insDraw(); }
   const insCards=()=>(S && S.row && Array.isArray(S.row.insights)) ? S.row.insights : [];
   function insTopics(){ return INS ? [...INS.topics.values()].sort((a,b)=>(b.last||0)-(a.last||0)).slice(0,3).map(t=>t.q) : []; }
   // 精修 / 批量标注之后：记下这句的术语和话题，够条件就排一张卡片
@@ -4018,16 +4036,34 @@ span.ic-t{color:var(--muted)}
   // 该出哪张卡片：先概念，后观点；正在请求或距上一次不到约 1 分钟就等下一轮
   function insKick(){
     if(!INS || INS.busy || !S || !insOn()) return;
-    if(Date.now()-INS.lastAt<INS_GAP_MS) return;
-    const have=new Set(insCards().map(c=>c.id));
-    for(const [k,o] of INS.terms) if(o.n>=INS_TERM_N && !have.has("c:"+k) && !o.tried){ o.tried=true; insRun(()=>insConcept(k,o)); return; }
-    for(const [k,o] of INS.topics) if(o.ids.length>=INS_TOPIC_N && (o.sps.size>=2 || o.ids.length>=8) && o.ids.length-o.cardN>=INS_TOPIC_STEP){ o.cardN=o.ids.length; insRun(()=>insDiscuss(k,o)); return; }
+    const now=Date.now(), have=new Set(insCards().map(c=>c.id));
+    // 1）进行中的讨论：已有卡片、又有新发言 → 增量更新，保持和对话同步（不占新卡片名额）
+    let up=null;
+    for(const [k,o] of INS.topics){
+      if(!have.has("d:"+k)) continue;
+      const nw=o.ids.length-o.cardN, since=now-(o.updAt||0);
+      if(nw>=INS_UPD_STEP ? since>=INS_UPD_MS : (nw>=1 && since>=INS_UPD_LONE_MS)) if(!up || (o.last||0)>(up.o.last||0)) up={k,o};
+    }
+    if(up){ const {k,o}=up, fresh=o.ids.slice(o.cardN); o.cardN=o.ids.length; o.updAt=now; insRun(()=>insDiscuss(k,o,fresh)); return; }
+    // 2）新卡片：所有达标的候选打分，只挑最值得的一张；3 分钟内最多 2 张，等太久的放弃
+    const cands=[];
+    for(const [k,o] of INS.terms) if(!o.done && o.n>=INS_TERM_N && !have.has("c:"+k)){ o.qualAt=o.qualAt||now; cands.push({k,o,c:true,score:o.n*2}); }
+    for(const [k,o] of INS.topics) if(!o.done && !have.has("d:"+k) && o.ids.length>=INS_TOPIC_N && (o.sps.size>=2 || o.ids.length>=8)){ o.qualAt=o.qualAt||now; cands.push({k,o,c:false,score:o.ids.length*(1+o.sps.size)+(now-(o.last||0)<INS_ACTIVE_MS?6:0)}); }
+    cands.forEach(x=>{ if(now-x.o.qualAt>INS_STALE_MS){ x.o.done=true; dbg("洞察：跳过「"+(x.o.t||x.o.q)+"」（等太久）"); } });
+    const live=cands.filter(x=>!x.o.done); if(!live.length) return;
+    if(now-INS.lastNew<INS_GAP_MS) return;
+    INS.newAt=INS.newAt.filter(t=>now-t<INS_BUDGET_WIN); if(INS.newAt.length>=INS_BUDGET) return;
+    live.sort((a,b)=>b.score-a.score); const x=live[0]; x.o.done=true;
+    INS.newAt.push(now); INS.lastNew=now;
+    if(x.c) insRun(()=>insConcept(x.k,x.o));
+    else{ x.o.cardN=x.o.ids.length; x.o.updAt=now; insRun(()=>insDiscuss(x.k,x.o)); }
   }
   async function insRun(fn){
-    INS.busy=true; INS.lastAt=Date.now(); const my=INS;
+    INS.busy=true; const my=INS;
     try{ const c=await fn(); if(c && INS===my && S && S.id===my.sid) insSave(c); }
     catch(e){ dbg("洞察卡片失败："+((e&&e.message)||e)); }
     my.busy=false;
+    if(INS===my) setTimeout(insKick,50);          // 排着的更新 / 卡片接着处理
   }
   function insJSON(t){ t=String(t||"").replace(/```(?:json)?/gi,""); const a=t.indexOf("{"), b=t.lastIndexOf("}"); if(a<0||b<=a) return null; try{ return JSON.parse(t.slice(a,b+1)); }catch(e){ return null; } }
   const insLang=()=>langName(settings.sumLang||"zh");
@@ -4046,21 +4082,31 @@ span.ic-t{color:var(--muted)}
     const src=(Array.isArray(j.src)?j.src:[]).map(n=>res[+n-1]).filter(x=>x&&x.url).slice(0,3).map(x=>({title:String(x.site||x.title||x.url).slice(0,60),url:x.url}));
     return {id:"c:"+k, k:"c", t:ctx.length?ctx[0].start:0, title:String(j.title||o.t).slice(0,60), body:String(j.body).slice(0,400), src, web:res.length>0};
   }
-  async function insDiscuss(k,o){
-    const segs=o.ids.map(segById).filter(Boolean).slice(-30);
+  async function insDiscuss(k,o,fresh){
     const sp=x=>x.speaker!=null&&x.speaker!=="" ? spName(S.row,x.speaker)+"：" : "";
     const old=insCards().find(c=>c.id==="d:"+k);
-    const sys="你是会议、讨论的记录员。下面是围绕同一个问题的若干句发言（语音转写，可能有识别错误）。请用"+insLang()+"梳理：讨论的问题是什么，各方观点（合并相同观点，标明是谁说的，不知道是谁就留空），还有哪些分歧或没解决的点。"+(old?"已有一版梳理，请在它的基础上更新。":"")+"严格只输出 JSON：{\"question\":\"讨论的问题\",\"views\":[{\"who\":\"说话人\",\"view\":\"一句话观点\"}],\"open\":\"尚未解决的分歧或待定事项，没有就空字符串\"}，观点 2～5 条。";
-    const user=(old?"【上一版梳理】\n"+JSON.stringify({question:old.title,views:old.views,open:old.open})+"\n\n":"")+"【发言】\n"+segs.map(x=>"["+fmtT(x.start)+"] "+sp(x)+x.en).join("\n");
+    // 增量更新：只发上一版梳理 + 新增的几句（另带前面 2 句作衔接），不重发整段讨论
+    const inc=!!(old && fresh && fresh.length);
+    const segs=inc ? (()=>{ const all=o.ids.map(segById).filter(Boolean), i=all.findIndex(x=>x.segId===fresh[0]); return all.slice(Math.max(0,i-2)); })() : o.ids.map(segById).filter(Boolean).slice(-30);
+    const sys="你是会议、讨论的记录员。下面是围绕同一个问题的若干句发言（语音转写，可能有识别错误）。请用"+insLang()+"梳理：讨论的问题是什么，各方观点（合并相同观点，标明是谁说的，不知道是谁就留空），还有哪些分歧或没解决的点。"+(inc?"已有一版梳理，下面只给出之后新增的发言（前两句是衔接用的旧发言）：请在原梳理基础上更新——新观点加进去，已有观点有补充就改写，有人改变立场要体现，已经解决的从待定里去掉；没有变化就原样输出。":old?"已有一版梳理，请在它的基础上更新。":"")+"严格只输出 JSON：{\"question\":\"讨论的问题\",\"views\":[{\"who\":\"说话人\",\"view\":\"一句话观点\"}],\"open\":\"尚未解决的分歧或待定事项，没有就空字符串\"}，观点 2～5 条。";
+    const user=(old?"【上一版梳理】\n"+JSON.stringify({question:old.title,views:old.views,open:old.open})+"\n\n":"")+(inc?"【新增发言】\n":"【发言】\n")+segs.map(x=>"["+fmtT(x.start)+"] "+sp(x)+x.en).join("\n");
     const j=insJSON(await llmStream(sys,user,550,null,{model:settings.refineModel,path:"/summary"}));
     if(!j || !Array.isArray(j.views) || !j.views.length) throw new Error("观点卡片解析失败");
     return {id:"d:"+k, k:"d", t:old?old.t:(segs[0]?segs[0].start:0), title:String(j.question||o.q).slice(0,80),
       views:j.views.slice(0,6).map(v=>({who:String(v&&v.who||"").slice(0,20),view:String(v&&v.view||"").slice(0,200)})).filter(v=>v.view), open:String(j.open||"").slice(0,200)};
   }
+  const viewKey=v=>insKey(v.view).slice(0,24);
   function insSave(c){
     const list=S.row.insights=insCards(); const i=list.findIndex(x=>x.id===c.id), isNew=i<0;
+    if(c.k==="d"){
+      // 这次新出现的观点：标「新」15 秒，方便看出梳理随对话变化
+      const before=new Set((isNew?[]:(list[i].views||[])).map(viewKey)), nv=new Set((c.views||[]).filter(v=>!before.has(viewKey(v))).map(viewKey));
+      if(!isNew) INS.fresh.set(c.id,{keys:nv,until:Date.now()+15000});
+      INS.active=c.id; c.n=(isNew?0:(list[i].n||0))+1;
+    }
     c.at=Date.now(); if(isNew) list.push(c); else list[i]=Object.assign({},list[i],c);
-    sessSave(); insDraw(); insPop(c,isNew);
+    sessSave(); insDraw();
+    if(c.k==="d") insPin(c,isNew); else insPop(c,isNew);
     dbg("洞察："+(c.k==="c"?"概念":"观点")+"卡片"+(isNew?"":"更新")+"「"+c.title+"」");
   }
   // ----- 界面：手机顶部弹出 + 💡 角标 / 电脑右侧栏 / 记录详情 -----
@@ -4069,6 +4115,7 @@ span.ic-t{color:var(--muted)}
     const d=document.createElement("div"); d.className="inscard k-"+c.k+(opt.compact?" compact":""); d.dataset.id=c.id;
     const h=document.createElement("div"); h.className="ic-h";
     const kd=document.createElement("span"); kd.className="ic-k"; kd.textContent=c.k==="c"?"💡 概念":"🗣 观点梳理"; h.appendChild(kd);
+    if(opt.live){ const lv=document.createElement("span"); lv.className="ic-live"; lv.textContent="● 进行中"; h.appendChild(lv); }
     const tm=document.createElement(opt.seek?"button":"span"); tm.className="ic-t"; tm.textContent=fmtT(c.t||0); if(opt.seek) tm.onclick=ev=>{ ev.stopPropagation(); opt.seek(c); }; h.appendChild(tm);
     if(opt.close){ const x=document.createElement("button"); x.className="ic-x"; x.setAttribute("aria-label","关闭"); x.textContent="×"; x.onclick=ev=>{ ev.stopPropagation(); opt.close(); }; h.appendChild(x); }
     d.appendChild(h);
@@ -4076,7 +4123,8 @@ span.ic-t{color:var(--muted)}
     if(c.k==="c"){ const b=document.createElement("div"); b.className="ic-body"; b.textContent=c.body||""; d.appendChild(b); }
     else{
       const ul=document.createElement("ul"); ul.className="ic-views";
-      (c.views||[]).slice(0,opt.compact?3:6).forEach(v=>{ const li=document.createElement("li"); if(v.who){ const w=document.createElement("b"); w.textContent=v.who+"："; li.appendChild(w); } li.appendChild(document.createTextNode(v.view)); ul.appendChild(li); });
+      const fr=INS && INS.fresh.get(c.id), frOn=fr && fr.until>Date.now();
+      (c.views||[]).slice(0,opt.compact?3:6).forEach(v=>{ const li=document.createElement("li"); if(frOn && fr.keys.has(viewKey(v))){ li.className="nv"; const nb=document.createElement("span"); nb.className="nv-b"; nb.textContent="新"; li.appendChild(nb); } if(v.who){ const w=document.createElement("b"); w.textContent=v.who+"："; li.appendChild(w); } li.appendChild(document.createTextNode(v.view)); ul.appendChild(li); });
       d.appendChild(ul);
       if(c.open && !opt.compact){ const o=document.createElement("div"); o.className="ic-open"; o.textContent="待定："+c.open; d.appendChild(o); }
     }
@@ -4092,16 +4140,54 @@ span.ic-t{color:var(--muted)}
     $("insSide").hidden=!wide;
     const n=insCards().length;
     $("insBadge").hidden=!live || wide || !n;
-    if(!live || wide) insPopHide();
+    if(!live || wide){ insPopHide(); insPinHide(); }
   }
   function insDraw(){
     const list=insSorted(insCards()), n=list.length;
     $("insN").textContent=String(n); $("insSideN").textContent=n?String(n):"";
     const side=$("insSideList"); side.textContent="";
     if(!n){ const e=document.createElement("div"); e.className="ins-empty"; e.textContent=insOn()?"讨论某个问题，或反复提到某个概念时，这里会出现梳理和介绍。":"实时洞察需要先在设置里配好中转和大语言模型。"; side.appendChild(e); }
-    list.forEach(c=>side.appendChild(insCardEl(c)));
+    const act=insActive();
+    if(act){ side.appendChild(insCardEl(act,{live:true})); }
+    list.forEach(c=>{ if(!act || c.id!==act.id) side.appendChild(insCardEl(c)); });
     if($("insDlg").open){ const b=$("insDlgList"); b.textContent=""; list.forEach(c=>b.appendChild(insCardEl(c))); }
     insLayout();
+  }
+  // 进行中的讨论：最近一张观点卡片，且这个问题 2 分钟内还有人在说
+  function insActive(){
+    if(!INS || !INS.active || !recActive()) return null;
+    const c=insCards().find(x=>x.id===INS.active); if(!c) return null;
+    const o=INS.topics.get(c.id.slice(2)); if(!o || Date.now()-(o.last||0)>INS_ACTIVE_MS) return null;
+    return c;
+  }
+  // 手机：进行中的讨论固定在顶部，一行显示问题和最新观点；点一下展开 / 收起，随对话更新
+  let insPinT=null;
+  function insPinHide(){ clearTimeout(insPinT); const p=$("insPin"); if(p){ p.hidden=true; p.textContent=""; } $("home").classList.remove("pin-on"); }
+  function insPin(c,isNew){
+    if(isWide()){ insPop(c,isNew); return; }
+    if(!recActive()) return;
+    if(isNew){ INS.pinOpen=true; clearTimeout(insPinT); insPinT=setTimeout(()=>{ if(INS){ INS.pinOpen=false; insPinDraw(); } },INS_POP_MS); }
+    insPinDraw(true);
+  }
+  function insPinDraw(flash){
+    const p=$("insPin"), c=insActive();
+    if(!c || isWide()){ insPinHide(); return; }
+    p.textContent=""; p.hidden=false; $("home").classList.add("pin-on");
+    if(INS.pinOpen){
+      const el=insCardEl(c,{live:true,close:()=>{ INS.pinOpen=false; insPinDraw(); }});
+      el.onclick=()=>{ INS.pinOpen=false; insPinDraw(); };
+      p.appendChild(el);
+    }else{
+      const bar=document.createElement("button"); bar.className="pinbar";
+      const vs=c.views||[], fr=INS.fresh.get(c.id), frOn=fr && fr.until>Date.now();
+      const latest=(frOn && vs.find(v=>fr.keys.has(viewKey(v)))) || vs[vs.length-1];
+      const q=document.createElement("b"); q.textContent="🗣 "+c.title; bar.appendChild(q);
+      const m=document.createElement("span"); m.textContent=(frOn?"新：":"")+(latest?(latest.who?latest.who+"：":"")+latest.view:vs.length+" 个观点"); bar.appendChild(m);
+      const n=document.createElement("i"); n.textContent=vs.length+" ▾"; bar.appendChild(n);
+      bar.onclick=()=>{ INS.pinOpen=true; insPinDraw(); };
+      p.appendChild(bar);
+    }
+    if(flash){ p.classList.remove("flash"); void p.offsetWidth; p.classList.add("flash"); }
   }
   let insPopT=null;
   function insPopHide(){ clearTimeout(insPopT); insPopT=null; $("insPop").hidden=true; $("insPop").textContent=""; }
@@ -4122,7 +4208,9 @@ span.ic-t{color:var(--muted)}
   $("insBadge").onclick=()=>insOpenDlg();
   $("insDlgClose").onclick=()=>$("insDlg").close();
   try{ wideQ.addEventListener("change",()=>insLayout()); }catch(e){}
-  setInterval(()=>{ if(INS && S && S.id===INS.sid && listening && insOn()){ insTagBatch(); insKick(); } },15000);
+  setInterval(()=>{ if(INS && S && S.id===INS.sid && listening && insOn()){ insTagBatch(); insKick(); } },8000);
+  // 讨论安静下来（2 分钟没人再说这个问题）就取消置顶
+  setInterval(()=>{ if(INS && INS.active && !insActive()){ INS.active=null; insPinHide(); insDraw(); } },10000);
   // 记录详情里的「洞察」区块
   let insDetOpen=false;
   function drawInsights(){
