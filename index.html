@@ -386,7 +386,11 @@ input:not([type=range]):focus,textarea:focus{outline:none;border-color:var(--acc
 .stage{flex:1;min-height:0;position:relative;overflow:hidden;overflow:clip}   /* clip：屏幕外的页面里的元素获得焦点时，容器也不会被横向滚动 */
 #home{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--home-bg)}
 .topbar{display:flex;align-items:center;justify-content:space-between;gap:var(--s1);padding:8px var(--s2);min-height:56px;flex:none}
-.tb-right{display:flex;align-items:center;gap:var(--s1)}
+.tb-right{display:flex;align-items:center;gap:var(--s1);flex:none}
+/* 顶栏不换行：文件夹胶囊先缩，「结束」等按钮保持一行；窄屏 / 大字号时 Live 只留圆点 */
+.topbar #folderChip{flex:0 1 auto;min-width:0}
+.endbtn,.livebadge,.insbadge{white-space:nowrap;flex:none}
+@media (max-width:400px){ .tb-right{gap:6px} .endbtn{padding:0 12px} #liveBadgeTxt{display:none} .insbadge{padding:4px 8px} }
 #folderChip{border:0;background:var(--fill);color:var(--ink2);font-size:14px;font-weight:500;cursor:pointer;padding:0 14px;border-radius:999px;min-height:36px;max-width:50vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;position:relative}
 #folderChip::after{content:"";position:absolute;left:0;right:0;top:50%;height:44px;transform:translateY(-50%)}
 .livebadge{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--ink2)}
@@ -603,8 +607,13 @@ span.ic-t{color:var(--muted)}
 .ic-src{margin-top:6px;font-size:12px;color:var(--muted)}.ic-src a{color:var(--accent)}
 .inscard.compact .ic-body,.inscard.compact .ic-views{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
 .ins-side{display:none}
+.capbox{margin:4px 16px 12px;padding:10px 12px;border-radius:12px;background:var(--fill);font-size:13px;line-height:1.6;color:var(--ink2)}
+.cap-h{font-weight:600;color:var(--ink);margin-bottom:2px}
+.cap-row{display:flex;flex-wrap:wrap;gap:4px 12px}
+.cap-ok{color:var(--ok)}.cap-no{color:var(--faint)}
+.cap-chg{margin-top:4px;color:var(--accent)}.cap-warn{color:var(--orange,#C77700)}.cap-bad{color:var(--rec-ink,#C0392B)}
 .inspin{position:absolute;left:12px;right:12px;top:60px;z-index:29}
-.inspin .inscard{box-shadow:0 8px 24px rgba(0,0,0,.16);cursor:pointer;max-height:46vh;overflow-y:auto}
+.inspin .inscard{box-shadow:0 8px 24px rgba(0,0,0,.16);cursor:pointer;max-height:38vh;overflow-y:auto}
 .inspin.flash .pinbar,.inspin.flash .inscard{animation:pinFlash 1.2s ease}
 @keyframes pinFlash{0%{box-shadow:0 0 0 3px var(--accent)}100%{box-shadow:0 8px 24px rgba(0,0,0,.16)}}
 @media (prefers-reduced-motion:reduce){.inspin.flash .pinbar,.inspin.flash .inscard{animation:none}}
@@ -1100,6 +1109,7 @@ span.ic-t{color:var(--muted)}
         <div class="note" id="keyNote" style="font-size:13px;color:var(--muted)">只保存在这台手机的浏览器里。在 <a href="https://console.anthropic.com" target="_blank" rel="noopener" style="color:var(--accent)">Claude Console</a> 申请。</div>
       </div>
       <div class="test-row"><button class="btn2" id="testBtn">测试连接</button><span id="testRes" role="status" aria-live="polite"></span></div>
+      <div class="capbox" id="capBox" hidden></div>
     </div>
     </div>
     <div class="spane" data-sp="adv" data-title="高级" hidden>
@@ -3976,6 +3986,68 @@ span.ic-t{color:var(--muted)}
     }
   }
 
+  // ---------- 自动识别配置 ----------
+  // 填好中转地址和访问口令后，向 Worker 要一份「哪些服务配好了」的清单（GET /config，只有布尔值和模型名，不含密钥），
+  // 当前选的服务商 / 识别引擎在 Worker 里没配时自动换成能用的。打开应用时如果距上次检查超过 12 小时，也会悄悄检查一次。
+  const WORKER_LATEST=5, CAP_TTL=12*3600000;
+  let capBusy=false, capErr="";
+  async function detectConfig(opts){
+    opts=opts||{};
+    if(!useRelay() || !relayBase() || !settings.relayToken || capBusy) return null;
+    capBusy=true; capErr=""; let caps=null;
+    try{
+      const r=await Promise.race([fetch(relayBase()+"/config",{headers:{authorization:"Bearer "+settings.relayToken}}), new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")),10000))]);
+      if(r.status===401) capErr="访问口令不对，请检查（和 Worker 里的 ACCESS_TOKEN 一致）";
+      else if(r.status===404) caps={old:true};
+      else if(r.ok){ const j=await r.json(); caps={v:+j.v||0, providers:j.providers||{}, engines:j.engines||{}, features:j.features||{}, onedrive:!!j.onedrive}; }
+      else capErr="Worker 返回 "+r.status;
+    }catch(e){ capErr="连不上中转地址，请检查地址是否正确"; }
+    capBusy=false;
+    if(caps){
+      caps.at=Date.now(); settings.relayCaps=caps; saveSettings();
+      const ch=applyCaps(caps); capChanges=ch;
+      if(ch.length && opts.toast!==false) toast("已按 Worker 自动设置："+ch.join("，"));
+      dbg("自动识别配置："+JSON.stringify({v:caps.v,old:!!caps.old,providers:Object.keys(caps.providers||{}),engines:caps.engines})+(ch.length?" → "+ch.join("，"):""));
+    }
+    drawCaps();
+    return caps;
+  }
+  let capChanges=[];
+  const capOf=()=>useRelay() && settings.relayCaps && !settings.relayCaps.old ? settings.relayCaps : null;
+  const llmAvail=v=>{ const c=capOf(); return !c || !!(c.providers||{})[v]; };
+  const engAvail=v=>{ const c=capOf(); if(!c) return true; return v==="soniox" ? !!c.engines.soniox : v==="deepgram" ? !!c.engines.deepgram : true; };
+  // 当前选择在 Worker 里不可用 → 换成能用的（录音中不换识别引擎）
+  function applyCaps(caps){
+    const ch=[]; if(!caps || caps.old) return ch;
+    const P=caps.providers||{}, avail=Object.keys(P);
+    if(avail.length && !P[settings.llm]){ const pick=["deepseek","anthropic","openai"].find(x=>P[x])||avail[0]; settings.llm=pick; ch.push("AI 服务商 → "+(LLM_NAMES[pick]||pick)); }
+    if(!listening && !engAvail(settings.engine)){ const pick=caps.engines.soniox?"soniox":caps.engines.deepgram?"deepgram":"browser"; if(pick!==settings.engine){ settings.engine=pick; ch.push("识别引擎 → "+(ENGINE_NAMES[pick]||pick)); } }
+    if(ch.length){ saveSettings(); applySettings(); }
+    return ch;
+  }
+  function drawCaps(){
+    const box=$("capBox"); if(!box) return;
+    const c=settings.relayCaps;
+    if(!useRelay() || (!c && !capErr && !capBusy)){ box.hidden=true; return; }
+    box.hidden=false; box.textContent="";
+    const add=(cls,txt)=>{ const d=document.createElement("div"); if(cls) d.className=cls; d.textContent=txt; box.appendChild(d); return d; };
+    if(capErr){ add("cap-bad","✗ "+capErr); return; }
+    if(!c) return;
+    if(c.old){ add("cap-warn","你的 Worker 版本较旧，没法自动识别配置。更新 worker.js 并重新部署后，就能自动选好服务商和识别引擎，也能用上经中转连接 Soniox、联网搜索等新功能。"); return; }
+    add("cap-h","Worker 里已配置的服务"+(c.v?"（v"+c.v+"）":""));
+    const row=items=>{ const d=document.createElement("div"); d.className="cap-row"; items.forEach(([ok,t])=>{ const s=document.createElement("span"); s.className=ok?"cap-ok":"cap-no"; s.textContent=(ok?"✓ ":"✗ ")+t; d.appendChild(s); }); box.appendChild(d); };
+    row([[!!c.engines.soniox,"Soniox"],[!!c.engines.deepgram,"Deepgram"]]);
+    row(Object.keys(LLM_NAMES).map(k=>[!!(c.providers||{})[k],LLM_NAMES[k]]));
+    row([[!!(c.features||{}).search,"联网搜索"],[!!c.onedrive,"OneDrive"]]);
+    if(capChanges.length) add("cap-chg","已自动调整："+capChanges.join("，"));
+    if(c.v && c.v<WORKER_LATEST) add("cap-warn","Worker 有新版本，更新 worker.js 并重新部署可以用上新功能。");
+  }
+  function normRelayUrl(u){
+    u=String(u||"").trim(); if(!u) return u;
+    if(!/^https?:\/\//i.test(u)) u="https://"+u;          // 只粘了域名时补上 https://
+    return u.replace(/\/+$/,"");
+  }
+
   // ---------- 实时洞察：围绕某个问题的讨论 → 梳理观点；反复出现的概念 → 介绍（概念先经 Worker 联网搜索） ----------
   // 为了省 token，不定期把整段转写发给模型：
   //   1）每句「精修」请求顺带让模型多输出两行——这句的「术语」和「话题」（正在讨论的问题），只多十几个 token；
@@ -5888,8 +5960,8 @@ registerProcessor("pcm16",PCM16);`;
   $("choiceDlg").addEventListener("click",e=>{ if(e.target===$("choiceDlg")) $("choiceDlg").close(); });
   const splitLabel=t=>{ const m=/^(.*?)（(.*)）$/.exec(t); return m?{t:m[1],sub:m[2]}:{t,sub:""}; };
   $("engineRow").onclick=()=>openChoice("识别引擎",[
-    {v:"soniox",t:"Soniox",sub:"推荐，内置实时翻译"},
-    {v:"deepgram",t:"Deepgram",sub:"备用，翻译由 "+llmName()+" 完成"},
+    {v:"soniox",t:"Soniox",sub:engAvail("soniox")?"推荐，内置实时翻译":"你的 Worker 里没有配置 SONIOX_API_KEY"},
+    {v:"deepgram",t:"Deepgram",sub:engAvail("deepgram")?"备用，翻译由 "+llmName()+" 完成":"你的 Worker 里没有配置 DEEPGRAM_API_KEY"},
     {v:"browser",t:"浏览器自带",sub:"免费，准确度较低"}],settings.engine,v=>{
       if(listening) stop();
       settings.engine=v; saveSettings(); applySettings();
@@ -5898,7 +5970,7 @@ registerProcessor("pcm16",PCM16);`;
   $("accentRow").onclick=()=>openChoice("说话人的口音",ACCENTS.map(([v,t])=>({v,t})),settings.lang,v=>{
     settings.lang=v; saveSettings(); applySettings(); if(listening && eng) eng.restartNow();
   });
-  $("providerRow").onclick=()=>openChoice("服务商",Object.entries(LLM_NAMES).map(([v,t])=>({v,t})),settings.llm,v=>{
+  $("providerRow").onclick=()=>openChoice("服务商",Object.entries(LLM_NAMES).map(([v,t])=>({v,t,sub:llmAvail(v)?"":"你的 Worker 里没有配置这个服务商的密钥"})),settings.llm,v=>{
     settings.llm=v; saveSettings(); applySettings();
   });
   $("refineModelRow").onclick=()=>openChoice($("refineModelLbl").textContent,modelList().map(([v,t])=>Object.assign({v},splitLabel(t))),settings.refineModel,v=>{ settings.refineModel=v; saveSettings(); applySettings(); });
@@ -5927,8 +5999,11 @@ registerProcessor("pcm16",PCM16);`;
   document.querySelectorAll("#modeSeg button").forEach(b=>b.onclick=()=>{ settings.mode=b.dataset.mode; saveSettings(); applySettings(); });
   // 输入框
   $("apiKey").oninput=e=>{ settings.apiKey=e.target.value.trim(); saveSettings(); };
-  $("relayUrl").oninput=e=>{ settings.relayUrl=e.target.value.trim(); saveSettings(); };
-  $("relayToken").oninput=e=>{ settings.relayToken=e.target.value.trim(); saveSettings(); };
+  $("relayUrl").oninput=e=>{ settings.relayUrl=e.target.value.trim(); settings.relayCaps=null; capChanges=[]; saveSettings(); };
+  $("relayToken").oninput=e=>{ settings.relayToken=e.target.value.trim(); settings.relayCaps=null; capChanges=[]; saveSettings(); };
+  // 填完（失焦）就自动识别：地址补全 https://、去掉末尾斜杠
+  $("relayUrl").onchange=e=>{ const v=normRelayUrl(e.target.value); if(v!==e.target.value){ e.target.value=v; settings.relayUrl=v; saveSettings(); } detectConfig(); };
+  $("relayToken").onchange=()=>detectConfig();
   $("dgKey").oninput=e=>{ settings.dgKey=e.target.value.trim(); saveSettings(); };
   $("glossary").oninput=e=>{ settings.glossary=e.target.value; saveSettings(); };
   $("size").oninput=e=>{ settings.size=+e.target.value; $("sizeVal").textContent=settings.size+"px"; document.documentElement.style.setProperty("--fs", settings.size+"px"); saveSettings(); };
@@ -5944,6 +6019,7 @@ registerProcessor("pcm16",PCM16);`;
     const out=$("testRes"), btn=$("testBtn");
     if(!translateReady()){ out.className="bad"; out.textContent="✗ "+(useRelay()?"请先填写中转地址和访问口令":"请先填写 Claude API 密钥"); return; }
     btn.disabled=true; out.className=""; out.innerHTML='<span class="spin"></span>测试中…';
+    if(useRelay()) await detectConfig();
     const t0=performance.now();
     try{
       await Promise.race([
@@ -5967,6 +6043,9 @@ registerProcessor("pcm16",PCM16);`;
   checkUnfinished();
   applySettings();
   applyUi();
+  drawCaps();
+  // 距上次检查超过 12 小时：悄悄再识别一次（Worker 可能加了新密钥或更新了版本）
+  if(useRelay() && relayBase() && settings.relayToken && (!settings.relayCaps || Date.now()-(settings.relayCaps.at||0)>CAP_TTL)) setTimeout(()=>detectConfig(),1500);
   // ---- OneDrive：旧数据迁移（补 updatedAt / syncState）、启动、回前台和定时拉取 ----
   (async()=>{
     try{
