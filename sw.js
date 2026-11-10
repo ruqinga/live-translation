@@ -1,7 +1,7 @@
-// 同声字幕 service worker
+// 同频 service worker
 // - 本站的页面和静态文件：总是先走网络（有更新立刻生效），只有断网时才用缓存。
 // - 其他网站的请求（中转 Worker、Soniox、Deepgram、OneDrive、AI 接口、字体等）一律不经过这里，直接走网络。
-const CACHE = "lt-shell-v1";
+const CACHE = "lt-shell-v2";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon.svg", "./icons/icon-192.png", "./icons/icon-512.png"];
 
 self.addEventListener("install", e => {

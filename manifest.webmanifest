@@ -1,7 +1,7 @@
 {
   "id": "/live-translation/",
-  "name": "同声字幕",
-  "short_name": "同声字幕",
+  "name": "同频 InTune",
+  "short_name": "同频",
   "description": "实时字幕与翻译：听中文、英文、西班牙语，实时显示译文。",
   "lang": "zh-CN",
   "start_url": "./",

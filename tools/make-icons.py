@@ -4,9 +4,9 @@
 """
 import math, os, struct, zlib
 
-BRAND = (0xB7, 0x5B, 0x35)   # #b75b35
+BRAND = (0x2F, 0x66, 0xE0)   # #2F66E0，与页面主色一致
 WHITE = (255, 255, 255)
-# 标识：80×80 画布上的 6 条竖线（与 logo-options.html 中「同频 InTune」一致），线宽 6，圆头
+# 标识：80×80 画布上的 6 条竖线（与 tongpin-logo.svg 一致），线宽 6，圆头
 BARS = [(10, 35, 45), (22, 23, 57), (34, 15, 65), (46, 25, 55), (58, 23, 57), (70, 35, 45)]
 STROKE = 6
 SS = 4  # 每像素 4×4 超采样
@@ -76,7 +76,7 @@ def svg():
     paths = "".join(f"M{x} {a}V{b}" for x, a, b in BARS)
     return (
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80">'
-        f'<rect width="80" height="80" rx="18" fill="#b75b35"/>'
+        f'<rect width="80" height="80" rx="18" fill="#2F66E0"/>'
         f'<g transform="translate(6 6) scale(.85)"><path d="{paths}" fill="none" stroke="#fff" '
         f'stroke-width="{STROKE}" stroke-linecap="round"/></g></svg>\n'
     )
