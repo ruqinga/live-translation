@@ -53,6 +53,7 @@ Deepgram 和 Claude 的密钥只保存在你手机浏览器的 localStorage 里�
 - `GET /deepgram-token`：返回 `{access_token, expires_in}`，页面用 `new WebSocket(url, ["bearer", access_token])` 连接。
 - `POST /onedrive/login-ticket`、`GET /onedrive/login`、`GET /onedrive/callback`、`GET /onedrive/token`、`GET /onedrive/status`、`POST /onedrive/logout`（新，OneDrive 同步用，见 [OneDrive 同步](onedrive.md#onedrive-的-azure-应用注册和-worker-配置)）：除 `login`（凭一次性登录码）和 `callback`（凭一次性 state）这两个浏览器跳转地址外都要带访问口令；未配置 `MS_CLIENT_ID` / `MS_CLIENT_SECRET` 或没有绑定 `ONEDRIVE_KV` 时返回明确的中文提示。
 - `GET /soniox-token`（新）：用 `SONIOX_API_KEY` 向 Soniox 换取临时 API key（有效期 60 秒，用途限定为实时 WebSocket），返回 `{token, expires_in_seconds}`；页面连接 Soniox 时通过 WebSocket 子协议传这个临时密钥（`new WebSocket(url, ["soniox-api-key", 密钥])`），不再放进第一条配置消息（Soniox 新的鉴权方式，旧方式 2027-01-15 起会返回 401）。未配置 `SONIOX_API_KEY` 时返回 500 和中文提示。已部署过旧版 Worker 的需要更新代码并重新部署，否则页面会提示「中转层还不支持 Soniox」。
+- `GET /config`（新）：「自动识别配置」用。只返回 Worker 版本号、哪些服务商配了密钥（和可用模型名）、Soniox / Deepgram 是否可用、是否支持联网搜索、OneDrive 是否配好——全是布尔值和模型名，**不返回任何密钥**。旧版 Worker 没有这个接口时页面会提示更新。
 - `POST /search`（新）：联网搜索，转发到 DeepSeek 的 Search API（`https://api.deepseek.com/v1/tools/search`），用已有的 `DEEPSEEK_API_KEY`，只返回前几条的标题、链接和摘要，给「实时洞察」的概念卡片用（约 ¥5 / 千次成功搜索）。没配 `DEEPSEEK_API_KEY` 时返回 501，页面改用模型自身知识。需要更新 `worker.js` 并重新部署。
 - `GET /soniox-ws?key=<临时密钥>`（WebSocket，新）：手机连不上 `stt-rt.soniox.com` 时，页面改连这个地址，Worker 用这个临时密钥（`Authorization: Bearer`）连到 Soniox，并把上游连接原样交还给页面，之后的音频和结果由 Cloudflare 直接转发，不经过 Worker 的 JavaScript，几乎不占 CPU 时间。浏览器的 WebSocket 不能带 Authorization 头，所以这个地址不检查访问口令；没有有效的 Soniox 临时密钥时 Soniox 会直接拒绝。不带 Upgrade 的普通 GET 返回 426，页面用它判断 Worker 是否已支持中转。**要用这个功能，需要更新 `worker.js` 并重新部署 Worker**（Git 集成的话合并到 main 后自动部署）。
 - 除了 `/soniox-ws`（靠 Soniox 临时密钥）和 OneDrive 登录 / 回调两个跳转地址，其余请求都要带 `Authorization: Bearer <ACCESS_TOKEN>`。服务商和模型有白名单，想加新模型改 `worker.js` 顶部的 `PROVIDERS`，同时在 `index.html` 的 `MODELS` 里加上。
@@ -89,3 +90,5 @@ OneDrive 同步需要的 Azure 应用注册、KV 和 Secret 配置，见 [OneDri
 - 用蓝牙耳机时，麦克风可能被切换到耳机，建议使用手机自带麦克风。
 
 **连不上 Soniox（「网络已断开，自动重连 3 次仍失败」，但能取到临时密钥）**：说明手机能连上你的 Worker，却连不上 Soniox 的实时服务 `stt-rt.soniox.com`。设置 → 识别与翻译 →「Soniox 连接」默认是「自动」：直连 7 秒没连上就改走 Worker 中转，并记住这台设备上能用的方式；也可以直接选「经中转」。先确认 Worker 已经更新到支持 `/soniox-ws` 的版本，否则会提示「你的 Worker 还不支持经中转连接 Soniox」。
+
+**自动识别配置**：在设置 → 连接与密钥里填好中转地址（只填域名也行，会自动补 `https://`、去掉末尾的 `/`）和访问口令，填完离开输入框就会向 Worker 查询 `/config`，下面列出 Worker 里配好了哪些服务（✓ / ✗）。当前选的 AI 服务商或识别引擎在 Worker 里没配时，自动换成能用的（服务商优先 DeepSeek，其次 Claude、OpenAI；识别引擎优先 Soniox，其次 Deepgram，都没有就用浏览器自带），并提示改了什么。「测试连接」也会重新识别一次；之后每次打开应用，距上次检查超过 12 小时会悄悄再查一次（例如你在 Worker 里新加了密钥）。选服务商、识别引擎时，Worker 里没配的选项会注明。

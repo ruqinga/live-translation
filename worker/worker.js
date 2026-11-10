@@ -3,6 +3,7 @@
 //   POST /summary          流式长文本摘要，格式同上，但允许更长的输入和输出
 //   GET  /deepgram-token   签发 Deepgram 短期令牌（手机端不需要保存 Deepgram 长期密钥）
 //   GET  /soniox-token     签发 Soniox 实时转录的临时 API 密钥（真正的密钥只放在这里的 SONIOX_API_KEY）
+//   GET  /config           自动识别配置：哪些服务商 / 识别引擎 / 功能已配置好（只有布尔值和模型名，不含密钥）
 //   POST /search           联网搜索（转发 DeepSeek Search API，用 DEEPSEEK_API_KEY），实时洞察的概念卡片用
 //   GET  /soniox-ws?key=   （WebSocket）把 Soniox 实时转录经 Worker 转发，给连不上 stt-rt.soniox.com 的网络用
 //   OneDrive 同步（Worker 代管微软登录；刷新令牌只存在 KV 里，绝不下发到浏览器）：
@@ -24,6 +25,8 @@ const PROVIDERS = {
   deepseek:  { key: "DEEPSEEK_API_KEY",  models: ["deepseek-chat"] },
   openai:    { key: "OPENAI_API_KEY",    models: ["gpt-4o-mini", "gpt-4o"] },
 };
+// 页面「自动识别配置」读这个版本号和功能列表，判断 Worker 需不需要更新
+const WORKER_VERSION = 5;
 const LIMITS = {
   translate: { maxBody: 30000, maxTokens: 1024 },
   summary:   { maxBody: 200000, maxTokens: 4096 },
@@ -161,6 +164,19 @@ async function sonioxToken(env, h) {
   const j = await res.json();
   if (!j.api_key) return json({ error: "Soniox 没有返回临时密钥", upstream: res.status }, 502, h);
   return json({ token: j.api_key, expires_in_seconds: 60 }, 200, { ...h, "cache-control": "no-store" });
+}
+
+// 自动识别配置：只告诉页面哪些服务配好了（布尔值和可用模型名），绝不返回任何密钥本身
+function workerConfig(env, h) {
+  const providers = {};
+  for (const [name, p] of Object.entries(PROVIDERS)) if (env[p.key]) providers[name] = p.models;
+  return json({
+    v: WORKER_VERSION,
+    providers,
+    engines: { soniox: !!env.SONIOX_API_KEY, deepgram: !!env.DEEPGRAM_API_KEY },
+    features: { summary: true, search: !!env.DEEPSEEK_API_KEY, sonioxWs: true },
+    onedrive: odConfigError(env) === "",
+  }, 200, { ...h, "cache-control": "no-store" });
 }
 
 // 联网搜索（实时洞察的概念卡片用）：转发到 DeepSeek 的 Search API（POST https://api.deepseek.com/v1/tools/search），
@@ -330,6 +346,7 @@ export default {
       return json({ error: "访问口令无效" }, 401, h);
     }
     const path = new URL(req.url).pathname.replace(/\/+$/, "");
+    if (path === "/config" && req.method === "GET") return workerConfig(env, h);
     if (path === "/translate" && req.method === "POST") return translate(req, env, h, LIMITS.translate);
     if (path === "/summary" && req.method === "POST") return translate(req, env, h, LIMITS.summary);
     if (path === "/deepgram-token" && req.method === "GET") return deepgramToken(env, h);
