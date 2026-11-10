@@ -7,7 +7,10 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#2B59C3">
 <title>同声字幕</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎧</text></svg>">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
@@ -780,6 +783,7 @@ span.ic-t{color:var(--muted)}
         <button role="menuitem" id="mmSettings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>设置</button>
         <button role="menuitemcheckbox" id="mmTwo" aria-checked="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h14M14 4l4 4-4 4M20 16H6M10 12l-4 4 4 4"/></svg><span class="mm-t">双语互译<small id="mmTwoSub"></small></span><span class="mm-sw" aria-hidden="true"></span></button>
         <button role="menuitem" id="mmView" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M4 12h16M12 7.5l-2 2.2h4zM12 16.5l-2-2.2h4z"/></svg><span id="mmViewTxt">面对面视图</span></button>
+        <button role="menuitem" id="mmInstall" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M12 7v7M9 11l3 3 3-3M10.5 18.5h3"/></svg>安装到主屏幕</button>
         <div id="mmSession">
           <hr>
           <button role="menuitem" id="mmRename"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>重命名本次记录</button>
@@ -2023,6 +2027,18 @@ span.ic-t{color:var(--muted)}
     toast(msg);
   };
   $("mmView").onclick=()=>{ closeMoreMenu(); f2fOn=!f2fOn; f2fApply(); };
+  // 「安装到主屏幕」：只有 Chrome 允许安装（触发 beforeinstallprompt）时才显示
+  let installEvt=null;
+  window.addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); installEvt=e; $("mmInstall").hidden=false; });
+  window.addEventListener("appinstalled",()=>{ installEvt=null; $("mmInstall").hidden=true; toast("已安装到主屏幕"); });
+  $("mmInstall").onclick=async()=>{
+    closeMoreMenu(); if(!installEvt) return;
+    const e=installEvt; installEvt=null; $("mmInstall").hidden=true;
+    try{ e.prompt(); await e.userChoice; }catch(_){}
+  };
+  if("serviceWorker" in navigator && window.isSecureContext){
+    window.addEventListener("load",()=>{ navigator.serviceWorker.register("sw.js").catch(err=>console.warn("service worker 注册失败",err)); });
+  }
   $("mmCopy").onclick=()=>{ closeMoreMenu(); copyAll(); };
   $("mmExport").onclick=()=>{ closeMoreMenu(); exportTxt(); };
   $("mmClear").onclick=()=>{ closeMoreMenu(); clearScreen(); };
